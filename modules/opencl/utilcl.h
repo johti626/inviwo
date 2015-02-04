@@ -3,7 +3,7 @@
  * Inviwo - Interactive Visualization Workshop
  * Version 0.9
  *
- * Copyright (c) 2013-2015 Inviwo Foundation
+ * Copyright (c) 2014-2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,28 +25,36 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#include <modules/fontrendering/fontrenderingmodule.h>
-#include <modules/opengl/glwrap/shadermanager.h>
-#include <modules/fontrendering/processors/textoverlaygl.h>
-#ifdef FONTRENDERING_INCLUDE_SHADER_RESOURCES
-#include <modules/fontrendering/shader_resources.h>
-#endif
+#ifndef IVW_UTILCL_H
+#define IVW_UTILCL_H
+
+#include <modules/opencl/openclmoduledefine.h>
+#include <inviwo/core/properties/simplelightingproperty.h>
 
 namespace inviwo {
 
-FontRenderingModule::FontRenderingModule() : InviwoModule() {
-    setIdentifier("FontRendering");
 
-#ifdef FONTRENDERING_INCLUDE_SHADER_RESOURCES
-    addGeneratedShaderResources();
-#else
-    ShaderManager::getPtr()->addShaderSearchPath(InviwoApplication::PATH_MODULES, "fontrendering/glsl");
-#endif
-    
-    registerProcessor(TextOverlayGL);
-}
+namespace utilcl {
 
-} // namespace
+// Struct that can be transferred to OpenCL.
+// Equivalent to struct in
+// opencl/datastructures/lightsource.cl
+// Note that float3 in OpenCL is same as vec4
+typedef struct LightParameters {
+    vec4 position;
+    vec4 ambientColor; 
+    vec4 diffuseColor;
+    vec4 specularColor;
+    float specularExponent;
+    ShadingMode::Modes shadingMode;
+
+    char padding[56]; // Align to power of two bytes (128)
+} LightParameters;
+}  // namspace utilcl
+
+}  // namespace
+
+#endif  // IVW_UTILCL_H

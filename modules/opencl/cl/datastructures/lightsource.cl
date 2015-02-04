@@ -51,4 +51,15 @@ typedef struct LightSource {
     int padding[7];
 } LightSource;
 
+typedef struct LightParameters {
+    float3 position;
+    float3 ambientColor; 
+    float3 diffuseColor;
+    float3 specularColor;
+    float specularExponent;
+    int shadingMode;
+
+    char padding[56];
+} LightParameters;
+
 #endif // LIGHTSOURCE_CL
