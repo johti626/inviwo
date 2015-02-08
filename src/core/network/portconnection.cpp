@@ -25,46 +25,88 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #include <inviwo/core/network/portconnection.h>
 
 namespace inviwo {
 
-PortConnection::PortConnection()
-    : inport_(0),
-      outport_(0) {}
+PortConnection::PortConnection() : inport_(NULL), outport_(NULL) {}
 
 PortConnection::PortConnection(Outport* outport, Inport* inport)
-    : inport_(inport),
-      outport_(outport) {}
+    : inport_(inport), outport_(outport) {}
 
 PortConnection::~PortConnection() {}
 
 void PortConnection::serialize(IvwSerializer& s) const {
-    s.serialize("OutPort", *getOutport());
-    s.serialize("InPort", *getInport());
+    s.serialize("OutPort", outport_);
+    s.serialize("InPort", inport_);
 }
 
 void PortConnection::deserialize(IvwDeserializer& d) {
-    Outport outport("");
-    d.deserialize("OutPort", outport);
-    Processor* outPortProcessor = outport.getProcessor();
+    struct SError {
+        SError() : error(false), data() {};
+        bool error;
+        SerializationException::SerializationExceptionData data;
+    };    
+    SError in, out;
 
-    if (outPortProcessor)
-        outport_ = outPortProcessor->getOutport(outport.getIdentifier());
-    else
-        LogWarn("Could not deserialize " << outport.getIdentifier());
+    try {
+        d.deserialize("OutPort", outport_);
+    } catch (SerializationException& e) {
+        out.error = true;
+        out.data = e.getData();
+    }
 
-    Inport inport("");
-    d.deserialize("InPort", inport);
-    Processor* inPortProcessor = inport.getProcessor();
+    try {
+        d.deserialize("InPort", inport_);
+    } catch (SerializationException& e) {
+        in.error = true;
+        in.data = e.getData();
+    }
 
-    if (inPortProcessor)
-        inport_ = inPortProcessor->getInport(inport.getIdentifier());
-    else
-        LogWarn("Could not deserialize " << inport.getIdentifier());
+    if (!(out.error || in.error)) {
+        if (inport_->getProcessor()->getInport(inport_->getIdentifier()) != inport_) {
+            inport_ = inport_->getProcessor()->getInport(inport_->getIdentifier());
+        }
+
+        if (outport_->getProcessor()->getOutport(outport_->getIdentifier()) != outport_) {
+            outport_ = outport_->getProcessor()->getOutport(outport_->getIdentifier());
+        }
+
+    } else {
+        std::string type = (out.error ? out.data.type : outport_->getProcessor()->getIdentifier()) + "." +
+                           outport_->getIdentifier() + " to " +
+                           (in.error ? in.data.type : inport_->getProcessor()->getIdentifier()) + "." +
+                           inport_->getIdentifier();
+
+        if (out.error && in.error) {
+            throw SerializationException("Could not create Connection from port \""
+                                         + outport_->getIdentifier() + "\" in the missing processor \""
+                                         + out.data.id + "\" of class \"" + out.data.type
+                                         + "\" to port \"" + inport_->getIdentifier()
+                                         + "\" in the missing processor \"" + in.data.id
+                                         + "\" of class \"" + in.data.type + "\"",
+                                         "Connection");
+        } else if (out.error) {
+            throw SerializationException("Could not create Connection from port \""
+                                         + outport_->getIdentifier() + "\" in the missing processor \""
+                                         + out.data.id + "\" of class \"" + out.data.type 
+                                         + "\" to port \"" + inport_->getIdentifier() 
+                                         + "\" in processor \""
+                                         + inport_->getProcessor()->getIdentifier() + "\"",
+                                         "Connection");
+        } else { // in.error
+            throw SerializationException("Could not create Connection from port \"" 
+                                         + outport_->getIdentifier() + "\" in processor \""
+                                         + outport_->getProcessor()->getIdentifier() 
+                                         + "\" to port \"" + inport_->getIdentifier() 
+                                         + "\" in the missing processor \"" + in.data.id 
+                                         + "\" of class \"" + in.data.type + "\"", 
+                                        "Connection");
+        }
+    }
 }
 
-} // namespace
+}  // namespace

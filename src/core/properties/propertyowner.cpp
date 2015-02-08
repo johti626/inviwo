@@ -129,6 +129,25 @@ Property* PropertyOwner::getPropertyByIdentifier(const std::string& identifier,
     return NULL;
 }
 
+Property* PropertyOwner::getPropertyByPath(const std::vector<std::string>& path) const {
+    Property* property = getPropertyByIdentifier(path[0]);
+    if (property) {
+        size_t i = 1;
+        while (path.size() > i) {
+            CompositeProperty* comp = dynamic_cast<CompositeProperty*>(property);
+            if (comp) {
+                property = comp->getPropertyByIdentifier(path[i]);
+                if (!property) return NULL;
+            } else {
+                return NULL;
+            }
+            ++i;
+        }
+        return property;
+    }
+    return NULL;
+}
+
 void PropertyOwner::setValid() {
     for (size_t i=0; i<properties_.size(); i++)
         properties_[i]->setPropertyModified(false);
@@ -230,5 +249,7 @@ void PropertyOwner::invokeInteractionEvent(Event* event) {
         if (event->hasBeenUsed()) return;
     }
 }
+
+
 
 } // namespace

@@ -25,22 +25,59 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
+#ifndef IVW_DESERIALIZATIONERRORHANDLER_H
+#define IVW_DESERIALIZATIONERRORHANDLER_H
+
+#include <inviwo/core/common/inviwocoredefine.h>
+#include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/util/exception.h>
 
 namespace inviwo {
 
-Exception::Exception(const std::string& message) : message_(message) {}
+class IVW_CORE_API BaseDeserializationErrorHandler {
+public:
+    BaseDeserializationErrorHandler() {}
+    virtual ~BaseDeserializationErrorHandler() {}
 
-Exception::~Exception() throw() {}
+    virtual void handleError(SerializationException&) = 0;
+    virtual std::string getKey() = 0;
+};
 
-const std::string& Exception::getMessage() const throw() { return message_; };
+template <typename T>
+class DeserializationErrorHandler : public BaseDeserializationErrorHandler {
+public:
+    typedef void (T::*Callback)(SerializationException&);
 
-IgnoreException::IgnoreException(const std::string& message) : Exception(message) {}
+    DeserializationErrorHandler(std::string type, T* obj, Callback callback);
+    virtual ~DeserializationErrorHandler() {}
 
-AbortException::AbortException(const std::string& message) : Exception(message) {}
+    virtual void handleError(SerializationException&);
+    virtual std::string getKey();
 
+private:
+    std::string key_;
+    T* obj_;
+    Callback callback_;
+};
 
-} // namespace
+template <typename T>
+DeserializationErrorHandler<T>::DeserializationErrorHandler(std::string type, T* obj,
+                                                            Callback callback)
+    : key_(type), obj_(obj), callback_(callback) {}
+
+template <typename T>
+std::string DeserializationErrorHandler<T>::getKey() {
+    return key_;
+}
+
+template <typename T>
+void inviwo::DeserializationErrorHandler<T>::handleError(SerializationException& e) {
+    (*obj_.*callback_)(e);
+}
+
+}  // namespace
+
+#endif  // IVW_DESERIALIZATIONERRORHANDLER_H

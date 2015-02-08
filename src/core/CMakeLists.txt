@@ -107,6 +107,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/io/ivfvolumereader.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/ivfvolumewriter.h    
     ${IVW_INCLUDE_DIR}/inviwo/core/io/rawvolumereader.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/deserializationerrorhandler.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/ivwdeserializer.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/ivwserializable.h  
     ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/ivwserialization.h
@@ -191,6 +192,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/stringproperty.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/templateproperty.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/transferfunctionproperty.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/properties/valuewrapper.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/volumeindicatorproperty.h
     ${IVW_INCLUDE_DIR}/inviwo/core/rendering/geometryrenderer.h
     ${IVW_INCLUDE_DIR}/inviwo/core/rendering/geometryrendererfactory.h
@@ -315,6 +317,7 @@ set(SOURCE_FILES
     io/ivfvolumereader.cpp 
     io/ivfvolumewriter.cpp  
     io/rawvolumereader.cpp
+    io/serialization/deserializationerrorhandler.cpp
     io/serialization/ivwdeserializer.cpp
     io/serialization/ivwserializebase.cpp
     io/serialization/ivwserializeconstants.cpp
@@ -438,6 +441,7 @@ set(TEST_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/unittests/image-test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unittests/stacktrace-test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unittests/metadata-test.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/unittests/network-test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unittests/serializer-test.cpp
 )
 ivw_add_unittest(${TEST_FILES})

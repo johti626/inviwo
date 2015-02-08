@@ -308,8 +308,20 @@ public:
     * further operation.
     */
     void clear();
-    
 private:
+    struct ErrorHandle {
+        void handleProcessorError(SerializationException& error) {
+            messages.push_back(error.getMessage());     
+        }
+        void handleConnectionError(SerializationException& error) {
+            messages.push_back(error.getMessage());
+        }
+        void handleLinkError(SerializationException& error) {
+            messages.push_back(error.getMessage());
+        }
+  
+        std::vector<std::string> messages;
+    };
 
     class PropertyLinkContainsTest {
     public:
@@ -374,6 +386,7 @@ private:
         void updateShadingMode(TxElement* node);
         void updateCameraToComposite(TxElement* node);
         void updateDimensionTag(TxElement* node);
+        void updatePropertyLinks(TxElement* node);
         void traverseNodes(TxElement* node, updateType update);
     };
 };

@@ -694,6 +694,9 @@ void ProcessorNetwork::serialize(IvwSerializer& s) const {
 void ProcessorNetwork::deserialize(IvwDeserializer& d) throw(Exception) {
     // This will set deserializing_ to true while keepTrueWillAlive is in scope
     // and set it to false no matter how we leave the scope
+    
+    ErrorHandle errorHandle;
+    
     KeepTrueWhileInScope keepTrueWillAlive(&deserializing_);
 
     int version = 0;
@@ -709,6 +712,8 @@ void ProcessorNetwork::deserialize(IvwDeserializer& d) throw(Exception) {
     // Processors
     ProcessorVector processors;
     try {
+        DeserializationErrorHandle<ErrorHandle>
+            processor_err(d, "Processor", &errorHandle, &ErrorHandle::handleProcessorError);
         d.deserialize("Processors", processors, "Processor");
         for (size_t i = 0; i < processors.size(); ++i) {
             if (processors[i]) {
@@ -728,6 +733,8 @@ void ProcessorNetwork::deserialize(IvwDeserializer& d) throw(Exception) {
     // Connections
     try {
         std::vector<PortConnection*> portConnections;
+        DeserializationErrorHandle<ErrorHandle>
+            connection_err(d, "Connection", &errorHandle, &ErrorHandle::handleConnectionError);
         d.deserialize("Connections", portConnections, "Connection");
 
         processors = getProcessors();
@@ -737,28 +744,7 @@ void ProcessorNetwork::deserialize(IvwDeserializer& d) throw(Exception) {
                 Outport* outPort = portConnections[i]->getOutport();
                 Inport* inPort = portConnections[i]->getInport();
 
-                if (!(outPort && inPort)) {
-                    LogWarn("Unable to establish port connectionNr." << i << " , one port did not exists.");
-                    delete portConnections[i];
-                    continue;
-                }
-
-                bool inPortProcessorFound = false;
-                bool outPortProcessorFound = false;
-                for (size_t p = 0; p < processors.size(); p++) {
-                    if(inPort->getProcessor() == processors[p])
-                        inPortProcessorFound = true;
-                    else if(outPort->getProcessor() == processors[p])
-                        outPortProcessorFound = true;
-                }
-
-                if (!(inPortProcessorFound && outPortProcessorFound)) {
-                    LogWarn("Unable to establish port connection Nr." << i << " , port was owned by non-existing processor");
-                    delete portConnections[i];
-                    continue;
-                }
-
-                if (!(addConnection(outPort, inPort))) {
+                if (!(outPort && inPort && addConnection(outPort, inPort))) {
                     LogWarn("Unable to establish port connection Nr." << i);
                 }
 
@@ -777,6 +763,8 @@ void ProcessorNetwork::deserialize(IvwDeserializer& d) throw(Exception) {
     // Links
     try {
         std::vector<PropertyLink*> propertyLinks;
+        DeserializationErrorHandle<ErrorHandle>
+            connection_err(d, "PropertyLink", &errorHandle, &ErrorHandle::handleLinkError);
         d.deserialize("PropertyLinks", propertyLinks, "PropertyLink");
 
         for (size_t j = 0; j < propertyLinks.size(); j++) {
@@ -784,30 +772,8 @@ void ProcessorNetwork::deserialize(IvwDeserializer& d) throw(Exception) {
                 Property* srcProperty = propertyLinks[j]->getSourceProperty();
                 Property* destProperty = propertyLinks[j]->getDestinationProperty();
 
-                if (!(srcProperty && destProperty)) {
-                    LogWarn("Unable to establish property linking Nr: " << j << " , one property did not exists.");
-                    delete propertyLinks[j];
-                    continue;
-                }
-
-                bool srcPropertyProcessorFound = false;
-                bool destPropertyProcessorFound = false;
-                for (size_t p = 0; p < processors.size(); p++) {
-                    if(srcProperty->getOwner()->getProcessor() == processors[p])
-                        srcPropertyProcessorFound = true;
-                    else if(destProperty->getOwner()->getProcessor() == processors[p])
-                        destPropertyProcessorFound = true;
-                }
-
-                if (!(srcPropertyProcessorFound && destPropertyProcessorFound)) {
-                    LogWarn("Unable to establish property link Nr: " << j << " connection, property was owned by non-existing processor");
-                    delete propertyLinks[j];
-                    continue;
-                }
-
-                if (!(addLink(propertyLinks[j]->getSourceProperty(),
-                    propertyLinks[j]->getDestinationProperty()))) {
-                        LogWarn("Unable to establish property link Nr: " << j);
+                if (!(srcProperty && destProperty && addLink(srcProperty, destProperty))) {
+                    LogWarn("Unable to establish property link Nr: " << j);
                 }
 
                 delete propertyLinks[j];
@@ -816,6 +782,13 @@ void ProcessorNetwork::deserialize(IvwDeserializer& d) throw(Exception) {
                 LogWarn("Unable to establish property link Nr: " << j);
             }
         }
+
+    if (!errorHandle.messages.empty()) {
+        LogWarn("There were errors while loading workspace: " + d.getFileName() + "\n" +
+                joinString(errorHandle.messages, "\n"));
+    }
+
+
     } catch (const SerializationException& exception) {
         throw IgnoreException("DeSerialization Exception " + exception.getMessage());
     } catch (...) {
@@ -834,26 +807,14 @@ Property* ProcessorNetwork::getProperty(std::vector<std::string> path) const {
     if (path.size() >= 2){
         Processor* processor = getProcessorByIdentifier(path[0]);
         if (processor) {
-            Property* property = processor->getPropertyByIdentifier(path[1]);
-            if (property) {
-                size_t i = 2;
-                while (path.size() > i) {
-                    CompositeProperty* comp = dynamic_cast<CompositeProperty*>(property);
-                    if(comp) {
-                        property = comp->getPropertyByIdentifier(path[i++]);
-                        if(!property) return NULL;
-                    }else{
-                        return NULL;
-                    }
-                }
-                return property;
-            }
+            std::vector<std::string> propPath(path.begin()+1, path.end());
+            return processor->getPropertyByPath(propPath);
         }
     }
     return NULL;
 }
 
-const int ProcessorNetwork::processorNetworkVersion_ = 8;
+const int ProcessorNetwork::processorNetworkVersion_ = 9;
 
 
 ProcessorNetwork::NetworkConverter::NetworkConverter(int from)
@@ -877,6 +838,8 @@ bool ProcessorNetwork::NetworkConverter::convert(TxElement* root) {
             traverseNodes(root, &ProcessorNetwork::NetworkConverter::updateMetaDataKeys);
         case 7:
             traverseNodes(root, &ProcessorNetwork::NetworkConverter::updateDimensionTag);
+        case 8:
+            traverseNodes(root, &ProcessorNetwork::NetworkConverter::updatePropertyLinks);
         default:
             break;
     }
@@ -1133,6 +1096,30 @@ void ProcessorNetwork::NetworkConverter::updateDimensionTag(TxElement* node) {
 
     if (key == "dimension") {
         node->SetValue("dimensions");
+    }
+}
+
+void ProcessorNetwork::NetworkConverter::updatePropertyLinks(TxElement* node) {
+    std::string key;
+    node->GetValue(&key);
+
+    if (key == "PropertyLink") {
+        TxElement* properties = node->FirstChildElement(false);
+        if (properties) {
+            TxElement* src = properties->FirstChild()->ToElement();
+            TxElement* dest = properties->LastChild()->ToElement();
+            src->SetValue("SourceProperty");
+            dest->SetValue("DestinationProperty");
+
+            node->InsertEndChild(*src);
+            node->InsertEndChild(*dest);
+
+            node->RemoveChild(properties);
+
+            std::stringstream ss;
+            ss << *node;
+            std::string txt = ss.str();
+        }
     }
 }
 

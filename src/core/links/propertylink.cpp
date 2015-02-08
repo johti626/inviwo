@@ -44,17 +44,55 @@ PropertyLink::PropertyLink(Property* srcProperty, Property* destProperty)
 }
 
 void PropertyLink::serialize(IvwSerializer& s) const {
-    std::vector<Property*> linkedProperties;
-    linkedProperties.push_back(srcProperty_);
-    linkedProperties.push_back(dstProperty_);
-    s.serialize("Properties", linkedProperties, "Property");
+    s.serialize("SourceProperty", srcProperty_);
+    s.serialize("DestinationProperty", dstProperty_);
 }
 
 void PropertyLink::deserialize(IvwDeserializer& d) {
-    std::vector<Property*> linkedProperties;
-    d.deserialize("Properties",linkedProperties, "Property");
-    srcProperty_ = linkedProperties[0];
-    dstProperty_ = linkedProperties[1];
+    struct LError {
+        LError() : error(false), data(){};
+        bool error;
+        SerializationException::SerializationExceptionData data;
+    };
+    LError src, dest;
+
+    try {
+        d.deserialize("SourceProperty", srcProperty_);
+    } catch (SerializationException& e) {
+        src.error = true;
+        src.data = e.getData();
+    }
+
+    try {
+        d.deserialize("DestinationProperty", dstProperty_);
+    } catch (SerializationException& e) {
+        dest.error = true;
+        dest.data = e.getData();
+    }
+
+    if (src.error && dest.error) {
+        NodeDebugger ndSrc(src.data.node);
+        NodeDebugger ndDest(dest.data.node);
+        throw SerializationException("Could not create Property Link from \"" +
+                                         joinString(ndSrc.getPath(), ".") + "\" to " +
+                                         joinString(dstProperty_->getPath(), ".") +
+                                         "\". Source and destination properties not found.",
+                                     "PropertyLink");
+
+    } else if (src.error) {
+        NodeDebugger ndSrc(src.data.node);
+        throw SerializationException(
+            "Could not create Property Link from \"" + joinString(ndSrc.getPath(), ".") + "\" to " +
+                joinString(dstProperty_->getPath(), ".") + "\". Source property not found.",
+            "PropertyLink");
+    } else if (dest.error) {
+        NodeDebugger ndDest(dest.data.node);
+        throw SerializationException("Could not create Property Link from \"" +
+                                         joinString(srcProperty_->getPath(), ".") + "\" to " +
+                                         joinString(ndDest.getPath(), ".") +
+                                         "\". Destination property not found.",
+                                     "PropertyLink");
+    }
 }
 
 bool operator==(const PropertyLink& lhs, const PropertyLink& rhs) {
