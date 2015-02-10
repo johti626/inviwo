@@ -28,10 +28,41 @@
  *
  *********************************************************************************/
 
-#include <inviwo/core/io/serialization/deserializationerrorhandler.h>
+#ifndef IVW_INVIWOSETUPINFO_H
+#define IVW_INVIWOSETUPINFO_H
+
+
+#include <inviwo/core/common/inviwocoredefine.h>
+#include <inviwo/core/io/serialization/ivwserializable.h>
+#include <inviwo/core/processors/processorfactoryobject.h>
+#include <string>
+#include <vector>
 
 namespace inviwo {
-    BaseDeserializationErrorHandler::BaseDeserializationErrorHandler() {}
-    BaseDeserializationErrorHandler::~BaseDeserializationErrorHandler() {}
-} // namespace
 
+class InviwoModule;
+class InviwoApplication;
+
+struct IVW_CORE_API InviwoSetupInfo : public IvwSerializable {
+    struct ModuleSetupInfo : public IvwSerializable {
+        ModuleSetupInfo() : name_("") {}
+        ModuleSetupInfo(const InviwoModule* module);
+        virtual void serialize(IvwSerializer& s) const;
+        virtual void deserialize(IvwDeserializer& d);
+        std::string name_;
+        std::vector<std::string> processors_;
+    };
+
+    InviwoSetupInfo(){};
+    InviwoSetupInfo(const InviwoApplication* app);
+    virtual void serialize(IvwSerializer& s) const;
+    virtual void deserialize(IvwDeserializer& d);
+    std::vector<ModuleSetupInfo> modules_;
+    
+    
+    std::string getModuleForProcessor(const std::string& processor) const;
+};
+
+}  // namespace
+
+#endif  // IVW_INVIWOSETUPINFO_H

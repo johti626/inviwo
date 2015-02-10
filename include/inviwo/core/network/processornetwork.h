@@ -37,12 +37,12 @@
 #include <inviwo/core/processors/processorobserver.h>
 #include <inviwo/core/network/portconnection.h>
 #include <inviwo/core/network/processornetworkobserver.h>
-#include <inviwo/core/links/processorlink.h>
 #include <inviwo/core/links/propertylink.h>
 #include <inviwo/core/links/linkevaluator.h>
 #include <inviwo/core/util/observer.h>
 #include <inviwo/core/util/exception.h>
 #include <inviwo/core/io/serialization/versionconverter.h>
+#include <inviwo/core/util/inviwosetupinfo.h>
 
 namespace inviwo {
 
@@ -310,8 +310,15 @@ public:
     void clear();
 private:
     struct ErrorHandle {
+        ErrorHandle(const InviwoSetupInfo& info) : info_(info) {};
+    
         void handleProcessorError(SerializationException& error) {
-            messages.push_back(error.getMessage());     
+            std::string module = info_.getModuleForProcessor(error.getType());
+            if (!module.empty()) {
+                messages.push_back(error.getMessage() + " Processor last seen in module: \"" + module + "\"");
+            } else {
+                messages.push_back(error.getMessage());
+            }
         }
         void handleConnectionError(SerializationException& error) {
             messages.push_back(error.getMessage());
@@ -321,8 +328,9 @@ private:
         }
   
         std::vector<std::string> messages;
+        const InviwoSetupInfo& info_;
     };
-
+    
     class PropertyLinkContainsTest {
     public:
         PropertyLinkContainsTest(Property* p) : p_(p) {}
@@ -387,6 +395,8 @@ private:
         void updateCameraToComposite(TxElement* node);
         void updateDimensionTag(TxElement* node);
         void updatePropertyLinks(TxElement* node);
+        void updatePortsInProcessors(TxElement* node);
+
         void traverseNodes(TxElement* node, updateType update);
     };
 };

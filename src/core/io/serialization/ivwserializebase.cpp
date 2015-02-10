@@ -38,27 +38,24 @@
 
 namespace inviwo {
 
-SerializationException::SerializationException(std::string message, std::string key,
-                                               std::string type, std::string id, TxElement* node )
-    : Exception(message), data_(key, type, id, node) {}
-
-const std::string& SerializationException::getKey() const throw() { return data_.key; }
-
-const std::string& SerializationException::getType() const throw() { return data_.type; }
-
-const std::string& SerializationException::getId() const throw() { return data_.id; }
-
-const SerializationException::SerializationExceptionData& SerializationException::getData() const
-    throw() {
-    return data_;
-}
-
 IvwSerializeBase::NodeSwitch::NodeSwitch(IvwSerializeBase& serializer, TxElement* node,
                                          bool retrieveChild)
     : serializer_(serializer)
     , storedNode_(serializer_.rootElement_)
     , storedRetrieveChild_(serializer_.retrieveChild_) {
     serializer_.rootElement_ = node;
+    serializer_.retrieveChild_ = retrieveChild;
+}
+
+IvwSerializeBase::NodeSwitch::NodeSwitch(IvwSerializeBase& serializer, const std::string& key,
+                                         bool retrieveChild)
+    : serializer_(serializer)
+    , storedNode_(serializer_.rootElement_)
+    , storedRetrieveChild_(serializer_.retrieveChild_) {
+    serializer_.rootElement_ = serializer_.retrieveChild_
+                                   ? serializer_.rootElement_->FirstChildElement(key)
+                                   : serializer_.rootElement_;
+
     serializer_.retrieveChild_ = retrieveChild;
 }
 
@@ -157,27 +154,31 @@ TxElement* IvwSerializeBase::ReferenceDataContainer::nodeCopy(const void* data) 
 }
 
 IvwSerializeBase::IvwSerializeBase(bool allowReference/*=true*/)
-    : allowRef_(allowReference) {
+    : allowRef_(allowReference)
+    , retrieveChild_(true) {
     registerFactories();
 }
 
 IvwSerializeBase::IvwSerializeBase(IvwSerializeBase& s, bool allowReference)
     : fileName_(s.fileName_)
     , doc_(s.fileName_)
-    , allowRef_(allowReference) {
+    , allowRef_(allowReference)
+    , retrieveChild_(true) {
     registerFactories();
 }
 
 IvwSerializeBase::IvwSerializeBase(std::string fileName, bool allowReference)
     : fileName_(fileName)
     , doc_(fileName)
-    , allowRef_(allowReference) {
+    , allowRef_(allowReference)
+    , retrieveChild_(true) {
     registerFactories();
 }
 
 IvwSerializeBase::IvwSerializeBase(std::istream& stream, const std::string& path, bool allowReference)
     : fileName_(path)
-    , allowRef_(allowReference) {
+    , allowRef_(allowReference)
+    , retrieveChild_(true) {
     stream >> doc_;
     registerFactories();
 }

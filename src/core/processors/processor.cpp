@@ -81,7 +81,7 @@ void Processor::addPort(Outport* port, const std::string &portDependencySet) {
     port->setProcessor(this);
     outports_.push_back(port);
     portDependencySets_.insert(portDependencySet, port);
-    notifyObserversProcessorPortAdded(this,port);
+    notifyObserversProcessorPortAdded(this, port);
 }
 
 void Processor::addPort(Outport& port, const std::string &portDependencySet) {
@@ -297,8 +297,9 @@ void Processor::serialize(IvwSerializer& s) const {
     s.serialize("type", getClassIdentifier(), true);
     s.serialize("identifier", identifier_, true);
 
-    if (!interactionHandlers_.empty())
-        s.serialize("InteractonHandlers", interactionHandlers_, "InteractionHandler");
+    s.serialize("InteractonHandlers", interactionHandlers_, "InteractionHandler");
+    s.serialize("InPorts", inports_, "InPort");
+    s.serialize("OutPorts", outports_, "OutPort");
 
     PropertyOwner::serialize(s);
     MetaDataOwner::serialize(s);
@@ -309,8 +310,18 @@ void Processor::deserialize(IvwDeserializer& d) {
     d.deserialize("identifier", identifier, true);
     setIdentifier(identifier); // Need to use setIdentifier to make sure we get a unique id.
 
-    if (interactionHandlers_.size() != 0)
-        d.deserialize("InteractonHandlers", interactionHandlers_, "InteractionHandler");
+    d.deserialize("InteractonHandlers", interactionHandlers_, "InteractionHandler");
+
+    StandardIdentifier<Port> inportIdentifier;
+    d.deserialize("InPorts", inports_, "InPort", inportIdentifier);
+    d.deserialize("OutPorts", outports_, "OutPort", inportIdentifier);
+
+    for (std::vector<Inport*>::iterator it = inports_.begin(); it!=inports_.end(); ++it) {
+        (*it)->setProcessor(this);
+    }
+    for (std::vector<Outport*>::iterator it = outports_.begin(); it!=outports_.end(); ++it) {
+        (*it)->setProcessor(this);
+    }
 
     PropertyOwner::deserialize(d);
     MetaDataOwner::deserialize(d);

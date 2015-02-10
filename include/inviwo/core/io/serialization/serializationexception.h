@@ -28,10 +28,41 @@
  *
  *********************************************************************************/
 
-#include <inviwo/core/io/serialization/deserializationerrorhandler.h>
+#ifndef IVW_SERIALIZATIONEXCEPTION_H
+#define IVW_SERIALIZATIONEXCEPTION_H
+
+#include <inviwo/core/common/inviwocoredefine.h>
+#include <inviwo/core/io/serialization/ticpp.h>
+#include <inviwo/core/util/exception.h>
 
 namespace inviwo {
-    BaseDeserializationErrorHandler::BaseDeserializationErrorHandler() {}
-    BaseDeserializationErrorHandler::~BaseDeserializationErrorHandler() {}
+
+class IVW_CORE_API SerializationException : public Exception {
+public:
+    struct SerializationExceptionData {
+        SerializationExceptionData(std::string k = "", std::string t = "", std::string i = "",
+                                   TxElement* n = NULL)
+            : key(k), type(t), id(i), node(n) {}
+        std::string key;
+        std::string type;
+        std::string id;
+        TxElement* node;
+    };
+
+    SerializationException(std::string message = "", std::string key = "", std::string type = "",
+                           std::string id = "",  TxElement* n = NULL);
+    virtual ~SerializationException() throw() {}
+
+    virtual const std::string& getKey() const throw();
+    virtual const std::string& getType() const throw();
+    virtual const std::string& getId() const throw();
+    virtual const SerializationExceptionData& getData() const throw();
+
+private:
+    SerializationExceptionData data_;
+};
+
 } // namespace
+
+#endif // IVW_SERIALIZATIONEXCEPTION_H
 

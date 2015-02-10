@@ -31,13 +31,11 @@
 #ifndef IVW_SERIALIZE_BASE_H
 #define IVW_SERIALIZE_BASE_H
 
-#ifndef TIXML_USE_TICPP
-#  define TIXML_USE_TICPP
-#endif
 
-#include <ticpp/ticpp.h>
+#include <inviwo/core/io/serialization/ticpp.h>
 #include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/io/serialization/ivwserializeconstants.h>
+#include <inviwo/core/io/serialization/serializationexception.h>
 #include <inviwo/core/util/factory.h>
 #include <map>
 
@@ -47,78 +45,33 @@
 #endif
 
 // include glm
-#ifndef GLM_FORCE_RADIANS
-#define GLM_FORCE_RADIANS
-#endif
-#ifndef GLM_SWIZZLE
-#define GLM_SWIZZLE
-#endif
-#include <glm/glm.hpp>
-#include <glm/gtx/transform.hpp>
-#include <glm/gtc/type_precision.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/rotate_vector.hpp>
-#include <glm/gtx/string_cast.hpp>
-
-typedef glm::ivec2 ivec2;
-typedef glm::ivec3 ivec3;
-typedef glm::ivec4 ivec4;
-typedef glm::vec2 vec2;
-typedef glm::vec3 vec3;
-typedef glm::vec4 vec4;
-typedef glm::dvec2 dvec2;
-typedef glm::dvec3 dvec3;
-typedef glm::dvec4 dvec4;
-typedef glm::bvec2 bvec2;
-typedef glm::bvec3 bvec3;
-typedef glm::bvec4 bvec4;
-typedef glm::uvec2 uvec2;
-typedef glm::uvec3 uvec3;
-typedef glm::uvec4 uvec4;
-typedef glm::mat2 mat2;
-typedef glm::mat3 mat3;
-typedef glm::mat4 mat4;
-typedef glm::quat quat;
-
+#include <inviwo/core/util/glm.h>
 
 namespace inviwo {
 
-typedef ticpp::Document TxDocument;
-typedef ticpp::Element TxElement;
-typedef ticpp::Node TxNode;
-typedef ticpp::Exception TxException;
-typedef ticpp::Declaration TxDeclaration;
-typedef ticpp::Comment TxComment;
-typedef ticpp::Attribute TxAttribute;
-typedef ticpp::Iterator<TxElement> TxEIt;
-typedef ticpp::Iterator<TxAttribute> TxAIt;
+template <typename T>
+struct ElementIdentifier {
+    virtual void setKey(TxElement*) = 0;
+    virtual bool operator()(const T* elem) const = 0;
+};
 
-class IvwSerializable;
+template <typename T>
+struct StandardIdentifier : public ElementIdentifier<T> {
+    typedef std::string (T::*funcPtr)() const;
 
-class IVW_CORE_API SerializationException : public Exception {
-public:
-    struct SerializationExceptionData {
-        SerializationExceptionData(std::string k = "", std::string t = "", std::string i = "",
-                                   TxElement* n = NULL)
-            : key(k), type(t), id(i), node(n) {}
-        std::string key;
-        std::string type;
-        std::string id;
-        TxElement* node;
-    };
+    StandardIdentifier(std::string key = "identifier", funcPtr ptr = &T::getIdentifier)
+        : key_(key), ptr_(ptr) {}
 
-    SerializationException(std::string message = "", std::string key = "", std::string type = "",
-                           std::string id = "",  TxElement* n = NULL);
-    virtual ~SerializationException() throw() {}
-
-    virtual const std::string& getKey() const throw();
-    virtual const std::string& getType() const throw();
-    virtual const std::string& getId() const throw();
-    virtual const SerializationExceptionData& getData() const throw();
+    virtual void setKey(TxElement* node) { identifier_ = node->GetAttributeOrDefault(key_, ""); }
+    virtual bool operator()(const T* elem) const { return identifier_ == (*elem.*ptr_)(); }
 
 private:
-    SerializationExceptionData data_;
+    funcPtr ptr_;
+    std::string key_;
+    std::string identifier_;
 };
+
+class IvwSerializable;
 
 class IVW_CORE_API IvwSerializeBase {
 public:
@@ -222,6 +175,16 @@ public:
          * @param TxElement * node //Parent (Ticpp Node) element.
          */
         NodeSwitch(IvwSerializeBase& serializer, TxElement* node, bool retrieveChild = true);
+        
+        
+        /**
+         * \brief NodeSwitch helps track parent node during recursive/nested function calls.
+         *
+         * @param IvwSerializeBase & serializer reference to serializer or deserializer
+         * @param std::string key the child to switch to.
+         */
+        NodeSwitch(IvwSerializeBase& serializer, const std::string& key, bool retrieveChild = true);
+        
         /**
          * \brief Destructor
          */
@@ -257,10 +220,11 @@ public:
         int referenceCount_;
     };
 
-protected:
 
     static std::string nodeToString(const TxElement& node);
 
+
+protected:
     friend class NodeSwitch;
 
     std::vector<Factory*> registeredFactories_;
@@ -275,16 +239,13 @@ protected:
 
 template <typename T>
 T* IvwSerializeBase::getRegisteredType(const std::string& className) {
-    T* data = 0;
+    T* data = NULL;
     std::vector<Factory*>::iterator it;
 
-    for (it = registeredFactories_.begin(); it!=registeredFactories_.end(); it++) {
+    for (it = registeredFactories_.begin(); it != registeredFactories_.end(); it++) {
         data = dynamic_cast<T*>((*it)->create(className));
-
-        if (data)
-            break;
+        if (data) break;
     }
-
     return data;
 }
 

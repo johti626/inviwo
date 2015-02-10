@@ -28,10 +28,26 @@
  *
  *********************************************************************************/
 
-#include <inviwo/core/io/serialization/deserializationerrorhandler.h>
+#include <inviwo/core/io/serialization/nodedebugger.h>
 
 namespace inviwo {
-    BaseDeserializationErrorHandler::BaseDeserializationErrorHandler() {}
-    BaseDeserializationErrorHandler::~BaseDeserializationErrorHandler() {}
+
+NodeDebugger::NodeDebugger(TxElement* elem) {
+    while (elem) {
+        nodes_.push_back(Node(
+            elem->Value(),
+            elem->GetAttributeOrDefault("identifier", ""),
+            elem->GetAttributeOrDefault("type", ""),
+            elem->Row()
+            ));
+        TxNode* node = elem->Parent(false);
+        if (node) {
+            elem = dynamic_cast<TxElement*>(node);
+        } else {
+            elem = NULL;
+        }
+    }
+}
+
 } // namespace
 

@@ -40,6 +40,7 @@ PropertyClassIdentifier(Trackball, "org.inviwo.Trackball");
 Trackball::Trackball(vec3* lookFrom, vec3* lookTo, vec3* lookUp)
     : CompositeProperty("trackball", "Trackball")
     , pixelWidth_(0.007f)
+    , panSpeedFactor_(1.f)
     , isMouseBeingPressedAndHold_(false)
     , lastMousePos_(ivec2(0))
     , lastTrackballPos_(vec3(0.5f))
@@ -153,6 +154,10 @@ void Trackball::invokeInteractionEvent(Event* event) {
     CompositeProperty::invokeInteractionEvent(event);
 }
 
+void Trackball::setPanSpeedFactor(float psf) { 
+    panSpeedFactor_ = psf; 
+}
+
 vec3 Trackball::mapNormalizedMousePosToTrackball(const vec2& mousePos, float dist /*= 1.f*/) {
     // set x and y to lie in interval [-r, r]
     float r = RADIUS;
@@ -198,14 +203,25 @@ void Trackball::pinchGesture(Event* event) {
 
 void Trackball::panGesture(Event* event) {
     GestureEvent* gestureEvent = static_cast<GestureEvent*>(event);
-    vec3 offsetVector =
-        vec3(gestureEvent->deltaPos().x * 2.f, gestureEvent->deltaPos().y * 2.f, 0.f);
 
-    // The resulting rotation needs to be mapped to the camera distance,
-    // as if the trackball is located at a certain distance from the camera.
-    // TODO: Verify this
-    float zDist = (glm::length(*lookFrom_ - *lookTo_) - 1.f) / M_PI;
-    vec3 mappedOffsetVector = mapToObject(offsetVector, zDist);
+    float ratio = (float)gestureEvent->canvasSize().x 
+                / (float)gestureEvent->canvasSize().y;
+    vec2 screenScale = vec2(1.f);
+
+    if(ratio > 1.f)
+        screenScale.x = ratio;
+    else if(ratio < 1.f)
+        screenScale.y = 1.f/ratio;
+
+    vec3 offsetVector =
+        vec3(gestureEvent->deltaPos().x * screenScale.x, 
+             gestureEvent->deltaPos().y * screenScale.y, 0.f);
+
+    offsetVector *= panSpeedFactor_;
+
+    vec3 direction = *lookFrom_ - *lookTo_;
+    float vecLength = glm::length(direction);
+    vec3 mappedOffsetVector = mapToObject(offsetVector, vecLength);
 
     *lookTo_ += mappedOffsetVector;
     *lookFrom_ += mappedOffsetVector;
@@ -217,13 +233,6 @@ void Trackball::rotate(Event* event) {
     MouseEvent* mouseEvent = static_cast<MouseEvent*>(event);
     
     vec2 curMousePos = mouseEvent->posNormalized();
-
-    // The resulting rotation needs to be mapped to the camera distance,
-    // as if the trackball is located at a certain distance from the camera.
-    // TODO: Verify this
-    // float zDist = (glm::length(*lookFrom_-*lookTo_)-1.f)/M_PI;
-    // vec3 curTrackballPos = mapNormalizedMousePosToTrackball(curMousePos, zDist);
-
     vec3 curTrackballPos = mapNormalizedMousePosToTrackball(curMousePos);
 
     // disable movements on first press
@@ -293,17 +302,27 @@ void Trackball::pan(Event* event) {
     }
 
     // difference vector in trackball co-ordinates
-    vec3 trackBallOffsetVector = lastTrackballPos_ - curTrackballPos;
-    // compute next camera position
-    trackBallOffsetVector.z = 0.0f;
+    vec3 trackBallOffsetVector = vec3(lastMousePos_ - curMousePos, 0.f);
+    
+    trackBallOffsetVector *= panSpeedFactor_;
+    
+    trackBallOffsetVector.y = -trackBallOffsetVector.y;
 
-    //The resulting rotation needs to be mapped to the camera distance,
-    //as if the trackball is located at a certain distance from the camera.
-    //TODO: Verify this
-    //float zDist = (glm::length(*lookFrom_-*lookTo_)-1.f)/M_PI;
-    //vec3 mappedTrackBallOffsetVector = mapToCamera(trackBallOffsetVector, zDist);
+    float ratio = (float)mouseEvent->canvasSize().x 
+        / (float)mouseEvent->canvasSize().y;
+    vec2 screenScale = vec2(1.f);
 
-    vec3 mappedTrackBallOffsetVector = mapToObject(trackBallOffsetVector);
+    if(ratio > 1.f)
+        screenScale.x = ratio;
+    else if(ratio < 1.f)
+        screenScale.y = 1.f/ratio;
+
+    trackBallOffsetVector.x *= screenScale.x;
+    trackBallOffsetVector.y *= screenScale.y;
+
+    vec3 direction = *lookFrom_ - *lookTo_;
+    float vecLength = glm::length(direction);
+    vec3 mappedTrackBallOffsetVector = mapToObject(trackBallOffsetVector, vecLength);
 
     if (curMousePos != lastMousePos_) {
         *lookTo_ += mappedTrackBallOffsetVector;

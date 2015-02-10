@@ -102,6 +102,8 @@ bool ProcessorNetwork::addProcessor(Processor* processor) {
 }
 
 void ProcessorNetwork::removeProcessor(Processor* processor) {
+    if (!processor) return;
+    
     // Remove all connections for this processor
      std::vector<PortConnection*> portConnections = getConnections();
     for (size_t i=0; i<portConnections.size(); i++)
@@ -164,6 +166,8 @@ void ProcessorNetwork::removeProcessor(Processor* processor) {
 }
 
 void ProcessorNetwork::removeAndDeleteProcessor(Processor* processor) {
+    if (!processor) return;
+    
     removeProcessor(processor);
     if (processor->isInitialized()) {
         processor->deinitialize();
@@ -459,11 +463,11 @@ void ProcessorNetwork::secondaryCacheHelper(std::vector<PropertyLink>& links, Pr
 }
 
 struct LinkCheck {
-    LinkCheck() : linkSettings_(InviwoApplication::getPtr()->getSettingsByType<LinkSettings>()) {}
-    bool operator()(const Property *p) const { return !linkSettings_->isLinkable(p); }
+    LinkCheck() : linkSettings_(*InviwoApplication::getPtr()->getSettingsByType<LinkSettings>()) {}
+    bool operator()(const Property *p) const { return !linkSettings_.isLinkable(p); }
 
 private:
-    LinkSettings *linkSettings_;
+    const LinkSettings& linkSettings_;
 };
 
 struct AutoLinkCheck {
@@ -689,14 +693,14 @@ void ProcessorNetwork::serialize(IvwSerializer& s) const {
     s.serialize("Processors", getProcessors(), "Processor");
     s.serialize("Connections", getConnections(), "Connection");
     s.serialize("PropertyLinks", getLinks(), "PropertyLink");
+    
+    InviwoSetupInfo info(InviwoApplication::getPtr());
+    s.serialize("InviwoSetup", info);
 }
 
 void ProcessorNetwork::deserialize(IvwDeserializer& d) throw(Exception) {
     // This will set deserializing_ to true while keepTrueWillAlive is in scope
     // and set it to false no matter how we leave the scope
-    
-    ErrorHandle errorHandle;
-    
     KeepTrueWhileInScope keepTrueWillAlive(&deserializing_);
 
     int version = 0;
@@ -709,11 +713,16 @@ void ProcessorNetwork::deserialize(IvwDeserializer& d) throw(Exception) {
         d.convertVersion(&nv);
     }
 
+    InviwoSetupInfo info;
+    d.deserialize("InviwoSetup", info);
+
+    ErrorHandle errorHandle(info);
+    
     // Processors
-    ProcessorVector processors;
     try {
         DeserializationErrorHandle<ErrorHandle>
             processor_err(d, "Processor", &errorHandle, &ErrorHandle::handleProcessorError);
+        ProcessorVector processors;
         d.deserialize("Processors", processors, "Processor");
         for (size_t i = 0; i < processors.size(); ++i) {
             if (processors[i]) {
@@ -736,8 +745,6 @@ void ProcessorNetwork::deserialize(IvwDeserializer& d) throw(Exception) {
         DeserializationErrorHandle<ErrorHandle>
             connection_err(d, "Connection", &errorHandle, &ErrorHandle::handleConnectionError);
         d.deserialize("Connections", portConnections, "Connection");
-
-        processors = getProcessors();
 
         for (size_t i = 0; i < portConnections.size(); i++) {
             if (portConnections[i]) {
@@ -814,7 +821,7 @@ Property* ProcessorNetwork::getProperty(std::vector<std::string> path) const {
     return NULL;
 }
 
-const int ProcessorNetwork::processorNetworkVersion_ = 9;
+const int ProcessorNetwork::processorNetworkVersion_ = 10;
 
 
 ProcessorNetwork::NetworkConverter::NetworkConverter(int from)
@@ -840,6 +847,8 @@ bool ProcessorNetwork::NetworkConverter::convert(TxElement* root) {
             traverseNodes(root, &ProcessorNetwork::NetworkConverter::updateDimensionTag);
         case 8:
             traverseNodes(root, &ProcessorNetwork::NetworkConverter::updatePropertyLinks);
+        case 9:
+            ProcessorNetwork::NetworkConverter::updatePortsInProcessors(root);
         default:
             break;
     }
@@ -1030,42 +1039,36 @@ void ProcessorNetwork::NetworkConverter::updateCameraToComposite(TxElement* node
         if (type == "org.inviwo.CameraProperty") {
             std::vector<TxElement> subNodeVector;
 
-            //create
+            // create
             TxElement newNode;
             newNode.SetValue("Properties");
 
-            //temp list
+            // temp list
             std::vector<TxElement*> toBeDeleted;
 
-            //copy and remove children
+            // copy and remove children
             ticpp::Iterator<TxElement> child;
             for (child = child.begin(node); child != child.end(); child++) {
                 std::string propKey;
                 TxElement* subNode = child.Get();
                 subNode->GetValue(&propKey);
-                if (propKey=="lookFrom" ||
-                    propKey=="lookTo" ||
-                    propKey=="lookUp" ||
-                    propKey=="fovy" ||
-                    propKey=="aspectRatio" ||
-                    propKey=="nearPlane" ||
-                    propKey=="farPlane"
-                    ) 
-                {
+                if (propKey == "lookFrom" || propKey == "lookTo" || propKey == "lookUp" ||
+                    propKey == "fovy" || propKey == "aspectRatio" || propKey == "nearPlane" ||
+                    propKey == "farPlane") {
                     subNode->SetValue("Property");
                     newNode.InsertEndChild(*subNode->Clone());
                     toBeDeleted.push_back(subNode);
                 }
             }
 
-          for (size_t i=0; i<toBeDeleted.size(); i++) {
-              node->RemoveChild(toBeDeleted[i]);
-          }
+            for (size_t i = 0; i < toBeDeleted.size(); i++) {
+                node->RemoveChild(toBeDeleted[i]);
+            }
 
-          //insert new node
-          node->InsertEndChild(newNode);
+            // insert new node
+            node->InsertEndChild(newNode);
 
-          LogWarn("Camera property updated to composite property. Workspace requires resave")
+            LogWarn("Camera property updated to composite property. Workspace requires resave")
         }
     }
 }
@@ -1121,6 +1124,93 @@ void ProcessorNetwork::NetworkConverter::updatePropertyLinks(TxElement* node) {
             std::string txt = ss.str();
         }
     }
+}
+
+void ProcessorNetwork::NetworkConverter::updatePortsInProcessors(TxElement* root) {
+    struct RefManager : public ticpp::Visitor {
+        virtual bool VisitEnter(const TxElement& node, const TxAttribute*) {
+            std::string id = node.GetAttributeOrDefault("id", "");
+            if (!id.empty()) {
+                ids_.push_back(id);
+                std::sort(ids_.begin(), ids_.end());
+            }
+            return true;
+        };
+
+        std::string getNewRef() {
+            std::string ref("ref0");
+            for (int i = 1; std::find(ids_.begin(), ids_.end(), ref) != ids_.end(); ++i) {
+                ref = "ref" + toString(i);
+            }
+            ids_.push_back(ref);
+            return ref;
+        };
+
+        std::vector<std::string> ids_;
+    };
+
+    RefManager refs;
+
+    root->Accept(&refs);
+
+    TxNode* processorlist = root->FirstChild("Processors");
+    std::map<std::string, TxElement*> processorsOutports;
+    std::map<std::string, TxElement*> processorsInports;
+
+    ticpp::Iterator<TxElement> child;
+    for (child = child.begin(processorlist); child != child.end();
+         child++) {
+        // create
+
+        TxElement* outports = new TxElement("OutPorts");
+        child->LinkEndChild(outports);
+        processorsOutports[child->GetAttributeOrDefault("identifier", "")] = outports;
+
+        TxElement* inports = new TxElement("InPorts");
+        child->LinkEndChild(inports);
+        processorsInports[child->GetAttributeOrDefault("identifier", "")] = inports;
+    }
+
+    TxNode* connectionlist = root->FirstChild("Connections");
+    for (child = child.begin(connectionlist); child != child.end();
+         child++) {
+
+        TxElement* outport = child->FirstChild("OutPort")->ToElement();
+        if (outport->GetAttributeOrDefault("reference", "").empty()) {
+            std::string pid = outport->FirstChild("Processor")->ToElement()->GetAttributeOrDefault("identifier", "");
+            outport->RemoveChild(outport->FirstChild());
+
+            TxElement* outclone = outport->Clone()->ToElement();    
+            
+            std::string id = outport->GetAttributeOrDefault("id", "");
+            if (id.empty()) id = refs.getNewRef();
+                       
+            outport->SetAttribute("reference", id);
+            outport->RemoveAttribute("id");
+
+            outclone->SetAttribute("id", id);
+            processorsOutports[pid]->LinkEndChild(outclone);
+        }
+
+        TxElement* inport = child->FirstChild("InPort")->ToElement();
+        if (inport->GetAttributeOrDefault("reference", "").empty()) {
+            std::string pid = inport->FirstChild("Processor")->ToElement()->GetAttributeOrDefault("identifier", "");
+            inport->RemoveChild(inport->FirstChild());
+
+            TxElement* inclone = inport->Clone()->ToElement();
+
+            std::string id = inport->GetAttributeOrDefault("id", "");
+            if (id.empty()) id = refs.getNewRef();
+            
+            inport->SetAttribute("reference", id);
+            inport->RemoveAttribute("id");
+
+            inclone->SetAttribute("id", id);
+            processorsInports[pid]->LinkEndChild(inclone);
+        }
+    }
+
+    std::string newroot = IvwSerializeBase::nodeToString(*root);
 }
 
 } // namespace

@@ -64,13 +64,14 @@ void Port::setProcessor(Processor* processor) {
 
 
 void Port::serialize(IvwSerializer& s) const {
+    s.serialize("type", getClassIdentifier(), true);
     s.serialize("identifier", identifier_, true);
-    s.serialize("Processor", processor_);
+//    s.serialize("Processor", processor_);
 }
 
 void Port::deserialize(IvwDeserializer& d) {
     d.deserialize("identifier", identifier_, true);
-    d.deserialize("Processor", processor_);
+//    d.deserialize("Processor", processor_);
 }
 
 void Port::invalidate(InvalidationLevel invalidationLevel) {
