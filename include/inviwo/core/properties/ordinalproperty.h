@@ -78,6 +78,7 @@ public:
     static uvec2 getDim() { return Defaultvalues<T>::getDim(); }
 
 private:
+    using TemplateProperty<T>::value_;
     ValueWrapper<T> minValue_;
     ValueWrapper<T> maxValue_;
     ValueWrapper<T> increment_;
@@ -123,6 +124,11 @@ OrdinalProperty<T>::OrdinalProperty(const std::string& identifier, const std::st
     , minValue_("minvalue", minValue)
     , maxValue_("maxvalue", maxValue)
     , increment_("increment", increment) {
+
+    // Invariant minValue_ < value_ < maxValue_
+    // Assume minValue is correct.
+    value_.value = glm::max(value_.value, minValue_.value);
+    maxValue_.value = glm::max(maxValue_.value, value_.value);
 }
 
 
@@ -195,6 +201,11 @@ template <typename T>
 void OrdinalProperty<T>::setMinValue(const T& value) {
     if (value == minValue_) return;
     minValue_ = value;
+    
+    // Make sure min < value < max
+    this->value_.value = glm::max(this->value_.value, minValue_.value);
+    maxValue_.value = glm::max(maxValue_.value, minValue_.value);
+
     Property::propertyModified();
 }
 
@@ -202,6 +213,11 @@ template <typename T>
 void OrdinalProperty<T>::setMaxValue(const T& value) {
     if (value == maxValue_) return;
     maxValue_ = value;
+    
+    // Make sure min < value < max
+    this->value_.value = glm::min(this->value_.value, maxValue_.value);
+    minValue_.value = glm::min(minValue_.value, maxValue_.value);
+    
     Property::propertyModified();
 }
 

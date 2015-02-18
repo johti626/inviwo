@@ -3,7 +3,7 @@
  * Inviwo - Interactive Visualization Workshop
  * Version 0.9
  *
- * Copyright (c) 2015 Inviwo Foundation
+ * Copyright (c) 2012-2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,32 +28,22 @@
  *
  *********************************************************************************/
 
-#include "imagecompositeprocessorgl.h"
+#ifndef IVW_RAIIUTILS_H
+#define IVW_RAIIUTILS_H
+
+#include <inviwo/core/common/inviwocoredefine.h>
 
 namespace inviwo {
 
-// The Class Identifier has to be globally unique. Use a reverse DNS naming scheme
-ProcessorClassIdentifier(ImageCompositeProcessorGL,  "org.inviwo.ImageCompositeProcessorGL")
-ProcessorDisplayName(ImageCompositeProcessorGL,  "Image Composite")
-ProcessorTags(ImageCompositeProcessorGL, Tags::GL);
-ProcessorCategory(ImageCompositeProcessorGL, "Image Operation");
-ProcessorCodeState(ImageCompositeProcessorGL, CODE_STATE_EXPERIMENTAL);
+class KeepTrueWhileInScope {
+public:
+    KeepTrueWhileInScope(bool* b) : variable_(b) { (*variable_) = true; }
+    ~KeepTrueWhileInScope() { (*variable_) = false; }
 
-ImageCompositeProcessorGL::ImageCompositeProcessorGL()
-	: CompositeProcessorGL()
-    , imageInport1_("imageInport1")
-    , imageInport2_("imageInport2")
-    , outport_("outport") {
-	
-    addPort(imageInport1_);
-    addPort(imageInport2_);
-    addPort(outport_);
-}
-	
-void ImageCompositeProcessorGL::process() {
-    imageInport1_.passOnDataToOutport(&outport_);
-    compositePortsToOutport(outport_, COLOR_DEPTH, imageInport2_);
-}
+private:
+    bool* variable_;
+};
 
-} // namespace
+}  // namespace
 
+#endif  // IVW_RAIIUTILS_H

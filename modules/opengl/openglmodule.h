@@ -43,18 +43,6 @@ class IVW_MODULE_OPENGL_API OpenGLModule : public InviwoModule {
 public:
     OpenGLModule();
     ~OpenGLModule();
-
-    void updateProfile();
-
-protected:
-    virtual void setupModuleSettings();
-
-private:
-    ButtonProperty btnOpenGLInfo_;
-    OptionPropertyString selectedOpenGLProfile_;
-
-    bool hasOutputedGLSLVersionOnce_;
-    std::string contextMode_;
 };
 
 } // namespace

@@ -25,35 +25,40 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
+ * 
  *********************************************************************************/
 
-#include "imagecompositeprocessorgl.h"
+#ifndef IVW_OPENGLSETTINGS_H
+#define IVW_OPENGLSETTINGS_H
+
+#include <modules/opengl/openglmoduledefine.h>
+#include <inviwo/core/util/settings/settings.h>
+#include <inviwo/core/properties/baseoptionproperty.h>
+#include <inviwo/core/properties/boolproperty.h>
+#include <inviwo/core/properties/buttonproperty.h>
 
 namespace inviwo {
 
-// The Class Identifier has to be globally unique. Use a reverse DNS naming scheme
-ProcessorClassIdentifier(ImageCompositeProcessorGL,  "org.inviwo.ImageCompositeProcessorGL")
-ProcessorDisplayName(ImageCompositeProcessorGL,  "Image Composite")
-ProcessorTags(ImageCompositeProcessorGL, Tags::GL);
-ProcessorCategory(ImageCompositeProcessorGL, "Image Operation");
-ProcessorCodeState(ImageCompositeProcessorGL, CODE_STATE_EXPERIMENTAL);
+class IVW_MODULE_OPENGL_API OpenGLSettings : public Settings {
 
-ImageCompositeProcessorGL::ImageCompositeProcessorGL()
-	: CompositeProcessorGL()
-    , imageInport1_("imageInport1")
-    , imageInport2_("imageInport2")
-    , outport_("outport") {
-	
-    addPort(imageInport1_);
-    addPort(imageInport2_);
-    addPort(outport_);
-}
-	
-void ImageCompositeProcessorGL::process() {
-    imageInport1_.passOnDataToOutport(&outport_);
-    compositePortsToOutport(outport_, COLOR_DEPTH, imageInport2_);
-}
+public:
+    OpenGLSettings();
+    virtual ~OpenGLSettings();
+    virtual void initialize();
+    virtual void deinitialize();
+
+    BoolProperty shaderReloadingProperty_;
+    ButtonProperty btnOpenGLInfo_;
+    OptionPropertyString selectedOpenGLProfile_;
+
+protected:
+    void updateProfile();
+
+private:
+    bool hasOutputedGLSLVersionOnce_;
+    std::string contextMode_;
+};
 
 } // namespace
 
+#endif // IVW_OPENGLSETTINGS_H

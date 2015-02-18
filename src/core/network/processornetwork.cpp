@@ -34,19 +34,10 @@
 #include <inviwo/core/util/settings/linksettings.h>
 #include <inviwo/core/common/inviwoapplication.h>
 #include <inviwo/core/links/linkconditions.h>
+#include <inviwo/core/util/raiiutils.h>
 #include <algorithm>
 
 namespace inviwo {
-
-namespace {
-class KeepTrueWhileInScope {
-public:
-    KeepTrueWhileInScope(bool* b) : variable_(b) { (*variable_) = true; }
-    ~KeepTrueWhileInScope() { (*variable_) = false; }
-private:
-    bool* variable_;
-};
-}
 
 ProcessorPair::ProcessorPair(Processor* p1, Processor* p2) 
 : processor1_(p1<p2?p1:p2), processor2_(p1<p2?p2:p1) {}
@@ -325,24 +316,15 @@ void ProcessorNetwork::addToPrimaryCache(PropertyLink* propertyLink) {
     // Update ProcessorLink cache
     Processor* p1 = srcProperty->getOwner()->getProcessor();
     Processor* p2 = dstProperty->getOwner()->getProcessor();
-    ProcessorLinkMap::iterator it = processorLinksCache_.find(ProcessorPair(p1,p2));
-    if (it != processorLinksCache_.end()) {
-        it->second.push_back(propertyLink);
-    } else {
-        processorLinksCache_[ProcessorPair(p1,p2)].push_back(propertyLink);
-    }
-    
+    processorLinksCache_[ProcessorPair(p1, p2)].push_back(propertyLink);
+
     // Update primary cache
-    if (std::find(propertyLinkPrimaryCache_[srcProperty].begin(),
-                  propertyLinkPrimaryCache_[srcProperty].end(),
-                  dstProperty) == propertyLinkPrimaryCache_[srcProperty].end()) {
-
-        propertyLinkPrimaryCache_[srcProperty].push_back(dstProperty);
+    std::vector<Property*>& cachelist = propertyLinkPrimaryCache_[srcProperty];
+    if (std::find(cachelist.begin(), cachelist.end(), dstProperty) == cachelist.end()) {
+        cachelist.push_back(dstProperty);
     }
 
-    if (propertyLinkPrimaryCache_[srcProperty].size() == 0) {
-        propertyLinkPrimaryCache_.erase(srcProperty);
-    }
+    if (cachelist.empty()) propertyLinkPrimaryCache_.erase(srcProperty);
 
     clearSecondaryCache();
 }
@@ -359,23 +341,17 @@ void ProcessorNetwork::removeFromPrimaryCache(PropertyLink* propertyLink) {
     if (it != processorLinksCache_.end()) {
         it->second.erase(std::remove(it->second.begin(), it->second.end(), propertyLink),
                          it->second.end());
-        if (it->second.size() == 0) {
-            processorLinksCache_.erase(it);
-        }
+        if (it->second.empty()) processorLinksCache_.erase(it);
     }
 
     // Update primary cache
+    std::vector<Property*>& cachelist = propertyLinkPrimaryCache_[srcProperty];
     std::vector<Property*>::iterator sIt =
-        std::find(propertyLinkPrimaryCache_[srcProperty].begin(),
-                  propertyLinkPrimaryCache_[srcProperty].end(), dstProperty);
+        std::find(cachelist.begin(), cachelist.end(), dstProperty);
 
-    if (sIt != propertyLinkPrimaryCache_[srcProperty].end()) {
-        propertyLinkPrimaryCache_[srcProperty].erase(sIt);
-    }
+    if (sIt != cachelist.end()) cachelist.erase(sIt);
 
-    if (propertyLinkPrimaryCache_[srcProperty].size() == 0) {
-        propertyLinkPrimaryCache_.erase(srcProperty);
-    }
+    if (cachelist.empty()) propertyLinkPrimaryCache_.erase(srcProperty);
 
     clearSecondaryCache();
 }
@@ -433,31 +409,32 @@ std::vector<PropertyLink>& ProcessorNetwork::addToSecondaryCache(Property* src) 
 
 void ProcessorNetwork::secondaryCacheHelper(std::vector<PropertyLink>& links, Property* src,
                                             Property* dst) {
-    // Check that we don't use a previous source as destination.
+    // Check that we don't use a previous source or destination as the new destination.
     if (std::find_if(links.begin(), links.end(), PropertyLinkContainsTest(dst)) == links.end()) {
         links.push_back(PropertyLink(src, dst));
 
-        Property* newSrc = dst;
-        while (newSrc) {
+        // Follow the links of destination all links of all owners (CompositeProperties).
+        for (Property* newSrc = dst; newSrc != NULL;
+             newSrc = dynamic_cast<Property*>(newSrc->getOwner())) {
+            // Recurse over outgoing links.
             std::vector<Property*> dest = propertyLinkPrimaryCache_[newSrc];
             for (std::vector<Property*>::iterator it = dest.begin(); it != dest.end(); ++it) {
                 if (newSrc != *it) secondaryCacheHelper(links, newSrc, *it);
             }
+        }
 
-            CompositeProperty* cp = dynamic_cast<CompositeProperty*>(newSrc);
-            if (cp) {
-                std::vector<Property*> srcProps = cp->getProperties();
-                for (std::vector<Property*>::iterator sit = srcProps.begin(); sit != srcProps.end();
-                     ++sit) {
-                    std::vector<Property*> dest = propertyLinkPrimaryCache_[*sit];
-                    for (std::vector<Property*>::iterator it = dest.begin(); it != dest.end();
-                         ++it) {
-                        if (*sit != *it) secondaryCacheHelper(links, *sit, *it);
-                    }
+        // If we link to a CompositeProperty, make sure to evaluate sublinks.
+        CompositeProperty* cp = dynamic_cast<CompositeProperty*>(dst);
+        if (cp) {
+            std::vector<Property*> srcProps = cp->getProperties();
+            for (std::vector<Property*>::iterator sit = srcProps.begin(); sit != srcProps.end();
+                 ++sit) {
+                // Recurse over outgoing links.
+                std::vector<Property*> dest = propertyLinkPrimaryCache_[*sit]; 
+                for (std::vector<Property*>::iterator it = dest.begin(); it != dest.end(); ++it) {
+                    if (*sit != *it) secondaryCacheHelper(links, *sit, *it);
                 }
             }
-
-            newSrc = dynamic_cast<Property*>(newSrc->getOwner());
         }
     }
 }
@@ -1158,8 +1135,7 @@ void ProcessorNetwork::NetworkConverter::updatePortsInProcessors(TxElement* root
     std::map<std::string, TxElement*> processorsInports;
 
     ticpp::Iterator<TxElement> child;
-    for (child = child.begin(processorlist); child != child.end();
-         child++) {
+    for (child = child.begin(processorlist); child != child.end(); child++) {
         // create
 
         TxElement* outports = new TxElement("OutPorts");
@@ -1172,19 +1148,18 @@ void ProcessorNetwork::NetworkConverter::updatePortsInProcessors(TxElement* root
     }
 
     TxNode* connectionlist = root->FirstChild("Connections");
-    for (child = child.begin(connectionlist); child != child.end();
-         child++) {
-
+    for (child = child.begin(connectionlist); child != child.end(); child++) {
         TxElement* outport = child->FirstChild("OutPort")->ToElement();
         if (outport->GetAttributeOrDefault("reference", "").empty()) {
-            std::string pid = outport->FirstChild("Processor")->ToElement()->GetAttributeOrDefault("identifier", "");
+            std::string pid = outport->FirstChild("Processor")->ToElement()->GetAttributeOrDefault(
+                "identifier", "");
             outport->RemoveChild(outport->FirstChild());
 
-            TxElement* outclone = outport->Clone()->ToElement();    
-            
+            TxElement* outclone = outport->Clone()->ToElement();
+
             std::string id = outport->GetAttributeOrDefault("id", "");
             if (id.empty()) id = refs.getNewRef();
-                       
+
             outport->SetAttribute("reference", id);
             outport->RemoveAttribute("id");
 
@@ -1194,14 +1169,15 @@ void ProcessorNetwork::NetworkConverter::updatePortsInProcessors(TxElement* root
 
         TxElement* inport = child->FirstChild("InPort")->ToElement();
         if (inport->GetAttributeOrDefault("reference", "").empty()) {
-            std::string pid = inport->FirstChild("Processor")->ToElement()->GetAttributeOrDefault("identifier", "");
+            std::string pid = inport->FirstChild("Processor")->ToElement()->GetAttributeOrDefault(
+                "identifier", "");
             inport->RemoveChild(inport->FirstChild());
 
             TxElement* inclone = inport->Clone()->ToElement();
 
             std::string id = inport->GetAttributeOrDefault("id", "");
             if (id.empty()) id = refs.getNewRef();
-            
+
             inport->SetAttribute("reference", id);
             inport->RemoveAttribute("id");
 
@@ -1210,7 +1186,15 @@ void ProcessorNetwork::NetworkConverter::updatePortsInProcessors(TxElement* root
         }
     }
 
-    std::string newroot = IvwSerializeBase::nodeToString(*root);
+    for (std::map<std::string, TxElement*>::iterator it = processorsOutports.begin();
+         it != processorsOutports.end(); ++it) {
+        delete it->second;
+    }
+
+    for (std::map<std::string, TxElement*>::iterator it = processorsInports.begin();
+         it != processorsInports.end(); ++it) {
+        delete it->second;
+    }
 }
 
 } // namespace

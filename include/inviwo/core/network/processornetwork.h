@@ -315,7 +315,7 @@ private:
         void handleProcessorError(SerializationException& error) {
             std::string module = info_.getModuleForProcessor(error.getType());
             if (!module.empty()) {
-                messages.push_back(error.getMessage() + " Processor last seen in module: \"" + module + "\"");
+                messages.push_back(error.getMessage() + " Processor was in module: \"" + module + "\"");
             } else {
                 messages.push_back(error.getMessage());
             }
@@ -330,17 +330,17 @@ private:
         std::vector<std::string> messages;
         const InviwoSetupInfo& info_;
     };
-    
+
     class PropertyLinkContainsTest {
     public:
         PropertyLinkContainsTest(Property* p) : p_(p) {}
         bool operator()(const PropertyLink& link) {
-            return link.getSourceProperty() == p_ || link.getDestinationProperty()==p_;
+            return link.getSourceProperty() == p_ || link.getDestinationProperty() == p_;
         }
+
     private:
         Property* p_;
     };
-
 
     //Property Linking support
     void performLinkingOnPropertyChange(Property* modifiedProperty);
