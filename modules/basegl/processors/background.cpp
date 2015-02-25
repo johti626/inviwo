@@ -50,7 +50,7 @@ Background::Background()
     , checkerBoardSize_("checkerBoardSize", "Checker Board Size", ivec2(10, 10), ivec2(1, 1),
                         ivec2(256, 256))
     , switchColors_("Switch colors", "switch colors", VALID)
-    , shader_(NULL) {
+    , shader_(nullptr) {
     addPort(inport_);
     addPort(outport_);
     backgroundStyle_.addOption("linearGradient", "Linear gradient", 0);
@@ -84,7 +84,7 @@ void Background::initialize() {
 
 void Background::deinitialize() {
     delete shader_;
-    shader_ = NULL;
+    shader_ = nullptr;
     Processor::deinitialize();
 }
 
@@ -129,9 +129,10 @@ void Background::initializeResources() {
 void Background::process() {
     if (inport_.hasData() != hadData_) initializeResources();
 
-    if (inport_.hasData()) inport_.passOnDataToOutport(&outport_);
-
-    utilgl::activateTarget(outport_, COLOR_ONLY);
+    if (inport_.hasData())
+        utilgl::activateTargetAndCopySource(outport_, inport_, COLOR_ONLY);
+    else
+        utilgl::activateTarget(outport_, COLOR_ONLY);
 
     TextureUnit srcColorUnit, srcDepthUnit;
     if (inport_.hasData()) utilgl::bindColorTexture(inport_, srcColorUnit);

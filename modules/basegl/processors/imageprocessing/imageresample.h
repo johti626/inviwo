@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2012-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,25 +24,45 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
+ * 
  *********************************************************************************/
 
-#include <inviwo/core/util/rendercontext.h>
-#include <inviwo/core/util/canvas.h>
+#ifndef IVW_IMAGERESAMPLE_H
+#define IVW_IMAGERESAMPLE_H
+
+#include <modules/basegl/baseglmoduledefine.h>
+#include <inviwo/core/common/inviwo.h>
+#include <modules/basegl/processors/imageglprocessor.h>
+#include <inviwo/core/properties/ordinalproperty.h>
+#include <inviwo/core/properties/baseoptionproperty.h>
 
 namespace inviwo {
 
-RenderContext::RenderContext() : defaultContext_(nullptr) {}
+/*! \class ImageResample
+ *
+ * \brief Upscale/Downscale image according to parameters
+ *
+ */
+class IVW_MODULE_BASEGL_API ImageResample : public ImageGLProcessor  { 
+public:
+    ImageResample();
+    virtual ~ImageResample();
+    InviwoProcessorInfo();
 
-RenderContext::~RenderContext() {}
+    void initialize();
 
-void RenderContext::setDefaultRenderContext(Canvas* canvas) { defaultContext_ = canvas; }
+protected:
+    void interpolationTypeChanged();
+    void dimensionChanged();
+    void dimensionSourceChanged();
 
-void RenderContext::activateDefaultRenderContext() const {
-    if (defaultContext_) defaultContext_->activate();
-}
-
-Canvas* RenderContext::getDefaultRenderContext() { return defaultContext_; }
+private:
+    OptionPropertyInt interpolationType_;
+    OptionPropertyInt dimensionSource_;
+    IntVec2Property dimensions_;
+};
 
 } // namespace
+
+#endif // IVW_IMAGERESAMPLE_H
 

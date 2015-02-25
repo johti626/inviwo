@@ -45,10 +45,9 @@ ImageMixer::ImageMixer()
     , inport0_("inport0")
     , inport1_("inport1")
     , outport_("outport")
-    , blendingMode_("blendMode", "Blend Mode", INVALID_RESOURCES) 
+    , blendingMode_("blendMode", "Blend Mode", INVALID_RESOURCES)
     , weight_("weight", "Weight", 0.5f, 0.0f, 1.0f)
-    , shader_(NULL)
-{
+    , shader_(nullptr) {
     addPort(inport0_);
     addPort(inport1_);
     addPort(outport_);
@@ -80,7 +79,6 @@ void ImageMixer::initialize() {
     Processor::initialize();
     delete shader_;
     shader_ = new Shader("img_mix.frag", true);
-    //internalInvalid_ = true;
 }
 
 void ImageMixer::deinitialize() {
@@ -89,13 +87,15 @@ void ImageMixer::deinitialize() {
 }
 
 void ImageMixer::process() {
-    if (/*internalInvalid_ || */inport0_.getInvalidationLevel() >= INVALID_OUTPUT) {
-        //internalInvalid_ = false;
+    if (inport0_.getInvalidationLevel() >= INVALID_OUTPUT) {
         const DataFormatBase* format = inport0_.getData()->getDataFormat();
-
-        Image *img = new Image(inport0_.getData()->getDimensions(), format);
-        img->copyMetaDataFrom(*inport0_.getData());
-        outport_.setData(img);
+        uvec2 dimensions = inport0_.getData()->getDimensions();
+        if (!outport_.hasData() || format != outport_.getData()->getDataFormat()
+            || dimensions != outport_.getData()->getDimensions()){
+            Image *img = new Image(dimensions, format);
+            img->copyMetaDataFrom(*inport0_.getData());
+            outport_.setData(img);
+        }
     }
 
     TextureUnit imgUnit0, imgUnit1;    
