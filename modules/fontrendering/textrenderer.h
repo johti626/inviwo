@@ -1,8 +1,9 @@
 /*********************************************************************************
  *
  * Inviwo - Interactive Visualization Workshop
+ * Version 0.9
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2012-2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,48 +25,63 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#ifndef IVW_QTWIDGETMODULE_H
-#define IVW_QTWIDGETMODULE_H
+#ifndef IVW_TEXTRENDERER_H
+#define IVW_TEXTRENDERER_H
 
-#include <inviwo/qt/widgets/inviwoqtwidgetsdefine.h>
+#include <modules/fontrendering/fontrenderingmoduledefine.h>
+#include <modules/fontrendering/fontrenderingmodule.h>
 #include <inviwo/core/common/inviwo.h>
-#include <inviwo/core/common/inviwomodule.h>
-
-#include <QString>
-#include <QLocale>
+#include <inviwo/core/common/inviwoapplication.h>
+#include <inviwo/core/datastructures/geometry/mesh.h>
+#include <modules/opengl/inviwoopengl.h>
+#include <modules/opengl/glwrap/shader.h>
+#include <modules/opengl/rendering/meshrenderer.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 namespace inviwo {
 
-class IVW_QTWIDGETS_API QtWidgetModule : public InviwoModule {
-
+/**
+ * \class TextRenderer
+ *
+ * \brief Render text using the FreeType font library
+ *
+ */
+class IVW_MODULE_FONTRENDERING_API TextRenderer { 
 public:
-    QtWidgetModule();
-    virtual ~QtWidgetModule() {}
+    TextRenderer(const std::string& fontPath = InviwoApplication::getPtr()
+        ->getModuleByType<FontRenderingModule>()
+        ->getPath() + "/fonts/arial.ttf");
+    virtual ~TextRenderer();
+
+    void render(const char* text, float x, float y, const vec2& scale, vec4 color);
+    /** 
+     * \brief Computes width and height of the given text     
+     */
+    vec2 computeTextSize(const char* text, const vec2& scale);
+
+    int getFontSize() const { return fontSize_; }
+    void setFontSize(int val);
+protected:
+    
+    void initMesh();
+
+    FT_Library fontlib_;
+    FT_Face fontface_;
+
+    int fontSize_;
+
+    Shader* textShader_;
+    GLuint texCharacter_;
+    Mesh* mesh_;
+    MeshRenderer* renderer_;
 
 };
-
-template<typename T>
-class IVW_QTWIDGETS_API QStringHelper{
-public:
-	static QString toLocaleString(QLocale locale,T value){
-		return locale.toString(value);
-	}
-};
-
-template<>
-class IVW_QTWIDGETS_API QStringHelper<long int>{
-public:
-	static QString toLocaleString(QLocale locale,long int value){
-		return locale.toString(static_cast<long long>(value));
-	}
-};
-
-
 
 } // namespace
 
-#endif // IVW_QTWIDGETMODULE_H
+#endif // IVW_TEXTRENDERER_H
 

@@ -26,10 +26,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * 
  *********************************************************************************/
+#include "utils/structs.glsl"
 
+uniform GeometryParameters geometry_;
 out vec2 texCoord;
 
 void main(void) {
-    gl_Position = vec4(in_Vertex.xy, 0, 1);
+    gl_Position = geometry_.dataToWorld * in_Vertex;
     texCoord = in_TexCoord.xy;
 }
