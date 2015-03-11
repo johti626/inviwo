@@ -41,7 +41,7 @@
 #include <inviwo/core/properties/ordinalproperty.h>
 #include <inviwo/core/properties/compositeproperty.h>
 #include <inviwo/core/properties/simplelightingproperty.h>
-#include <inviwo/core/rendering/geometryrenderer.h>
+#include <inviwo/core/rendering/geometrydrawer.h>
 #include <modules/opengl/openglmoduledefine.h>
 #include <vector>
 
@@ -78,7 +78,7 @@ protected:
     ButtonProperty resetViewParams_;
     CameraTrackball trackball_;
 
-    std::vector<GeometryRenderer*> renderers_;
+    std::vector<GeometryDrawer*> drawers_;
     
     CompositeProperty geomProperties_;
     OptionPropertyInt cullFace_;
