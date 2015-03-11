@@ -27,19 +27,10 @@
  *
  *********************************************************************************/
 
-#include <inviwo/core/util/exception.h>
+#include <inviwo/core/util/stdextensions.h>
 
 namespace inviwo {
 
-Exception::Exception(const std::string& message) : std::exception(), message_(message) {}
 
-Exception::~Exception() throw() {}
+} // namespace
 
-std::string Exception::getMessage() const throw() { return message_; };
-const char* Exception::what() const throw() { return message_.c_str(); }
-
-IgnoreException::IgnoreException(const std::string& message) : Exception(message) {}
-
-AbortException::AbortException(const std::string& message) : Exception(message) {}
-
-}  // namespace

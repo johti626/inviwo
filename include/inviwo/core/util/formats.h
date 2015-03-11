@@ -309,8 +309,14 @@ public:
     DataFormatEnums::Id getId() const;
 
 
-    template <typename T>
-    void dispatchTemplateArguments(T* obj) const;
+    // T Models a type with a function:
+    //    template <class T>
+    //    U dispatch(Args... args)
+    // add a type
+    //    T::type = return type
+    template <typename T, typename... Args>
+    auto dispatch(T& obj, Args&&... args) const -> typename T::type;
+
 
 protected:
     static DataFormatBase* instance_[DataFormatEnums::NUMBER_OF_FORMATS];
@@ -1302,20 +1308,18 @@ public:
     }
 };
 
-template <typename T>
-void DataFormatBase::dispatchTemplateArguments(T* obj) const {
+template <typename T, typename... Args>
+auto DataFormatBase::dispatch(T& obj, Args&&... args) const -> typename T::type {
     switch (formatId_) {
-#define DataFormatIdMacro(i)                                                                  \
-    case DataFormatEnums::i:                                                                  \
-        obj->template templateDispatch<Data##i::type, Data##i::primitive, Data##i::comp>(); \
-        break;
+#define DataFormatIdMacro(i) \
+    case DataFormatEnums::i: \
+        return obj.template dispatch<Data##i>(std::forward<Args>(args)...);
 #include <inviwo/core/util/formatsdefinefunc.h>
 #undef DataFormatIdMacro
         default:
-            break;
+            return nullptr;
     }
 }
-
 
 #define CallFunctionWithTemplateArgsForType(fun, id) \
     switch (id) {\

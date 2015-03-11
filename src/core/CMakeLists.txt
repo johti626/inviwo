@@ -18,6 +18,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/buffer/bufferram.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/buffer/bufferramprecision.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/buffer/bufferrepresentation.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/camera.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/coordinatetransformer.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/data.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/datagroup.h
@@ -236,6 +237,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/util/settings/systemsettings.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/singleton.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/stacktrace.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/util/stdextensions.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/stringconversion.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/systemcapabilities.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/timer.h
@@ -254,6 +256,7 @@ set(SOURCE_FILES
     datastructures/buffer/buffer.cpp
     datastructures/buffer/bufferram.cpp
     datastructures/buffer/bufferrepresentation.cpp
+    datastructures/camera.cpp
     datastructures/data.cpp
     datastructures/datagroup.cpp
     datastructures/datagrouprepresentation.cpp
@@ -420,6 +423,7 @@ set(SOURCE_FILES
     util/settings/systemsettings.cpp    
     util/singleton.cpp
     util/stacktrace.cpp
+    util/stdextensions.cpp
     util/stringconversion.cpp
     util/systemcapabilities.cpp
     util/timer.cpp

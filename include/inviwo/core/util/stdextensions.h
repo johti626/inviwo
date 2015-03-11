@@ -27,19 +27,22 @@
  *
  *********************************************************************************/
 
-#include <inviwo/core/util/exception.h>
+#ifndef IVW_STDEXTENSIONS_H
+#define IVW_STDEXTENSIONS_H
+
+#include <inviwo/core/common/inviwocoredefine.h>
+#include <memory>
 
 namespace inviwo {
 
-Exception::Exception(const std::string& message) : std::exception(), message_(message) {}
+namespace util {
+// Since make_unique is a c++14 feature, roll our own in the mean time.
+template <typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args&&... args) {
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
 
-Exception::~Exception() throw() {}
-
-std::string Exception::getMessage() const throw() { return message_; };
-const char* Exception::what() const throw() { return message_.c_str(); }
-
-IgnoreException::IgnoreException(const std::string& message) : Exception(message) {}
-
-AbortException::AbortException(const std::string& message) : Exception(message) {}
-
+}
 }  // namespace
+
+#endif  // IVW_STDEXTENSIONS_H
