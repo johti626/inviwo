@@ -109,6 +109,7 @@ Property* PropertyOwner::removeProperty(std::vector<Property*>::iterator it) {
             cit = std::find(compositeProperties_.begin(),compositeProperties_.end(), *it);
         if (cit != compositeProperties_.end()) compositeProperties_.erase(cit);
 
+        prop->setOwner(nullptr);
         properties_.erase(it);
         notifyObserversDidRemoveProperty(prop, index);
     }
@@ -117,11 +118,11 @@ Property* PropertyOwner::removeProperty(std::vector<Property*>::iterator it) {
 
 Property* PropertyOwner::getPropertyByIdentifier(const std::string& identifier,
                                                  bool recursiveSearch) const {
-    for (auto& property : properties_) {
+    for (Property* property : properties_) {
         if (property->getIdentifier() == identifier) return property;
     }
     if (recursiveSearch) {
-        for (auto compositeProperty : compositeProperties_) {
+        for (CompositeProperty* compositeProperty : compositeProperties_) {
             Property* p = compositeProperty->getPropertyByIdentifier(identifier, true);
             if (p) return p;
         }
