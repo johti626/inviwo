@@ -50,19 +50,30 @@ void ImageInport::connectTo(Outport* outport) {
     connectedOutport_ = outport;
     outport->connectTo(this);
 
-    if (getProcessor()->isEndProcessor()) {
-        // Resize outport if no outports exist (Canvas)
-        ResizeEvent resizeEvent(getDimensions());
-        ImageOutport* connectedImageOutport = dynamic_cast<ImageOutport*>(outport);
+    ImageOutport* connectedImageOutport = dynamic_cast<ImageOutport*>(outport);
+    uvec2 dim;
+    if (isOutportDeterminingSize() && isConnected()) {
+        dim = connectedImageOutport->getDimensions();
+    }
+    else {
+        dim = dimensions_;
+    }
+
+    if (getProcessor()->isEndProcessor() || isOutportDeterminingSize()) {
+        ResizeEvent resizeEvent(dim);
+		if (connectedImageOutport->isHandlingResizeEvents())
+			resizeEvent.setSize(dimensions_);
+		else
+			dimensions_ = dim;
         connectedImageOutport->changeDataDimensions(&resizeEvent);
-    } else if (!isOutportDeterminingSize()) {
+    } else {
         // Resize outport if any outport within the same port dependency set is connected
         std::vector<Port*> portSet =
             getProcessor()->getPortsByDependencySet(getProcessor()->getPortDependencySet(this));
         for (size_t j = 0; j < portSet.size(); j++) {
             ImageOutport* imageOutport = dynamic_cast<ImageOutport*>(portSet[j]);
             if (imageOutport && imageOutport->isConnected()) {
-                ResizeEvent resizeEvent(getDimensions());
+                ResizeEvent resizeEvent(dim);
                 ImageOutport* connectedImageOutport = dynamic_cast<ImageOutport*>(outport);
                 connectedImageOutport->changeDataDimensions(&resizeEvent);
             }
@@ -77,7 +88,7 @@ void ImageInport::changeDataDimensions(ResizeEvent* resizeEvent) {
     // set dimensionsbased on port groups
     std::vector<std::string> portDependencySets = getProcessor()->getPortDependencySets();
     std::vector<Port*> portSet;
-    uvec2 dimMax(0);
+    uvec2 dimMax(resizeEvent->size());
     bool hasImageOutport = false;
 
     for (size_t i = 0; i < portDependencySets.size(); i++) {
@@ -125,12 +136,7 @@ void ImageInport::setResizeScale(vec2 scaling) { resizeScale_ = scaling; }
 vec2 ImageInport::getResizeScale() { return resizeScale_; }
 
 uvec2 ImageInport::getDimensions() const {
-    if (isOutportDeterminingSize() && isConnected()) {
-        ImageOutport* outport = dynamic_cast<ImageOutport*>(getConnectedOutport());
-        return outport->getDimensions();
-    } else {
-        return dimensions_;
-    }
+    return dimensions_;
 }
 
 const Image* ImageInport::getData() const {
@@ -142,7 +148,7 @@ const Image* ImageInport::getData() const {
             return const_cast<const Image*>(outport->getResizedImageData(dimensions_));
         }
     } else {
-        return NULL;
+        return nullptr;
     }
 }
 
@@ -185,11 +191,14 @@ ImageOutport::ImageOutport(std::string identifier, const DataFormatBase* format,
 
 ImageOutport::~ImageOutport() {
     for (auto& elem : imageDataMap_) {
-        if (isDataOwner() && elem.second != data_) {
+        if (elem.second != data_) {
             delete elem.second;
         }
     }
-    data_ = NULL;  // As data_ is referenced in imageDataMap_.
+    if (isDataOwner()){
+        delete data_;
+        data_ = nullptr;
+    }
 }
 
 bool ImageOutport::propagateResizeEventToPredecessor(ResizeEvent* resizeEvent) {
@@ -300,11 +309,13 @@ void ImageOutport::changeDataDimensions(ResizeEvent* resizeEvent) {
 
     for (auto& inport : inports) {
         ImageInport* imageInport = dynamic_cast<ImageInport*>(inport);
-        if (imageInport)
+        if (imageInport && !imageInport->isOutportDeterminingSize())
             registeredDimensions.push_back(imageInport->getDimensions());
     }
 
-    if (registeredDimensions.empty()) return;
+    if (registeredDimensions.empty()){
+        registeredDimensions.push_back(resizeEvent->size());
+    }
 
     std::vector<std::string> registeredDimensionsStrings;
 
@@ -371,12 +382,11 @@ void ImageOutport::changeDataDimensions(ResizeEvent* resizeEvent) {
         for (auto& invalidImageDataString : invalidImageDataStrings) {
             Image* invalidImage = imageDataMap_[invalidImageDataString];
 
-            //Make sure you don't delete data thats not owned
-            if (isDataOwner() && invalidImage != data_) {
+            //Make sure you don't delete data_
+            if (invalidImage != data_) {
                 delete invalidImage;
+                imageDataMap_.erase(invalidImageDataString);
             }
-
-            imageDataMap_.erase(invalidImageDataString);
         }
     }
 
