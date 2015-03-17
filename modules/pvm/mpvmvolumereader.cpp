@@ -29,7 +29,6 @@
 
 #include <modules/pvm/mpvmvolumereader.h>
 #include <inviwo/core/datastructures/volume/volumeram.h>
-#include <inviwo/core/datastructures/volume/volumetypeclassification.h>
 #include <inviwo/core/util/filesystem.h>
 #include <inviwo/core/util/formatconversion.h>
 #include <inviwo/core/util/stringconversion.h>
@@ -116,10 +115,10 @@ Volume* MPVMVolumeReader::readMetaData(std::string filePath) {
 
     // Create new format
     const DataFormatBase* mformat =
-        DataFormatBase::get(format->getNumericType(), volumes.size(), format->getSize());
+        DataFormatBase::get(format->getNumericType(), volumes.size(), format->getSize()*8);
 
     // Create new volume
-    Volume* volume = new UniformRectiLinearVolume();
+    Volume* volume = new Volume();
     glm::mat3 basis = volumes[0]->getBasis();
     volume->setBasis(basis);
     volume->setOffset(-0.5f * (basis[0] + basis[1] + basis[2]));

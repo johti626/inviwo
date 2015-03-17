@@ -31,7 +31,6 @@
 #include <inviwo/core/datastructures/datasequence.h>
 #include <inviwo/core/datastructures/volume/volumedisk.h>
 #include <inviwo/core/datastructures/volume/volumeramprecision.h>
-#include <inviwo/core/datastructures/volume/volumetypeclassification.h>
 #include <inviwo/core/util/filesystem.h>
 #include <inviwo/core/util/formatconversion.h>
 #include <inviwo/core/util/stringconversion.h>
@@ -84,7 +83,7 @@ Volume* DatVolumeReader::readMetaData(std::string filePath) {
     std::istream* f = new std::ifstream(filePath.c_str());
     std::string textLine;
     std::string formatFlag = "";
-    Volume* volume = new UniformRectiLinearVolume();
+    Volume* volume = new Volume();
     glm::mat3 basis(2.0f);
     glm::vec3 offset(0.0f);
     bool hasOffset = false;
@@ -187,7 +186,16 @@ Volume* DatVolumeReader::readMetaData(std::string filePath) {
             ss >> wtm[3][3];
         } else if (key == "format") {
             ss >> formatFlag;
-            format_ = DataFormatBase::get(formatFlag);
+            // Backward support for USHORT_12 key
+			if (formatFlag == "USHORT_12") {
+				format_ = DataUINT16::get();
+				// Check so that data range has not been set before
+				if (glm::all(glm::equal(datarange, dvec2(0)))) {
+					datarange.y = 4095;
+				}
+			} else {
+				format_ = DataFormatBase::get(formatFlag);
+			}
         } else if (key == "datarange") {
             ss >> datarange.x;
             ss >> datarange.y;
