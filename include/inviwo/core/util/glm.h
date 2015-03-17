@@ -48,6 +48,9 @@
 #include <glm/detail/precision.hpp>
 #include <glm/gtx/io.hpp>
 
+#include <half/half.hpp>
+
+#include <limits>
 #include <type_traits>
 
 namespace inviwo {
@@ -79,6 +82,57 @@ typedef glm::quat quat;
 
 namespace util {
 
+template <typename T>
+struct is_floating_point : public std::is_floating_point<T> {};
+
+template <>
+struct is_floating_point<half_float::half> : std::true_type {};
+
+
+
+template <typename T>
+struct rank : public std::rank<T> {};
+
+template <typename T, glm::precision P>
+struct rank<glm::detail::tvec2<T, P>> : public std::integral_constant<std::size_t, 1> {};
+template <typename T, glm::precision P>
+struct rank<glm::detail::tvec3<T, P>> : public std::integral_constant<std::size_t, 1> {};
+template <typename T, glm::precision P>
+struct rank<glm::detail::tvec4<T, P>> : public std::integral_constant<std::size_t, 1> {};
+
+template <typename T, glm::precision P>
+struct rank<glm::detail::tmat2x2<T, P>> : public std::integral_constant<std::size_t, 2> {};
+template <typename T, glm::precision P>
+struct rank<glm::detail::tmat3x3<T, P>> : public std::integral_constant<std::size_t, 2> {};
+template <typename T, glm::precision P>
+struct rank<glm::detail::tmat4x4<T, P>> : public std::integral_constant<std::size_t, 2> {};
+
+
+template <typename T, unsigned N = 0>
+struct extent : public std::extent<T,N> {};
+
+template <typename T, glm::precision P>
+struct extent<glm::detail::tvec2<T, P>, 0> : public std::integral_constant<std::size_t, 2> {};
+template <typename T, glm::precision P>
+struct extent<glm::detail::tvec3<T, P>, 0> : public std::integral_constant<std::size_t, 3> {};
+template <typename T, glm::precision P>
+struct extent<glm::detail::tvec4<T, P>, 0> : public std::integral_constant<std::size_t, 4> {};
+
+template <typename T, glm::precision P>
+struct extent<glm::detail::tmat2x2<T, P>, 0> : public std::integral_constant<std::size_t, 2> {};
+template <typename T, glm::precision P>
+struct extent<glm::detail::tmat3x3<T, P>, 0> : public std::integral_constant<std::size_t, 3> {};
+template <typename T, glm::precision P>
+struct extent<glm::detail::tmat4x4<T, P>, 0> : public std::integral_constant<std::size_t, 4> {};
+
+template <typename T, glm::precision P>
+struct extent<glm::detail::tmat2x2<T, P>, 1> : public std::integral_constant<std::size_t, 2> {};
+template <typename T, glm::precision P>
+struct extent<glm::detail::tmat3x3<T, P>, 1> : public std::integral_constant<std::size_t, 3> {};
+template <typename T, glm::precision P>
+struct extent<glm::detail::tmat4x4<T, P>, 1> : public std::integral_constant<std::size_t, 4> {};
+
+
 template<class U, class T, class BinaryOperation>
 U accumulate(T x, U init, BinaryOperation op) {
     init = op(init, x);
@@ -87,44 +141,483 @@ U accumulate(T x, U init, BinaryOperation op) {
 
 template <class U, glm::precision P, template <typename, glm::precision> class vecType,
           class BinaryOperation>
-typename std::enable_if<
-            std::is_same< typename std::decay<vecType<U, P>>::type ,
-                          glm::detail::tvec2<U, P>>::value ||
-            std::is_same< typename std::decay<vecType<U, P>>::type ,
-                          glm::detail::tvec3<U, P>>::value ||
-            std::is_same< typename std::decay<vecType<U, P>>::type ,
-                          glm::detail::tvec4<U, P>>::value, U >::type
+typename std::enable_if<util::rank<vecType<U, P>>::value == 1, U >::type
     accumulate(vecType<U, P> const& x, U init, BinaryOperation op) {
-    for (int i = 0; i < x.length(); ++i) init = op(init, x[i]);
+    for (int i = 0; i < util::extent<vecType<U, P>,0>::value; ++i) init = op(init, x[i]);
 
     return init;
 }
 
 template <class U, glm::precision P, template <typename, glm::precision> class vecType,
           class BinaryOperation>
-typename std::enable_if<
-            std::is_same< typename std::decay<vecType<U, P>>::type ,
-                          glm::detail::tmat2x2<U, P>>::value ||
-            std::is_same< typename std::decay<vecType<U, P>>::type ,
-                          glm::detail::tmat3x3<U, P>>::value ||
-            std::is_same< typename std::decay<vecType<U, P>>::type ,
-                          glm::detail::tmat4x4<U, P>>::value, U >::type
+typename std::enable_if<util::rank<vecType<U, P>>::value == 2, U >::type
     accumulate(vecType<U, P> const& x, U init, BinaryOperation op) {
-    for (int i = 0; i < x.length(); ++i)
-        for (int j = 0; j< x[i].length(); ++j)
+    for (int i = 0; i < util::extent<vecType<U, P>,0>::value; ++i)
+        for (int j = 0; j< util::extent<vecType<U, P>,1>::value; ++j)
             init = op(init, x[i][j]);
 
     return init;
 }
 
-//template<typename T>
-//struct rank {
-//    static const int value = 1;
-//}
+template <typename T = double, int dimX = 1, int dimY = 1, glm::precision P = glm::defaultp>
+struct glmtype {};
 
+template <typename T, glm::precision P>
+struct glmtype<T, 1, 1, P> { typedef T type; };
+
+template <typename T, glm::precision P>
+struct glmtype<T, 2, 1, P> { typedef glm::detail::tvec2<T,P> type; };
+
+template <typename T, glm::precision P>
+struct glmtype<T, 3, 1, P> { typedef glm::detail::tvec3<T,P> type; };
+
+template <typename T, glm::precision P>
+struct glmtype<T, 4, 1, P> { typedef glm::detail::tvec4<T,P> type; };
+
+template <typename T, glm::precision P>
+struct glmtype<T, 2, 2, P> { typedef glm::detail::tmat2x2<T,P> type; };
+
+template <typename T, glm::precision P>
+struct glmtype<T, 3, 3, P> { typedef glm::detail::tmat3x3<T,P> type; };
+
+template <typename T, glm::precision P>
+struct glmtype<T, 4, 4, P> { typedef glm::detail::tmat4x4<T,P> type; };
+
+template <typename T, typename U>
+struct same_extent { typedef U type; };
+
+template <typename T, glm::precision P, template <typename, glm::precision> class G, typename U>
+struct same_extent<G<T,P>, U> { typedef G<U,P> type; };
+
+
+// Type conversion
+
+// Standard conversion simple casts
+
+// Scalar to Scalar conversion
+template <typename To = double, typename From,
+          typename std::enable_if<util::rank<From>::value == 0 && util::rank<To>::value == 0,
+                                  int>::type = 0>
+To glm_convert(From x) {
+    return static_cast<To>(x);
+}
+
+// Scalar to Vector conversion
+template <class To, typename From,
+          typename std::enable_if<util::rank<From>::value == 0 && util::rank<To>::value == 1,
+                                  int>::type = 0>
+To glm_convert(From x) {
+    To res(0);
+    res[0] = static_cast<typename To::value_type>(x);
+    return res;
+}
+
+// Vector to Scalar conversion
+template <typename To = double, class From,
+          typename std::enable_if<util::rank<From>::value == 1 && util::rank<To>::value == 0,
+                                  int>::type = 0>
+To glm_convert(From x) {
+    return static_cast<To>(x[0]);
+}
+
+// Vector to Vector conversion
+template <class To, class From,
+          typename std::enable_if<util::rank<From>::value == 1 && util::rank<To>::value == 1,
+                                  int>::type = 0>
+To glm_convert(From x) {
+    To res(static_cast<typename To::value_type>(0));
+    size_t max = std::min(util::extent<To, 0>::value, util::extent<From, 0>::value);
+    for (size_t i = 0; i < max; ++i) res[i] = static_cast<typename To::value_type>(x[i]);
+    return res;
+}
+
+// Normalized conversions. Only to floating point types.
+
+// Scalar to Scalar conversion,
+// Floating point to floating point, only cast
+template <typename To = double, typename From,
+          typename std::enable_if<util::rank<From>::value == 0 && util::rank<To>::value == 0 &&
+                                      util::is_floating_point<To>::value &&
+                                      util::is_floating_point<From>::value,
+                                  int>::type = 0>
+To glm_convert_normalized(From x) {
+    return static_cast<To>(x);
+}
+
+// Unsigned integer to floating point, normalize and cast
+template <typename To = double, typename From,
+          typename std::enable_if<util::rank<From>::value == 0 && util::rank<To>::value == 0 &&
+                                      util::is_floating_point<To>::value &&
+                                      std::is_integral<From>::value &&
+                                      std::is_unsigned<From>::value,
+                                  int>::type = 0>
+To glm_convert_normalized(From x) {
+    return static_cast<To>(x) / static_cast<To>(std::numeric_limits<From>::max());
+}
+
+// Signed integer to floating point, normalize and cast
+template <typename To = double, typename From,
+          typename std::enable_if<util::rank<From>::value == 0 && util::rank<To>::value == 0 &&
+                                      util::is_floating_point<To>::value &&
+                                      std::is_integral<From>::value && std::is_signed<From>::value,
+                                  int>::type = 0>
+To glm_convert_normalized(From x) {
+    return (static_cast<To>(x) - static_cast<To>(std::numeric_limits<From>::lowest())) /
+           (static_cast<To>(std::numeric_limits<From>::max()) -
+            static_cast<To>(std::numeric_limits<From>::lowest()));
+}
+
+
+// Scalar to Vector conversion
+// Floating point to floating point, only cast
+template <class To, typename From,
+          typename std::enable_if<util::rank<From>::value == 0 && util::rank<To>::value == 1 &&
+                                      util::is_floating_point<typename To::value_type>::value &&
+                                      util::is_floating_point<From>::value,
+                                  int>::type = 0>
+To glm_convert_normalized(From x) {
+    To res(0);
+    res[0] = static_cast<typename To::value_type>(x);
+    return res;
+}
+
+// Unsigned integer to floating point, normalize and cast
+template <
+    class To, typename From,
+    typename std::enable_if<util::rank<From>::value == 0 && util::rank<To>::value == 1 &&
+                                util::is_floating_point<typename To::value_type>::value &&
+                                std::is_integral<From>::value && std::is_unsigned<From>::value,
+                            int>::type = 0>
+To glm_convert_normalized(From x) {
+    To res(0);
+    typedef typename To::value_type T;
+    res[0] = static_cast<T>(x) / static_cast<T>(std::numeric_limits<From>::max());
+    return res;
+}
+
+// Signed integer to floating point, normalize and cast
+template <class To, typename From,
+          typename std::enable_if<util::rank<From>::value == 0 && util::rank<To>::value == 1 &&
+                                      util::is_floating_point<typename To::value_type>::value &&
+                                      std::is_integral<From>::value && std::is_signed<From>::value,
+                                  int>::type = 0>
+To glm_convert_normalized(From x) {
+    To res(0);
+    typedef typename To::value_type T;
+    res[0] = (static_cast<T>(x) - static_cast<T>(std::numeric_limits<From>::lowest())) /
+             (static_cast<T>(std::numeric_limits<From>::max()) -
+              static_cast<T>(std::numeric_limits<From>::lowest()));
+    return res;
+}
+
+
+// Vector to Scalar conversion
+// Floating point to floating point, only cast
+template <typename To = double, class From,
+          typename std::enable_if<util::rank<From>::value == 1 && util::rank<To>::value == 0 &&
+                                      util::is_floating_point<To>::value &&
+                                      util::is_floating_point<typename From::value_type>::value,
+                                  int>::type = 0>
+To glm_convert_normalized(From x) {
+    return static_cast<To>(x[0]);
+}
+
+// Unsigned integer to floating point, normalize and cast
+template <typename To = double, class From,
+          typename std::enable_if<util::rank<From>::value == 1 && util::rank<To>::value == 0 &&
+                                      util::is_floating_point<To>::value &&
+                                      std::is_integral<typename From::value_type>::value &&
+                                      std::is_unsigned<typename From::value_type>::value,
+                                  int>::type = 0>
+To glm_convert_normalized(From x) {
+    typedef typename From::value_type F;
+    return static_cast<To>(x[0]) / static_cast<To>(std::numeric_limits<F>::max());
+}
+
+// Signed integer to floating point, normalize and cast
+template <typename To = double, class From,
+          typename std::enable_if<util::rank<From>::value == 1 && util::rank<To>::value == 0 &&
+                                      util::is_floating_point<To>::value &&
+                                      std::is_integral<typename From::value_type>::value &&
+                                      std::is_signed<typename From::value_type>::value,
+                                  int>::type = 0>
+To glm_convert_normalized(From x) {
+    typedef typename From::value_type F;
+    return (static_cast<To>(x[0]) - static_cast<To>(std::numeric_limits<F>::lowest())) /
+           (static_cast<To>(std::numeric_limits<F>::max()) -
+            static_cast<To>(std::numeric_limits<F>::lowest()));
+}
+
+
+// Vector to Vector conversion
+// Floating point to floating point, only cast
+template <class To, class From,
+          typename std::enable_if<util::rank<From>::value == 1 && util::rank<To>::value == 1 &&
+                                      util::is_floating_point<typename To::value_type>::value &&
+                                      util::is_floating_point<typename From::value_type>::value,
+                                  int>::type = 0>
+To glm_convert_normalized(From x) {
+    typedef typename To::value_type T;
+    To res(static_cast<T>(0));
+    size_t max = std::min(util::extent<To, 0>::value, util::extent<From, 0>::value);
+    for (size_t i = 0; i < max; ++i) res[i] = static_cast<T>(x[i]);
+    return res;
+}
+
+// Unsigned integer to floating point, normalize and cast
+template <class To, class From,
+          typename std::enable_if<util::rank<From>::value == 1 && util::rank<To>::value == 1 &&
+                                      util::is_floating_point<typename To::value_type>::value &&
+                                      std::is_integral<typename From::value_type>::value &&
+                                      std::is_unsigned<typename From::value_type>::value,
+                                  int>::type = 0>
+To glm_convert_normalized(From x) {
+    typedef typename To::value_type T;
+    typedef typename From::value_type F;
+
+    To res(static_cast<T>(0));
+    size_t max = std::min(util::extent<To, 0>::value, util::extent<From, 0>::value);
+    for (size_t i = 0; i < max; ++i) {
+        res[i] = static_cast<T>(x[i]) / static_cast<T>(std::numeric_limits<F>::max());
+    }
+
+    return res;
+}
+
+// Signed integer to floating point, normalize and cast
+template <class To, class From,
+          typename std::enable_if<util::rank<From>::value == 1 && util::rank<To>::value == 1 &&
+                                      util::is_floating_point<typename To::value_type>::value &&
+                                      std::is_integral<typename From::value_type>::value &&
+                                      std::is_signed<typename From::value_type>::value,
+                                  int>::type = 0>
+To glm_convert_normalized(From x) {
+    typedef typename To::value_type T;
+    typedef typename From::value_type F;
+    To res(static_cast<T>(0));
+    size_t max = std::min(util::extent<To, 0>::value, util::extent<From, 0>::value);
+    for (size_t i = 0; i < max; ++i) {
+        res[i] = (static_cast<T>(x[i]) - static_cast<T>(std::numeric_limits<F>::lowest())) /
+                 (static_cast<T>(std::numeric_limits<F>::max()) -
+                  static_cast<T>(std::numeric_limits<F>::lowest()));
+    }
+    return res;
+}
+
+
+// GLM element access wrapper functions. 
+
+// vector like access
+template <typename T, typename std::enable_if<util::rank<T>::value == 0, int>::type = 0> 
+auto glmcomp(T& elem, size_t i) -> T& {
+    return elem;
+}
+template <typename T, typename std::enable_if<util::rank<T>::value == 1, int>::type = 0> 
+auto glmcomp(T& elem, size_t i) -> typename T::value_type& {
+    return elem[i];
+}
+template <typename T, typename std::enable_if<util::rank<T>::value == 2, int>::type = 0> 
+auto glmcomp(T& elem, size_t i) -> typename T::value_type& {
+    return elem[i / util::extent<T, 0>::value][i % util::extent<T, 1>::value];
+}
+
+// matrix like access
+template <typename T, typename std::enable_if<util::rank<T>::value == 0, int>::type = 0> 
+auto glmcomp(T& elem, size_t i, size_t j) -> T& {
+    return elem;
+}
+template <typename T, typename std::enable_if<util::rank<T>::value == 1, int>::type = 0> 
+auto glmcomp(T& elem, size_t i, size_t j) -> typename T::value_type& {
+    return elem[i];
+}
+template <typename T, typename std::enable_if<util::rank<T>::value == 2, int>::type = 0> 
+auto glmcomp(T& elem, size_t i, size_t j) -> typename T::value_type&{
+    return elem[i][j];
+}
 
 
 } // namespace util
+
+
+template <typename BT, typename T>
+class glmwrapper {};
+
+template <typename T>
+class glmwrapper<T, T> {
+public:
+    static T getval(T val, size_t const ind) { return val; }
+    static T setval(T org, size_t const ind, T val) { return val; }
+};
+
+template <typename T, glm::precision P, template <typename, glm::precision> class G>
+class glmwrapper<T, G<T, P>> {
+public:
+    template <typename U = T, typename std::enable_if<util::rank<G<U, P>>::value == 1, int>::type = 0>
+    static U getval(G<T, P> vec, const size_t ind) {
+        return vec[static_cast<int>(ind)];
+    }
+    template <typename U = T, typename std::enable_if<util::rank<G<U, P>>::value == 1, int>::type = 0>
+    static G<T, P> setval(G<T, P> vec, const size_t ind, T val) {
+        vec[static_cast<int>(ind)] = val;
+        return vec;
+    }
+
+    template <typename U = T, typename std::enable_if<util::rank<G<U, P>>::value == 2, int>::type = 0>
+    static T getval(G<T, P> mat, const size_t ind) {
+        return mat[static_cast<int>(ind) /
+                   util::extent<G<T, P>, 0>::value][static_cast<int>(ind) %
+                                                    util::extent<G<T, P>, 1>::value];
+    }
+    template <typename U = T, typename std::enable_if<util::rank<G<U, P>>::value == 2, int>::type = 0>
+    static G<T, P> setval(G<T, P> mat, const size_t ind, T val) {
+        mat[static_cast<int>(ind) /
+            util::extent<G<T, P>, 0>::value][static_cast<int>(ind) %
+                                             util::extent<G<T, P>, 1>::value] = val;
+        return mat;
+    }
+};
+
+
+template <unsigned int N, typename T>
+class Matrix {};
+
+template <unsigned int N, typename T>
+class Vector {};
+
+template <typename T>
+class Matrix<4, T> : public glm::detail::tmat4x4<T, glm::defaultp> {
+public:
+    Matrix<4, T>() : glm::detail::tmat4x4<T, glm::defaultp>() {};
+    Matrix<4, T>(const Matrix<4, T>& m) : glm::detail::tmat4x4<T, glm::defaultp>(
+            m[0][0], m[0][1], m[0][2], m[0][3],
+            m[1][0], m[1][1], m[1][2], m[1][3],
+            m[2][0], m[2][1], m[2][2], m[2][3],
+            m[3][0], m[3][1], m[3][2], m[3][3]) {};
+    Matrix<4, T>(const glm::detail::tmat4x4<T, glm::defaultp>& m) : glm::detail::tmat4x4<T, glm::defaultp>(m) {};
+    Matrix<4, T>(T m) : glm::detail::tmat4x4<T, glm::defaultp>(m) {};
+    Matrix<4, T>(Vector<4,T>& m) : glm::detail::tmat4x4<T, glm::defaultp>() {*this = glm::diagonal4x4(m);}
+    Matrix<4, T>(T x1, T y1, T z1, T w1,
+                 T x2, T y2, T z2, T w2,
+                 T x3, T y3, T z3, T w3,
+                 T x4, T y4, T z4, T w4) :
+        glm::detail::tmat4x4<T, glm::defaultp>(x1, y1, z1, w1,
+                                               x2, y2, z2, w2,
+                                               x3, y3, z3, w3,
+                                               x4, y4, z4, w4) {};
+    
+    
+    operator glm::detail::tmat4x4<T, glm::defaultp>&() { return *this; }
+    operator const glm::detail::tmat4x4<T, glm::defaultp>&() const { return *this; }
+    
+    glm::detail::tmat4x4<T, glm::defaultp> getGLM() const {
+        return *this;
+    };
+};
+template <typename T>
+class Matrix<3, T> : public glm::detail::tmat3x3<T, glm::defaultp> {
+public:
+    Matrix<3, T>() : glm::detail::tmat3x3<T, glm::defaultp>() {};
+    Matrix<3, T>(const Matrix<3, T>& m) : glm::detail::tmat3x3<T, glm::defaultp>(
+            m[0][0], m[0][1], m[0][2],
+            m[1][0], m[1][1], m[1][2],
+            m[2][0], m[2][1], m[2][2]) {};
+    Matrix<3, T>(const glm::detail::tmat3x3<T, glm::defaultp>& m) : glm::detail::tmat3x3<T, glm::defaultp>(m) {};
+    Matrix<3, T>(T m) : glm::detail::tmat3x3<T, glm::defaultp>(m) {};
+    Matrix<3, T>(Vector<3,T>& m) : glm::detail::tmat3x3<T, glm::defaultp>() {*this = glm::diagonal3x3(m);}
+    Matrix<3, T>(T x1, T y1, T z1,
+                 T x2, T y2, T z2,
+                 T x3, T y3, T z3) :
+        glm::detail::tmat3x3<T, glm::defaultp>(x1, y1, z1,
+                                               x2, y2, z2,
+                                               x3, y3, z3) {};
+    
+    operator glm::detail::tmat3x3<T, glm::defaultp>&() { return *this; }
+    operator const glm::detail::tmat3x3<T, glm::defaultp>&() const { return *this; }
+    
+    glm::detail::tmat3x3<T, glm::defaultp> getGLM() const {
+        return *this;
+    };
+};
+template <typename T>
+class Matrix<2, T> : public glm::detail::tmat2x2<T, glm::defaultp> {
+public:
+    Matrix<2, T>() : glm::detail::tmat2x2<T, glm::defaultp>() {};
+    Matrix<2, T>(const Matrix<2, T>& m) : glm::detail::tmat2x2<T, glm::defaultp>(
+            m[0][0], m[0][1],
+            m[1][0], m[1][1]) {};
+    Matrix<2, T>(const glm::detail::tmat2x2<T, glm::defaultp>& m) : glm::detail::tmat2x2<T, glm::defaultp>(m) {};
+    Matrix<2, T>(T m) : glm::detail::tmat2x2<T, glm::defaultp>(m) {};
+    Matrix<2, T>(Vector<2,T>& m) : glm::detail::tmat2x2<T, glm::defaultp>() {*this = glm::diagonal2x2(m);}
+    Matrix<2, T>(T x1, T y1,
+                 T x2, T y2) :
+        glm::detail::tmat2x2<T, glm::defaultp>(x1, y1,
+                                               x2, y2) {};
+    
+     operator glm::detail::tmat2x2<T, glm::defaultp>&() { return *this; }
+    operator const glm::detail::tmat2x2<T, glm::defaultp>&() const { return *this; }
+    
+    glm::detail::tmat2x2<T, glm::defaultp> getGLM() const {
+        return *this;
+    };
+};
+
+template <unsigned int N, typename T>
+Matrix<N, T> MatrixInvert(const Matrix<N, T>& m) {
+    return glm::inverse(m.getGLM());
+}
+template <typename T>
+Matrix<4, T> MatrixInvert(const glm::detail::tmat4x4<T, glm::defaultp>& m) {
+    return glm::inverse(m);
+}
+template <typename T>
+Matrix<3, T> MatrixInvert(const glm::detail::tmat3x3<T, glm::defaultp>& m) {
+    return glm::inverse(m);
+}
+template <typename T>
+Matrix<2, T> MatrixInvert(const glm::detail::tmat2x2<T, glm::defaultp>& m) {
+    return glm::inverse(m);
+}
+
+
+template <typename T>
+class Vector<4, T> : public glm::detail::tvec4<T, glm::defaultp> {
+public:
+    Vector<4, T>() : glm::detail::tvec4<T, glm::defaultp>() {};
+    Vector<4, T>(const Vector<4, T>& v) : glm::detail::tvec4<T, glm::defaultp>(v.x, v.y, v.z, v.w) {};
+    Vector<4, T>(const glm::detail::tvec4<T, glm::defaultp>& v) : glm::detail::tvec4<T, glm::defaultp>(v) {};
+    Vector<4, T>(T v) : glm::detail::tvec4<T, glm::defaultp>(v) {};
+    Vector<4, T>(T v1, T v2, T v3, T v4) : glm::detail::tvec2<T, glm::defaultp>(v1, v2, v3, v4) {};
+    operator  glm::detail::tvec4<T, glm::defaultp>&() { return *this; }
+    operator const  glm::detail::tvec4<T, glm::defaultp>&() const { return *this; }
+    glm::detail::tvec4<T, glm::defaultp> getGLM() const { return *this; };
+};
+template <typename T>
+class Vector<3, T> : public glm::detail::tvec3<T, glm::defaultp> {
+public:
+    Vector<3, T>() : glm::detail::tvec3<T, glm::defaultp>() {};
+    Vector<3, T>(const Vector<3, T>& v) : glm::detail::tvec3<T, glm::defaultp>(v.x, v.y, v.z) {};
+    Vector<3, T>(const glm::detail::tvec3<T, glm::defaultp>& v) : glm::detail::tvec3<T, glm::defaultp>(v) {};
+    Vector<3, T>(T v) : glm::detail::tvec3<T, glm::defaultp>(v) {};
+    Vector<3, T>(T v1, T v2, T v3) : glm::detail::tvec3<T, glm::defaultp>(v1, v2, v3) {};
+    operator  glm::detail::tvec3<T, glm::defaultp>&() { return *this; }
+    operator const  glm::detail::tvec3<T, glm::defaultp>&() const { return *this; }
+    glm::detail::tvec3<T, glm::defaultp> getGLM() const { return *this; };
+};
+template <typename T>
+class Vector<2, T> : public glm::detail::tvec2<T, glm::defaultp> {
+public:
+    Vector<2, T>() : glm::detail::tvec2<T, glm::defaultp>() {};
+    Vector<2, T>(const Vector<2, T>& v) : glm::detail::tvec2<T, glm::defaultp>(v.x, v.y) {};
+    Vector<2, T>(const glm::detail::tvec2<T, glm::defaultp>& v) : glm::detail::tvec2<T, glm::defaultp>(v) {};
+    Vector<2, T>(T v) : glm::detail::tvec2<T, glm::defaultp>(v) {};
+    Vector<2, T>(T v1, T v2) : glm::detail::tvec2<T, glm::defaultp>(v1, v2) {};
+    operator  glm::detail::tvec2<T, glm::defaultp>&() { return *this; }
+    operator const  glm::detail::tvec2<T, glm::defaultp>&() const { return *this; }
+    glm::detail::tvec2<T, glm::defaultp> getGLM() const { return *this; };
+};
+
+
+
 
 } // namespace
 
