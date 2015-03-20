@@ -65,6 +65,7 @@ VolumeSlice::VolumeSlice()
                          new Action(this, &VolumeSlice::eventGestureShiftSlice)) {
     addPort(inport_);
     addPort(outport_);
+    outport_.setHandleResizeEvents(false);
     sliceAlongAxis_.addOption("x", "X axis", CoordinateEnums::X);
     sliceAlongAxis_.addOption("y", "Y axis", CoordinateEnums::Y);
     sliceAlongAxis_.addOption("z", "Z axis", CoordinateEnums::Z);
@@ -88,10 +89,6 @@ VolumeSlice::VolumeSlice()
 }
 
 VolumeSlice::~VolumeSlice() {}
-
-void VolumeSlice::initialize() { Processor::initialize(); }
-
-void VolumeSlice::deinitialize() { Processor::deinitialize(); }
 
 void VolumeSlice::invokeInteractionEvent(Event* event) {
     if (!handleInteractionEvents_) return;

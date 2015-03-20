@@ -40,7 +40,7 @@ uvec3 ImageInport::colorCode = uvec3(90, 127, 183);
 ImageInport::ImageInport(std::string identifier, bool outportDeterminesSize,
                          InvalidationLevel invalidationLevel)
     : DataInport<Image>(identifier, invalidationLevel)
-    , dimensions_(uvec2(32, 32))
+    , dimensions_(uvec2(8, 8))
     , resizeScale_(vec2(1.f, 1.f))
     , outportDeterminesSize_(outportDeterminesSize) {}
 
@@ -120,14 +120,12 @@ void ImageInport::changeDataDimensions(ResizeEvent* resizeEvent) {
     
     resizeEvent->setSize(dimensions_);
     propagateResizeToPredecessor(resizeEvent);
-    
-    invalidate(INVALID_OUTPUT);
 }
 
 void ImageInport::propagateResizeToPredecessor(ResizeEvent* resizeEvent) {
     ImageOutport* imageOutport = dynamic_cast<ImageOutport*>(getConnectedOutport());
-    if (imageOutport && !isOutportDeterminingSize()) {
-        imageOutport->changeDataDimensions(resizeEvent);
+    if (imageOutport) {
+       imageOutport->changeDataDimensions(resizeEvent);
     }
 }
 
@@ -142,7 +140,7 @@ uvec2 ImageInport::getDimensions() const {
 const Image* ImageInport::getData() const {
     if (isConnected()) {
         ImageOutport* outport = dynamic_cast<ImageOutport*>(getConnectedOutport());
-        if (isOutportDeterminingSize()) {
+        if (isOutportDeterminingSize() || dimensions_ == uvec2(8, 8)) {
             return outport->getConstData();
         } else {
             return const_cast<const Image*>(outport->getResizedImageData(dimensions_));
@@ -181,7 +179,7 @@ ImageOutport::ImageOutport(std::string identifier, const DataFormatBase* format,
                            InvalidationLevel invalidationLevel,
                            bool handleResizeEvents)
     : DataOutport<Image>(identifier, invalidationLevel)
-    , dimensions_(uvec2(32, 32))
+    , dimensions_(uvec2(8, 8))
     , mapDataInvalid_(true)
     , handleResizeEvents_(handleResizeEvents) {
     
@@ -281,6 +279,11 @@ void ImageOutport::changeDataDimensions(ResizeEvent* resizeEvent) {
     // and checking registeredDimensions.
     // Allocates space holder, sets largest data, cleans up un-used data
     uvec2 requiredDimensions = resizeEvent->size();
+
+    // Avoid unwanted propagation
+    if (requiredDimensions == uvec2(8, 8))
+        return;
+
     uvec2 previousDimensions = resizeEvent->previousSize();
     std::string prevDimensionString = glm::to_string(previousDimensions);
     std::string reqDimensionString = glm::to_string(requiredDimensions);
@@ -330,7 +333,7 @@ void ImageOutport::changeDataDimensions(ResizeEvent* resizeEvent) {
     //      Resize map data to required dimensions
     //  Else
     //      Clone the current data, resize it and make new entry in map
-    Image* resultImage = 0;
+    Image* resultImage = nullptr;
 
     if (imageDataMap_.find(reqDimensionString) != imageDataMap_.end())
         resultImage = imageDataMap_[reqDimensionString];
@@ -384,6 +387,8 @@ void ImageOutport::changeDataDimensions(ResizeEvent* resizeEvent) {
 
             //Make sure you don't delete data_
             if (invalidImage != data_) {
+                if (invalidImage == resultImage)
+                    resultImage = nullptr;
                 delete invalidImage;
                 imageDataMap_.erase(invalidImageDataString);
             }
@@ -393,7 +398,7 @@ void ImageOutport::changeDataDimensions(ResizeEvent* resizeEvent) {
     uvec2 outDim;
 
     //Don't continue is outport determine output size
-    if (isHandlingResizeEvents()) {
+    if (isHandlingResizeEvents() || dimensions_ == uvec2(8, 8)) {
         outDim = getDimensions();
         // Set largest data
         setLargestImageData(resizeEvent);
@@ -451,23 +456,25 @@ Image* ImageOutport::getResizedImageData(uvec2 requiredDimensions) {
         }
 
         // Resize all map data once
+        bool delete88 = false;
         for (auto& elem : imageDataMap_) {
             if (elem.second != data_) {
                 uvec2 mapDataDimensions = elem.second->getDimensions();
-                data_->resizeRepresentations(elem.second, mapDataDimensions);
+                if (elem.second != data_ && mapDataDimensions == uvec2(8, 8)){
+                    delete elem.second;
+                    delete88 = true;
+                }
+                else
+                    data_->resizeRepresentations(elem.second, mapDataDimensions);
             }
         }
+        if (delete88) imageDataMap_.erase(glm::to_string(uvec2(8, 8)));
 
         mapDataInvalid_ = false;
     }
-
-    for (auto& elem : imageDataMap_) {
-        if (elem.second->getDimensions() == requiredDimensions) {
-            return elem.second;
-        } else if (elem.first == glm::to_string(requiredDimensions)) {
-            elem.second->resize(requiredDimensions);
-            return elem.second;
-        }
+    auto it = imageDataMap_.find(glm::to_string(requiredDimensions));
+    if (it != imageDataMap_.end()){
+        return it->second;
     }
 
     Image* resultImage = data_->clone();
@@ -480,7 +487,7 @@ Image* ImageOutport::getResizedImageData(uvec2 requiredDimensions) {
 
 void ImageOutport::setLargestImageData(ResizeEvent* resizeEvent) {
     uvec2 maxDimensions(0);
-    Image* largestImage = 0;
+    Image* largestImage = nullptr;
 
     for (auto& elem : imageDataMap_) {
         uvec2 mapDataDimensions = elem.second->getDimensions();

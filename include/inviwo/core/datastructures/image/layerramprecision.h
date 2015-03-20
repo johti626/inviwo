@@ -37,9 +37,9 @@ namespace inviwo {
 template <typename T>
 class LayerRAMPrecision : public LayerRAM {
 public:
-    LayerRAMPrecision(uvec2 dimensions = uvec2(32, 32), LayerType type = COLOR_LAYER,
+    LayerRAMPrecision(uvec2 dimensions = uvec2(8, 8), LayerType type = COLOR_LAYER,
                       const DataFormatBase* format = defaultformat());
-    LayerRAMPrecision(T* data, uvec2 dimensions = uvec2(32, 32), LayerType type = COLOR_LAYER,
+    LayerRAMPrecision(T* data, uvec2 dimensions = uvec2(8, 8), LayerType type = COLOR_LAYER,
                       const DataFormatBase* format = defaultformat());
     LayerRAMPrecision(const LayerRAMPrecision<T>& rhs);
     LayerRAMPrecision<T>& operator=(const LayerRAMPrecision<T>& that);
@@ -83,7 +83,7 @@ template <typename T>
 LayerRAMPrecision<T>::LayerRAMPrecision(const LayerRAMPrecision<T>& rhs)
     : LayerRAM(rhs) {
     initialize();
-    memcpy(data_, rhs.getData(), dimensions_.x * dimensions_.y * sizeof(T));
+    std::memcpy(data_, rhs.getData(), dimensions_.x * dimensions_.y * sizeof(T));
 }
 
 template <typename T>
@@ -92,7 +92,7 @@ LayerRAMPrecision<T>& LayerRAMPrecision<T>::operator=(const LayerRAMPrecision<T>
         LayerRAM::operator=(that);
         delete[] data_;
         initialize();
-        memcpy(data_, that.getData(), dimensions_.x*dimensions_.y*sizeof(T));
+        std::memcpy(data_, that.getData(), dimensions_.x*dimensions_.y*sizeof(T));
     }
 
     return *this;
@@ -110,13 +110,13 @@ LayerRAMPrecision<T>::~LayerRAMPrecision() {
 
 template<typename T>
 void LayerRAMPrecision<T>::initialize() {
-    data_ = new T[dimensions_.x*dimensions_.y];
+    data_ = new T[dimensions_.x*dimensions_.y]();
 }
 
 template<typename T>
 void LayerRAMPrecision<T>::initialize(void* data) {
     if (data == nullptr)
-        data_ = new T[dimensions_.x*dimensions_.y];
+        data_ = new T[dimensions_.x*dimensions_.y]();
     else
         data_ = data;
 }

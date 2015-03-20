@@ -99,14 +99,14 @@ VolumeRAMPrecision<T>::VolumeRAMPrecision(uvec3 dimensions, const DataFormatBase
     : VolumeRAM(format)
     , dimensions_(dimensions)
     , ownsDataPtr_(true)
-    , data_(new T[dimensions_.x * dimensions_.y * dimensions_.z]) {}
+    , data_(new T[dimensions_.x * dimensions_.y * dimensions_.z]()) {}
 
 template <typename T>
 VolumeRAMPrecision<T>::VolumeRAMPrecision(T* data, uvec3 dimensions, const DataFormatBase* format)
     : VolumeRAM(format)
     , dimensions_(dimensions)
     , ownsDataPtr_(true)
-    , data_(data ? data : new T[dimensions_.x * dimensions_.y * dimensions_.z]) {}
+    , data_(data ? data : new T[dimensions_.x * dimensions_.y * dimensions_.z]()) {}
 
 template <typename T>
 VolumeRAMPrecision<T>::VolumeRAMPrecision(const VolumeRAMPrecision<T>& rhs)
@@ -232,13 +232,15 @@ void VolumeRAMPrecision<T>::setValuesFromVolume(const VolumeRAM* src, const uvec
 
     size_t volumePos;
     size_t subVolumePos;
-    for (size_t i = 0; i < subSize.z; i++) {
-        for (size_t j = 0; j < subSize.y; j++) {
-            volumePos = (j * dimensions_.x) + (i * dimensions_.x * dimensions_.y);
-            subVolumePos = ((j + subOffset.y) * srcDims.x) +
-                           ((i + subOffset.z) * srcDims.x * srcDims.y) + subOffset.x;
-            memcpy((data_.get() + volumePos + initialStartPos), (srcData + subVolumePos), dataSize);
-        }
+    ivec3 subSizeI = ivec3(subSize);
+#pragma omp parallel for
+    for (int zy = 0; zy < subSizeI.z*subSizeI.y; ++zy) {
+        int z = zy / subSizeI.y;
+        int y = zy % subSizeI.y;
+        volumePos = (y * dimensions_.x) + (z * dimensions_.x * dimensions_.y);
+        subVolumePos = ((y + subOffset.y) * srcDims.x) +
+            ((z + subOffset.z) * srcDims.x * srcDims.y) + subOffset.x;
+        std::memcpy((data_.get() + volumePos + initialStartPos), (srcData + subVolumePos), dataSize);
     }
 }
 
@@ -300,9 +302,6 @@ template <typename T>
 bool inviwo::VolumeRAMPrecision<T>::hasHistograms() const {
     return !histCont_.empty() && histCont_.isValid();
 }
-
-#define DataFormatIdMacro(i) typedef VolumeRAMPrecision<Data##i::type> VolumeRAM_##i;
-#include <inviwo/core/util/formatsdefinefunc.h>
 
 }  // namespace
 
