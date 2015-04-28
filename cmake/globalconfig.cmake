@@ -38,6 +38,7 @@ set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER cmake)
 #--------------------------------------------------------------------
 # Only output error messages
 function(message)
+if( GET )
   list(GET ARGV 0 MessageType)
   if(MessageType STREQUAL FATAL_ERROR OR
      MessageType STREQUAL SEND_ERROR OR
@@ -46,6 +47,7 @@ function(message)
     list(REMOVE_AT ARGV 0)
     _message(STATUS "${ARGV}")
   endif()
+endif()
 endfunction()
 function(ivw_message)
     _message(${ARGV})
@@ -111,7 +113,7 @@ set(IVW_CMAKE_BINARY_MODULE_DIR ${CMAKE_BINARY_DIR}/cmake)
 
 #Generate headers
 generate_external_module_header()
-configure_file(${IVW_CMAKE_SOURCE_MODULE_DIR}/inviwocommondefines_template.h ${IVW_INCLUDE_DIR}/inviwo/core/common/inviwocommondefines.h @ONLY IMMEDIATE)
+configure_file(${IVW_CMAKE_SOURCE_MODULE_DIR}/inviwocommondefines_template.h ${CMAKE_BINARY_DIR}/modules/_generated/inviwocommondefines.h @ONLY IMMEDIATE)
 
 # Set ignored libs
 set(VS_MULTITHREADED_DEBUG_DLL_IGNORE_LIBRARY_FLAGS
@@ -189,6 +191,7 @@ IF(WIN32)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Ym0x20000000")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zm512")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
 	ENDIF(MSVC)
 ENDIF()
 

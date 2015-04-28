@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2012-2015 Inviwo Foundation
+ * Copyright (c) 2013-2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,42 +24,15 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
+ * 
  *********************************************************************************/
-
-#ifndef IVW_PROPERTYFACTORY_H
-#define IVW_PROPERTYFACTORY_H
-
-#include <inviwo/core/common/inviwocoredefine.h>
-#include <inviwo/core/properties/property.h>
-#include <inviwo/core/util/factory.h>
-#include <inviwo/core/util/singleton.h>
-#include <inviwo/core/properties/propertyfactoryobject.h>
+ 
+#include <inviwo/core/datastructures/spatialdata.h>
 
 namespace inviwo {
-
-class IVW_CORE_API PropertyFactory : public Factory, public Singleton<PropertyFactory> {
-public:
-    PropertyFactory();
-    ~PropertyFactory();
-
-    void registeryObject(PropertyFactoryObject *property);
-
-    virtual IvwSerializable *create(const std::string &className) const;
-
-    virtual Property *getProperty(const std::string &className, const std::string &identifier,
-                                  const std::string &displayName) const;
-
-    virtual bool isValidType(const std::string &className) const;
-
-    std::vector<std::string> getRegistedPropertyClassNames() const;
-
-    typedef std::map<std::string, PropertyFactoryObject *> PropertyClassMap;
-
-private:
-    mutable PropertyClassMap propertyClassMap_;
-};
-
-}  // namespace
-
-#endif  // IVW_PROPERTYFACTORY_H
+ 
+template class IVW_CORE_API SpatialEntity<2>;
+template class IVW_CORE_API SpatialEntity<3>;
+ 
+ 
+} // namespace

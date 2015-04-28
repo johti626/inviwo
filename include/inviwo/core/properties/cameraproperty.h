@@ -55,7 +55,7 @@ public:
                    vec3 center = vec3(0.0f),
                    vec3 lookUp = vec3(0.0f, 1.0f, 0.0f),
                    Inport* inport = nullptr,
-                   InvalidationLevel=INVALID_OUTPUT,
+                   InvalidationLevel=INVALID_RESOURCES,
                    PropertySemantics semantics = PropertySemantics::Default);
     
     CameraProperty(const CameraProperty& rhs);
@@ -108,8 +108,8 @@ public:
 
     // Local camera invalidation
     // Use lock and unlock to set several camera properties without casing evaluation,
-    // then call invalidate().
-    void invalidate();
+    // then call invalidateCamera().
+    void invalidateCamera();
     void lockInvalidation();
     void unlockInvalidation();
     bool isInvalidationLocked();

@@ -27,39 +27,40 @@
  *
  *********************************************************************************/
 
-#ifndef IVW_PROPERTYFACTORY_H
-#define IVW_PROPERTYFACTORY_H
+#ifndef IVW_OPENGLQTMENU_H
+#define IVW_OPENGLQTMENU_H
 
-#include <inviwo/core/common/inviwocoredefine.h>
-#include <inviwo/core/properties/property.h>
-#include <inviwo/core/util/factory.h>
-#include <inviwo/core/util/singleton.h>
-#include <inviwo/core/properties/propertyfactoryobject.h>
+#include <modules/openglqt/openglqtmoduledefine.h>
+#include <inviwo/core/common/inviwo.h>
+#include <inviwo/core/network/processornetworkobserver.h>
+
+#include <QObject>
+#include <QMenu>
+#include <QSignalMapper>
 
 namespace inviwo {
 
-class IVW_CORE_API PropertyFactory : public Factory, public Singleton<PropertyFactory> {
+class IVW_MODULE_OPENGLQT_API OpenGLQtMenu : public QObject, public ProcessorNetworkObserver {
+    Q_OBJECT
 public:
-    PropertyFactory();
-    ~PropertyFactory();
+    OpenGLQtMenu();
+    virtual ~OpenGLQtMenu() {}
 
-    void registeryObject(PropertyFactoryObject *property);
+    virtual void onProcessorNetworkDidAddProcessor(Processor* processor) override;
+    virtual void onProcessorNetworkDidRemoveProcessor(Processor* processor) override;
 
-    virtual IvwSerializable *create(const std::string &className) const;
-
-    virtual Property *getProperty(const std::string &className, const std::string &identifier,
-                                  const std::string &displayName) const;
-
-    virtual bool isValidType(const std::string &className) const;
-
-    std::vector<std::string> getRegistedPropertyClassNames() const;
-
-    typedef std::map<std::string, PropertyFactoryObject *> PropertyClassMap;
+public slots:
+    void shaderMenuCallback(QObject* obj);
+    void shadersReload();
 
 private:
-    mutable PropertyClassMap propertyClassMap_;
+    void updateShadersMenu();
+
+    QMenu* shadersItem_;
+    std::map<unsigned int, QMenu*> shadersItems_;
+    QSignalMapper* shaderMapper_;
 };
 
 }  // namespace
 
-#endif  // IVW_PROPERTYFACTORY_H
+#endif  // IVW_OPENGLQTMENU_H

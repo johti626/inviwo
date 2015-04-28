@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2012-2015 Inviwo Foundation
+ * Copyright (c) 2013-2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,42 +24,56 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
+ * 
  *********************************************************************************/
 
-#ifndef IVW_PROPERTYFACTORY_H
-#define IVW_PROPERTYFACTORY_H
+#ifndef IVW_PLANEPROPERTY_H
+#define IVW_PLANEPROPERTY_H
 
 #include <inviwo/core/common/inviwocoredefine.h>
-#include <inviwo/core/properties/property.h>
-#include <inviwo/core/util/factory.h>
-#include <inviwo/core/util/singleton.h>
-#include <inviwo/core/properties/propertyfactoryobject.h>
+#include <inviwo/core/common/inviwo.h>
+#include <inviwo/core/properties/ordinalproperty.h>
+#include <inviwo/core/properties/boolproperty.h>
+#include <inviwo/core/properties/templateproperty.h>
+#include <inviwo/core/properties/compositeproperty.h>
+#include <inviwo/core/properties/baseoptionproperty.h>
 
 namespace inviwo {
 
-class IVW_CORE_API PropertyFactory : public Factory, public Singleton<PropertyFactory> {
+/**
+ * \class PlaneProperty
+ *
+ * \brief A Property that represents a plane
+ *
+ * A Plane is represented by a plane normal and a point that is in the plane.
+ * The property also holds a color for drawing the plane. A bool for turning it on an and off.
+ * And a mode for various ways of rendering the plane.
+ */
+class IVW_CORE_API PlaneProperty : public CompositeProperty { 
 public:
-    PropertyFactory();
-    ~PropertyFactory();
+    InviwoPropertyInfo();
 
-    void registeryObject(PropertyFactoryObject *property);
+    PlaneProperty(std::string identifier, std::string displayName,
+                            InvalidationLevel invalidationLevel = INVALID_RESOURCES,
+                            PropertySemantics semantics = PropertySemantics::Default);
 
-    virtual IvwSerializable *create(const std::string &className) const;
+    PlaneProperty(const PlaneProperty& rhs);
+    PlaneProperty& operator=(const PlaneProperty& that);
+    virtual PlaneProperty* clone() const;
+    virtual ~PlaneProperty();
+    virtual std::string getClassIdentifierForWidget() const;
 
-    virtual Property *getProperty(const std::string &className, const std::string &identifier,
-                                  const std::string &displayName) const;
-
-    virtual bool isValidType(const std::string &className) const;
-
-    std::vector<std::string> getRegistedPropertyClassNames() const;
-
-    typedef std::map<std::string, PropertyFactoryObject *> PropertyClassMap;
+    BoolProperty enable_;
+    OptionPropertyInt mode_;
+    FloatVec3Property position_;
+    FloatVec3Property normal_;
+    FloatVec4Property color_;
 
 private:
-    mutable PropertyClassMap propertyClassMap_;
+    void onModeChange();
 };
 
-}  // namespace
+} // namespace
 
-#endif  // IVW_PROPERTYFACTORY_H
+#endif // IVW_PLANEPROPERTY_H
+

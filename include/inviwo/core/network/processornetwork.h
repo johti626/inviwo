@@ -295,7 +295,7 @@ public:
     inline bool islocked() const { return (locked_!=0); }
 
     virtual void serialize(IvwSerializer& s) const;
-    virtual void deserialize(IvwDeserializer& d) throw (Exception);
+    virtual void deserialize(IvwDeserializer& d);
 
     bool isDeserializing()const;
     void updatePropertyLinkCaches();
@@ -323,6 +323,9 @@ private:
             messages.push_back(error.getMessage());
         }
         void handleLinkError(SerializationException& error) {
+            messages.push_back(error.getMessage());
+        }
+        void handlePortError(SerializationException& error) {
             messages.push_back(error.getMessage());
         }
   

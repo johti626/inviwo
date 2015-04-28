@@ -671,7 +671,7 @@ void ProcessorNetwork::serialize(IvwSerializer& s) const {
     s.serialize("InviwoSetup", info);
 }
 
-void ProcessorNetwork::deserialize(IvwDeserializer& d) throw(Exception) {
+void ProcessorNetwork::deserialize(IvwDeserializer& d) {
     // This will set deserializing_ to true while keepTrueWillAlive is in scope
     // and set it to false no matter how we leave the scope
     KeepTrueWhileInScope keepTrueWillAlive(&deserializing_);
@@ -695,6 +695,11 @@ void ProcessorNetwork::deserialize(IvwDeserializer& d) throw(Exception) {
     try {
         DeserializationErrorHandle<ErrorHandle>
             processor_err(d, "Processor", &errorHandle, &ErrorHandle::handleProcessorError);
+        DeserializationErrorHandle<ErrorHandle>
+            inport_err(d, "InPort", &errorHandle, &ErrorHandle::handlePortError);
+        DeserializationErrorHandle<ErrorHandle>
+            outport_err(d, "OutPort", &errorHandle, &ErrorHandle::handlePortError);
+
         ProcessorVector processors;
         d.deserialize("Processors", processors, "Processor");
         for (size_t i = 0; i < processors.size(); ++i) {

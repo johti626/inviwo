@@ -30,8 +30,11 @@
 #ifndef IVW_SERIALIZE_BASE_H
 #define IVW_SERIALIZE_BASE_H
 
-
+#pragma warning(push)
+#pragma warning(disable: 4263)
 #include <inviwo/core/io/serialization/ticpp.h>
+#pragma warning(pop)
+
 #include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/io/serialization/ivwserializeconstants.h>
 #include <inviwo/core/io/serialization/serializationexception.h>
@@ -50,6 +53,7 @@ namespace inviwo {
 
 template <typename T>
 struct ElementIdentifier {
+    virtual ~ElementIdentifier() = default;
     virtual void setKey(TxElement*) = 0;
     virtual bool operator()(const T* elem) const = 0;
 };
@@ -69,6 +73,32 @@ private:
     std::string key_;
     std::string identifier_;
 };
+
+namespace util {
+
+template <class T>
+class has_class_version {
+    template <class U, class = typename std::enable_if<
+                           !std::is_member_pointer<decltype(&U::CLASS_VERSION)>::value>::type>
+    static std::true_type check(int);
+    template <class>
+    static std::false_type check(...);
+
+public:
+    static const bool value = decltype(check<T>(0))::value;
+};
+
+template <typename T,
+          typename std::enable_if<util::has_class_version<T>::value, std::size_t>::type = 0>
+std::size_t class_version() {
+    return T::CLASS_VERSION;
+}
+template <typename T,
+          typename std::enable_if<!util::has_class_version<T>::value, std::size_t>::type = 0>
+std::size_t class_version() {
+    return 0;
+}
+}
 
 class IvwSerializable;
 
