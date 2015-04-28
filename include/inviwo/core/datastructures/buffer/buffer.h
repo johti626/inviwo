@@ -64,6 +64,9 @@ public:
     size_t getSizeInBytes();
     BufferType getBufferType() const { return type_; }
 
+    static uvec3 COLOR_CODE;
+    static const std::string CLASS_IDENTIFIER;
+
 protected:
     virtual DataRepresentation* createDefaultRepresentation();
 

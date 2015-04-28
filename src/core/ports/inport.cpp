@@ -24,76 +24,63 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #include <inviwo/core/ports/inport.h>
 #include <inviwo/core/ports/outport.h>
 #include <inviwo/core/processors/processor.h>
+#include <inviwo/core/util/stdextensions.h>
 
 namespace inviwo {
 
-Inport::Inport(std::string identifier)
-    : Port(identifier), changed_(false)
-{}
+Inport::Inport(std::string identifier) : Port(identifier), changed_(false) {}
 
 Inport::~Inport() {}
 
-bool Inport::isConnected() const { 
-    return false; 
-}
-
-bool Inport::isReady() const { 
-    return isConnected() && getConnectedOutport()->isValid(); 
+bool Inport::isReady() const {
+    return isConnected() && getConnectedOutport()->getInvalidationLevel() == VALID;
 }
 
 void Inport::invalidate(InvalidationLevel invalidationLevel) {
-    Port::invalidate(invalidationLevel);
+    if (processor_) processor_->invalidate(invalidationLevel);
 }
 
-std::vector<Processor*> Inport::getPredecessors() {
-    std::vector<Processor*> predecessorsProcessors;
-    getPredecessorsUsingPortType<Inport>(predecessorsProcessors);
-    return predecessorsProcessors;
+std::vector<Processor*> Inport::getPredecessors() const {
+    std::vector<Processor*> predecessors;
+    getPredecessors(predecessors);
+    return predecessors;
 }
 
-template <typename T>
-void Inport::getPredecessorsUsingPortType(std::vector<Processor*>& predecessorsProcessors) {
-    if (isConnected()) {
-        std::vector<Outport*> connectedOutports = getConnectedOutports();
-        std::vector<Outport*>::const_iterator it = connectedOutports.begin();
-        std::vector<Outport*>::const_iterator endIt = connectedOutports.end();
+void Inport::getPredecessors(std::vector<Processor*>& predecessors) const {
+    for (auto outport : getConnectedOutports()) {
+        Processor* p = outport->getProcessor();
 
-        for (; it != endIt; ++it) {
-            Processor* predecessorsProcessor = (*it)->getProcessor();
-
-            if (std::find(predecessorsProcessors.begin(), predecessorsProcessors.end(), predecessorsProcessor)== predecessorsProcessors.end())
-                predecessorsProcessors.push_back(predecessorsProcessor);
-
-            std::vector<Inport*> inports = predecessorsProcessor->getInports();
-
-            for (auto& inport : inports) {
-                T* inPort = dynamic_cast<T*>(inport);
-
-                if (inPort)
-                    inPort->template getPredecessorsUsingPortType<T>(predecessorsProcessors);
+        if (std::find(predecessors.begin(), predecessors.end(), p) == predecessors.end()) {
+            predecessors.push_back(p);
+            for (auto inport : p->getInports()) {
+                inport->getPredecessors(predecessors);
             }
         }
     }
 }
 
-void Inport::setChanged(bool changed) { 
-    changed_ = changed; 
+void Inport::setChanged(bool changed) { changed_ = changed; }
+
+void Inport::removeOnChange(const BaseCallBack* callback) {
+    onChangeCallback_.remove(callback);
 }
 
-void Inport::callOnChangeIfChanged() {
-    if (isChanged()){
+void Inport::callOnChangeIfChanged() const {
+    if (isChanged()) {
         onChangeCallback_.invokeAll();
     }
 }
 
-bool Inport::isChanged(){
-    return changed_;
+const BaseCallBack* Inport::onChange(std::function<void()> lambda) const {
+    return onChangeCallback_.addLambdaCallback(lambda);
 }
 
-} // namespace
+bool Inport::isChanged() const { return changed_; }
+
+}  // namespace

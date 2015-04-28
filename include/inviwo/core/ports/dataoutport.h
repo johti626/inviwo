@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #ifndef IVW_DATAOUTPORT_H
@@ -35,20 +35,26 @@
 #include <inviwo/core/datastructures/data.h>
 #include <inviwo/core/datastructures/datasequence.h>
 #include <inviwo/core/ports/outport.h>
+#include <inviwo/core/util/introspection.h>
 
 namespace inviwo {
 
-template< typename T, typename U> class MultiDataInport;
+template <typename T, typename U>
+class MultiDataInport;
 
-template< typename T> class DataInport;
+template <typename T>
+class DataInport;
 
-template<typename T>
+template <typename T>
 class DataOutport : public Outport {
-
     friend class MultiDataInport<T, DataInport<T> >;
+
 public:
-    DataOutport(std::string identifier, InvalidationLevel invalidationLevel=INVALID_OUTPUT);
+    DataOutport(std::string identifier);
     virtual ~DataOutport();
+
+    virtual uvec3 getColorCode() const override;
+    virtual std::string getClassIdentifier() const override;
 
     virtual T* getData();
     virtual DataSequence<T>* getDataSequence();
@@ -76,16 +82,20 @@ protected:
 };
 
 template <typename T>
-DataOutport<T>::DataOutport(std::string identifier, InvalidationLevel invalidationLevel)
-    : Outport(identifier, invalidationLevel),
-    data_(nullptr), ownsData_(false), isSequence_(false)
-{
+std::string inviwo::DataOutport<T>::getClassIdentifier() const  {
+    return port_traits<T>::class_identifier() + "Outport";
 }
 
 template <typename T>
+uvec3 inviwo::DataOutport<T>::getColorCode() const { return port_traits<T>::color_code(); }
+
+template <typename T>
+DataOutport<T>::DataOutport(std::string identifier)
+    : Outport(identifier), data_(nullptr), ownsData_(false), isSequence_(false) {}
+
+template <typename T>
 DataOutport<T>::~DataOutport() {
-    if (ownsData_ && data_)
-        delete data_;
+    if (ownsData_ && data_) delete data_;
 }
 
 template <typename T>
@@ -94,8 +104,7 @@ T* DataOutport<T>::getData() {
         ivwAssert(ownsData_, "Port does not own data, so can not return writable data.");
     }
 
-    if(isSequence_)
-        return static_cast<DataSequence<T>*>(data_)->getCurrent();
+    if (isSequence_) return static_cast<DataSequence<T>*>(data_)->getCurrent();
 
     return data_;
 }
@@ -106,15 +115,14 @@ DataSequence<T>* DataOutport<T>::getDataSequence() {
         ivwAssert(ownsData_, "Port does not own data, so can not return writable data.");
     }
 
-    if(isSequence_)
-        return static_cast<DataSequence<T>*>(data_);
+    if (isSequence_) return static_cast<DataSequence<T>*>(data_);
 
     return nullptr;
 }
 
 template <typename T>
 const T* DataOutport<T>::getConstData() const {
-    if(isSequence_)
+    if (isSequence_)
         return const_cast<const T*>(static_cast<DataSequence<T>*>(data_)->getCurrent());
 
     return const_cast<const T*>(data_);
@@ -122,7 +130,7 @@ const T* DataOutport<T>::getConstData() const {
 
 template <typename T>
 const DataSequence<T>* DataOutport<T>::getConstDataSequence() const {
-    if(isSequence_)
+    if (isSequence_)
         return const_cast<const DataSequence<T>*>(static_cast<DataSequence<T>*>(data_));
 
     return nullptr;
@@ -131,13 +139,13 @@ const DataSequence<T>* DataOutport<T>::getConstDataSequence() const {
 template <typename T>
 void DataOutport<T>::setData(T* data, bool ownsData) {
     if (ownsData_ && data_ && data_ != data) {
-        delete data_; //Delete old data
+        delete data_;  // Delete old data
     }
 
     isSequence_ = (dynamic_cast<DataSequence<T>*>(data) != nullptr);
     ownsData_ = ownsData;
-    
-    data_ = data; //Add reference to new data
+
+    data_ = data;  // Add reference to new data
 
     dataChanged();
 }
@@ -145,13 +153,13 @@ void DataOutport<T>::setData(T* data, bool ownsData) {
 template <typename T>
 void DataOutport<T>::setConstData(const T* data) {
     if (ownsData_ && data_ && data_ != data) {
-        delete data_; //Delete old data
+        delete data_;  // Delete old data
     }
 
     ownsData_ = false;
     isSequence_ = (dynamic_cast<const DataSequence<T>*>(data) != nullptr);
-   
-    data_ = const_cast<T*>(data); //Add reference to new data
+
+    data_ = const_cast<T*>(data);  // Add reference to new data
 
     dataChanged();
 }
@@ -187,17 +195,17 @@ std::string DataOutport<T>::getContentInfo() const {
         const DataSequence<T>* seq = static_cast<const DataSequence<T>*>(data_);
         return seq->getDataInfo();
     } else if (hasData()) {
-        const BaseData* data = dynamic_cast<const BaseData*>(data_);
-        if (data) {
-            return data->getDataInfo();
+        std::string info = port_traits<T>::data_info(data_);
+        if (!info.empty()) {
+            return info;
         } else {
-            return "Not a BaseData Object";
+            return "No information available for: " + util::class_identifier<T>();
         }
     } else {
-        return getClassIdentifier() + " has no data.";
+        return "Port has no data";
     }
 }
 
-} // namespace
+}  // namespace
 
-#endif // IVW_DATAOUTPORT_H
+#endif  // IVW_DATAOUTPORT_H

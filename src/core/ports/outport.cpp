@@ -24,82 +24,80 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #include <inviwo/core/ports/outport.h>
-
 #include <inviwo/core/processors/processor.h>
 
 namespace inviwo {
 
-Outport::Outport(std::string identifier, InvalidationLevel invalidationLevel)
-    : Port(identifier), invalidationLevel_(invalidationLevel)
-{}
+Outport::Outport(std::string identifier) : Port(identifier), invalidationLevel_(INVALID_OUTPUT) {}
 
 Outport::~Outport() {}
 
-bool Outport::isConnected() const {
-    return !(connectedInports_.empty());
-}
+bool Outport::isConnected() const { return !(connectedInports_.empty()); }
+
+bool Outport::isReady() const { return isConnected(); }
 
 bool Outport::isConnectedTo(Inport* port) const {
-    return !(std::find(connectedInports_.begin(),connectedInports_.end(),port)==connectedInports_.end());
+    return !(std::find(connectedInports_.begin(), connectedInports_.end(), port) ==
+             connectedInports_.end());
+}
+
+std::vector<Inport*> Outport::getConnectedInports() const {
+    return connectedInports_;
 }
 
 void Outport::invalidate(InvalidationLevel invalidationLevel) {
     invalidationLevel_ = invalidationLevel;
-    invalidateConnectedInports(invalidationLevel_);
+    for (auto port : connectedInports_) port->invalidate(invalidationLevel);
 }
 
-void Outport::invalidateConnectedInports(InvalidationLevel invalidationLevel){
-    for (auto& elem : connectedInports_) elem->invalidate(invalidationLevel);
+inviwo::InvalidationLevel Outport::getInvalidationLevel() const {
+    return invalidationLevel_;
 }
 
-void Outport::setInvalidationLevel(InvalidationLevel invalidationLevel){
-    invalidationLevel_ = invalidationLevel;
-    for (auto& elem : connectedInports_) elem->setInvalidationLevel(invalidationLevel);
+void Outport::setValid() {
+    invalidationLevel_ = VALID;
+    for (auto port : connectedInports_) port->setValid();
 }
 
-template <typename T>
-void Outport::getSuccessorsUsingPortType(std::vector<Processor*>& successorProcessors) {
-    for (auto& elem : connectedInports_) {
-        Processor* decendantProcessor = elem->getProcessor();
+std::vector<Processor*> Outport::getDirectSuccessors() const {
+    std::vector<Processor*> successors;
+    getSuccessors(successors);
+    return successors;
+}
 
-        if (std::find(successorProcessors.begin(), successorProcessors.end(), decendantProcessor)== successorProcessors.end())
-            successorProcessors.push_back(elem->getProcessor());
+void Outport::getSuccessors(std::vector<Processor*>& successors) const {
+    for (auto inport : connectedInports_) {
+        Processor* p = inport->getProcessor();
 
-        std::vector<Outport*> outports = decendantProcessor->getOutports();
-
-        for (auto& outport : outports) {
-            T* outPort = dynamic_cast<T*>(outport);
-
-            if (outPort)
-                outPort->template getSuccessorsUsingPortType<T>(successorProcessors);
+        if (std::find(successors.begin(), successors.end(), p) == successors.end()) {
+            successors.push_back(p);
+            for (auto outport : p->getOutports()) {
+                outport->getSuccessors(successors);
+            }
         }
     }
 }
 
-std::vector<Processor*> Outport::getDirectSuccessors() {
-    std::vector<Processor*> successorProcessors;
-    getSuccessorsUsingPortType<Outport>(successorProcessors);
-    return successorProcessors;
-}
-
-//Is called exclusively by Inport, which means a connection has been made.
+// Is called exclusively by Inport, which means a connection has been made.
 void Outport::connectTo(Inport* inport) {
-    if (std::find(connectedInports_.begin(), connectedInports_.end(), inport) == connectedInports_.end()) {
+    if (std::find(connectedInports_.begin(), connectedInports_.end(), inport) ==
+        connectedInports_.end()) {
         connectedInports_.push_back(inport);
     }
 }
 
-//Is called exclusively by Inport, which means a connection has been removed.
+// Is called exclusively by Inport, which means a connection has been removed.
 void Outport::disconnectFrom(Inport* inport) {
-    if (std::find(connectedInports_.begin(), connectedInports_.end(), inport) != connectedInports_.end()) {
-        connectedInports_.erase(std::remove(connectedInports_.begin(), connectedInports_.end(), inport),
-                                connectedInports_.end());
+    if (std::find(connectedInports_.begin(), connectedInports_.end(), inport) !=
+        connectedInports_.end()) {
+        connectedInports_.erase(
+            std::remove(connectedInports_.begin(), connectedInports_.end(), inport),
+            connectedInports_.end());
     }
 }
 
-
-} // namespace
+}  // namespace

@@ -45,7 +45,7 @@ ProcessorCodeState(ImageSource, CODE_STATE_STABLE);
 
 ImageSource::ImageSource()
     : Processor()
-    , outport_("image.outport", DataVec4UINT8::get(), INVALID_OUTPUT, false)
+    , outport_("image.outport", DataVec4UINT8::get(), false)
     , imageFileName_("imageFileName", "Image file name", "", "image")
     , imageDimension_("imageDimension_", "Image Dimension", ivec2(0), ivec2(0), ivec2(10000),
                       ivec2(1), VALID, PropertySemantics("Text"))
@@ -95,7 +95,7 @@ void ImageSource::load() {
             imageDimension_.set(outLayer->getDimensions());
 
         } catch (DataReaderException const& e) {
-            LogError("Could not load data: " << imageFileName_.get() << ", " << e.getMessage());
+            util::log(e.getContext(), "Could not load data: " + imageFileName_.get() + ", " + e.getMessage(), LogLevel::Error);
             imageFileName_.set("");
         }
         delete reader;

@@ -43,25 +43,33 @@ class DataOutport;
 template<typename T>
 class DataInport : public SingleInport {
 public:
-    DataInport(std::string identifier, InvalidationLevel invalidationLevel=INVALID_OUTPUT);
+    DataInport(std::string identifier);
     virtual ~DataInport();
 
-    virtual bool canConnectTo(Port* port) const;
-    virtual void connectTo(Outport* port);
+    virtual uvec3 getColorCode() const override;
+    virtual std::string getClassIdentifier() const override;
+
+    virtual bool canConnectTo(Port* port) const override;
+    virtual void connectTo(Outport* port) override;
+    virtual bool isReady() const override;
 
     virtual const T* getData() const;
-
     bool hasData() const;
     virtual std::string getContentInfo() const;
-
-    virtual bool isReady() const { return SingleInport::isReady() && hasData(); }
 };
 
+template<typename T>
+std::string inviwo::DataInport<T>::getClassIdentifier() const  {
+    return port_traits<T>::class_identifier() + "Inport";
+}
 
 template <typename T>
-DataInport<T>::DataInport(std::string identifier, InvalidationLevel invalidationLevel)
-    : SingleInport(identifier, invalidationLevel) {
+DataInport<T>::DataInport(std::string identifier)
+    : SingleInport(identifier) {
 }
+
+template <typename T>
+uvec3 DataInport<T>::getColorCode() const { return port_traits<T>::color_code(); }
 
 template <typename T>
 DataInport<T>::~DataInport() {}
@@ -84,6 +92,8 @@ void DataInport<T>::connectTo(Outport* port) {
     else
         LogWarn("Trying to connect incompatible ports.");
 }
+template <typename T>
+bool DataInport<T>::isReady() const { return SingleInport::isReady() && hasData(); }
 
 template <typename T>
 const T* DataInport<T>::getData() const {
@@ -99,22 +109,22 @@ bool DataInport<T>::hasData() const {
     if (isConnected()) {
         // Safe to static cast since we are unable to connect other outport types.
         return static_cast< DataOutport<T>* >(connectedOutport_)->hasData();
-    } else
+    } else {
         return false;
+    }
 }
 
 template <typename T>
 std::string DataInport<T>::getContentInfo() const {
-    
     if (hasData()) {
-        const BaseData* data = dynamic_cast<const BaseData*>(getData());
-        if (data) {
-            return data->getDataInfo();
+        std::string info = port_traits<T>::data_info(getData());
+        if (!info.empty()) {
+            return info;
         } else {
-            return "Not a BaseData Object";
+            return "No information available for: " + util::class_identifier<T>();
         }
     } else {
-        return getClassIdentifier() + " has no data.";
+        return "Port has no data";
     }
 }
 

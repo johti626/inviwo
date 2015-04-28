@@ -43,7 +43,8 @@ ProcessorNetworkEvaluator::ProcessorNetworkEvaluator(ProcessorNetwork* processor
     : processorNetwork_(processorNetwork)
     , evaulationQueued_(false)
     , evaluationDisabled_(false)
-    , processorStatesDirty_(true) {
+    , processorStatesDirty_(true) 
+    , exceptionHandler_(StandardExceptionHandler()) {
 
     initializeNetwork();
     
@@ -69,9 +70,15 @@ void ProcessorNetworkEvaluator::initializeNetwork() {
     // initialize network
     std::vector<Processor*> processors = processorNetwork_->getProcessors();
 
-    for (size_t i=0; i<processors.size(); i++)
-        if (!processors[i]->isInitialized())
-            processors[i]->initialize();
+
+    for (size_t i=0; i<processors.size(); i++) {
+        try {
+            if (!processors[i]->isInitialized())
+                processors[i]->initialize();
+        } catch (Exception& e) {
+            exceptionHandler_(IvwContext);
+        }
+    }
 }
 
 void ProcessorNetworkEvaluator::saveSnapshotAllCanvases(std::string dir, std::string default_name, std::string ext) {
@@ -248,6 +255,10 @@ void ProcessorNetworkEvaluator::propagateInteractionEvent(Processor* processor,
     processorNetwork_->unlock();
 }
 
+void ProcessorNetworkEvaluator::setExceptionHandler(ExceptionHandler handler) {
+    exceptionHandler_ = handler;
+}
+
 bool ProcessorNetworkEvaluator::isPortConnectedToProcessor(Port* port, Processor* processor) {
     bool isConnected = false;
     std::vector<PortConnection*> portConnections = processorNetwork_->getConnections();
@@ -399,7 +410,7 @@ void ProcessorNetworkEvaluator::evaluate() {
                         inport->callOnChangeIfChanged();
                     }
                 } catch (Exception& e) {
-                    LogError(e.getMessage());
+                    exceptionHandler_(IvwContext);
                     processor->setValid();
                     continue;
                 }
@@ -412,7 +423,7 @@ void ProcessorNetworkEvaluator::evaluate() {
                     // do the actual processing
                     processor->process();
                 } catch (Exception& e) {
-                    LogError(e.getMessage());
+                    exceptionHandler_(IvwContext);
                 }
                 // set processor as valid
                 processor->setValid();

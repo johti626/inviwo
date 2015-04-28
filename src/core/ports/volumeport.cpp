@@ -30,23 +30,4 @@
 #include <inviwo/core/ports/volumeport.h>
 
 namespace inviwo {
-
-uvec3 VolumeInport::colorCode = uvec3(188, 101, 101);
-
-// Volume Inport
-VolumeInport::VolumeInport(std::string identifier, InvalidationLevel invalidationLevel)
-    : DataInport<Volume>(identifier, invalidationLevel) {}
-
-VolumeInport::~VolumeInport() {}
-
-uvec3 VolumeInport::getColorCode() const { return VolumeInport::colorCode; }
-
-// Volume Outport
-VolumeOutport::VolumeOutport(std::string identifier, InvalidationLevel invalidationLevel)
-    : DataOutport<Volume>(identifier, invalidationLevel) {}
-
-VolumeOutport::~VolumeOutport() {}
-
-uvec3 VolumeOutport::getColorCode() const { return VolumeInport::colorCode; }
-
 }  // namespace

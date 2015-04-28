@@ -28,33 +28,6 @@
  *********************************************************************************/
 
 #include <inviwo/core/ports/geometryport.h>
-#include <inviwo/core/datastructures/geometry/simplemesh.h>
 
 namespace inviwo {
-
-uvec3 GeometryInport::colorCode = uvec3(188, 188, 101);
-
-// Geometry Inport
-GeometryInport::GeometryInport(std::string identifier, InvalidationLevel invalidationLevel)
-    : DataInport<Geometry>(identifier, invalidationLevel) {}
-
-GeometryInport::~GeometryInport() {}
-
-uvec3 GeometryInport::getColorCode() const { return GeometryInport::colorCode; }
-
-GeometryMultiInport::GeometryMultiInport(std::string identifier)
-    : MultiDataInport<Geometry>(identifier) {}
-
-GeometryMultiInport::~GeometryMultiInport() {}
-
-uvec3 GeometryMultiInport::getColorCode() const { return GeometryInport::colorCode; }
-
-// Geometry Outport
-GeometryOutport::GeometryOutport(std::string identifier, InvalidationLevel invalidationLevel)
-    : DataOutport<Geometry>(identifier, invalidationLevel) {}
-
-GeometryOutport::~GeometryOutport() {}
-
-uvec3 GeometryOutport::getColorCode() const { return GeometryInport::colorCode; }
-
 }  // namespace

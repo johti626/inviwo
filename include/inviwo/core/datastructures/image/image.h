@@ -77,6 +77,8 @@ public:
 
     const DataFormatBase* getDataFormat() const;
 
+    static uvec3 COLOR_CODE;
+    static const std::string CLASS_IDENTIFIER;
 protected:
     std::vector<Layer*> colorLayers_;  //< owning pointer
     Layer* depthLayer_;                //< owning pointer

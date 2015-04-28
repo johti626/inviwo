@@ -554,10 +554,10 @@ void ProcessorNetwork::clear() {
     //Invalidate inports to alert processors that they should stop their calculations.
     // TODO Check if needed? solve in a nicer way... /Peter
     for (auto processor : processors) {
-        for (auto& inport : processor->getInports()) inport->invalidate(INVALID_OUTPUT);
+        for (auto inport : processor->getInports()) inport->invalidate(INVALID_OUTPUT);
     }
 
-    for (auto& processor : processors) removeAndDeleteProcessor(processor);
+    for (auto processor : processors) removeAndDeleteProcessor(processor);
 
     locked_ = 0; // make sure we remove all locks.
     unlock();
@@ -674,14 +674,15 @@ void ProcessorNetwork::serialize(IvwSerializer& s) const {
 void ProcessorNetwork::deserialize(IvwDeserializer& d) {
     // This will set deserializing_ to true while keepTrueWillAlive is in scope
     // and set it to false no matter how we leave the scope
-    KeepTrueWhileInScope keepTrueWillAlive(&deserializing_);
+    util::KeepTrueWhileInScope keepTrueWillAlive(&deserializing_);
 
     int version = 0;
     d.deserialize("ProcessorNetworkVersion", version);
 
     if (version != processorNetworkVersion_) {
-        LogNetworkWarn("Loading old workspace (" << d.getFileName()<< ") version: "
-                << version << ". Updating to version: " << processorNetworkVersion_);
+        LogNetworkWarn("Loading old workspace ("
+                       << d.getFileName() << ") version: " << version
+                       << ". Updating to version: " << processorNetworkVersion_);
         NetworkConverter nv(version);
         d.convertVersion(&nv);
     }
@@ -690,15 +691,15 @@ void ProcessorNetwork::deserialize(IvwDeserializer& d) {
     d.deserialize("InviwoSetup", info);
 
     ErrorHandle errorHandle(info);
-    
+
     // Processors
     try {
-        DeserializationErrorHandle<ErrorHandle>
-            processor_err(d, "Processor", &errorHandle, &ErrorHandle::handleProcessorError);
-        DeserializationErrorHandle<ErrorHandle>
-            inport_err(d, "InPort", &errorHandle, &ErrorHandle::handlePortError);
-        DeserializationErrorHandle<ErrorHandle>
-            outport_err(d, "OutPort", &errorHandle, &ErrorHandle::handlePortError);
+        DeserializationErrorHandle<ErrorHandle> processor_err(d, "Processor", &errorHandle,
+                                                              &ErrorHandle::handleProcessorError);
+        DeserializationErrorHandle<ErrorHandle> inport_err(d, "InPort", &errorHandle,
+                                                           &ErrorHandle::handlePortError);
+        DeserializationErrorHandle<ErrorHandle> outport_err(d, "OutPort", &errorHandle,
+                                                            &ErrorHandle::handlePortError);
 
         ProcessorVector processors;
         d.deserialize("Processors", processors, "Processor");
@@ -711,17 +712,18 @@ void ProcessorNetwork::deserialize(IvwDeserializer& d) {
         }
     } catch (const SerializationException& exception) {
         clear();
-        throw AbortException("DeSerialization exception " + exception.getMessage());
+        throw AbortException("DeSerialization exception " + exception.getMessage(),
+                             exception.getContext());
     } catch (...) {
         clear();
-        throw AbortException("Unknown Exception.");
+        throw AbortException("Unknown Exception.", IvwContext);
     }
 
     // Connections
     try {
         std::vector<PortConnection*> portConnections;
-        DeserializationErrorHandle<ErrorHandle>
-            connection_err(d, "Connection", &errorHandle, &ErrorHandle::handleConnectionError);
+        DeserializationErrorHandle<ErrorHandle> connection_err(d, "Connection", &errorHandle,
+                                                               &ErrorHandle::handleConnectionError);
         d.deserialize("Connections", portConnections, "Connection");
 
         for (size_t i = 0; i < portConnections.size(); i++) {
@@ -739,17 +741,17 @@ void ProcessorNetwork::deserialize(IvwDeserializer& d) {
             }
         }
     } catch (const SerializationException& exception) {
-        throw IgnoreException("DeSerialization Exception " + exception.getMessage());
+        throw IgnoreException("DeSerialization Exception " + exception.getMessage(), exception.getContext());
     } catch (...) {
         clear();
-        throw AbortException("Unknown Exception.");
+        throw AbortException("Unknown Exception.", IvwContext);
     }
 
     // Links
     try {
         std::vector<PropertyLink*> propertyLinks;
-        DeserializationErrorHandle<ErrorHandle>
-            connection_err(d, "PropertyLink", &errorHandle, &ErrorHandle::handleLinkError);
+        DeserializationErrorHandle<ErrorHandle> connection_err(d, "PropertyLink", &errorHandle,
+                                                               &ErrorHandle::handleLinkError);
         d.deserialize("PropertyLinks", propertyLinks, "PropertyLink");
 
         for (size_t j = 0; j < propertyLinks.size(); j++) {
@@ -768,17 +770,16 @@ void ProcessorNetwork::deserialize(IvwDeserializer& d) {
             }
         }
 
-    if (!errorHandle.messages.empty()) {
-        LogNetworkWarn("There were errors while loading workspace: " + d.getFileName() + "\n" +
-                joinString(errorHandle.messages, "\n"));
-    }
-
+        if (!errorHandle.messages.empty()) {
+            LogNetworkWarn("There were errors while loading workspace: " + d.getFileName() + "\n" +
+                           joinString(errorHandle.messages, "\n"));
+        }
 
     } catch (const SerializationException& exception) {
-        throw IgnoreException("DeSerialization Exception " + exception.getMessage());
+        throw IgnoreException("DeSerialization Exception " + exception.getMessage(), exception.getContext());
     } catch (...) {
         clear();
-        throw AbortException("Unknown Exception.");
+        throw AbortException("Unknown Exception.", IvwContext);
     }
 
     notifyObserversProcessorNetworkChanged();

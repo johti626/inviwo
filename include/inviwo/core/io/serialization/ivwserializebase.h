@@ -74,32 +74,6 @@ private:
     std::string identifier_;
 };
 
-namespace util {
-
-template <class T>
-class has_class_version {
-    template <class U, class = typename std::enable_if<
-                           !std::is_member_pointer<decltype(&U::CLASS_VERSION)>::value>::type>
-    static std::true_type check(int);
-    template <class>
-    static std::false_type check(...);
-
-public:
-    static const bool value = decltype(check<T>(0))::value;
-};
-
-template <typename T,
-          typename std::enable_if<util::has_class_version<T>::value, std::size_t>::type = 0>
-std::size_t class_version() {
-    return T::CLASS_VERSION;
-}
-template <typename T,
-          typename std::enable_if<!util::has_class_version<T>::value, std::size_t>::type = 0>
-std::size_t class_version() {
-    return 0;
-}
-}
-
 class IvwSerializable;
 
 class IVW_CORE_API IvwSerializeBase {
@@ -278,10 +252,27 @@ T* IvwSerializeBase::getRegisteredType(const std::string& className) {
     return data;
 }
 
-template <typename T>
-inline T* IvwSerializeBase::getNonRegisteredType() {
+template <typename T, typename std::enable_if<
+                          !std::is_abstract<T>::value && std::is_default_constructible<T>::value,
+                          int>::type = 0>
+T* defaultConstructType() {
     return new T();
+};
+
+template <typename T, typename std::enable_if<
+                          std::is_abstract<T>::value || !std::is_default_constructible<T>::value,
+                          int>::type = 0>
+T* defaultConstructType() {
+    return nullptr;
+};
+
+template <typename T>
+T* IvwSerializeBase::getNonRegisteredType() {
+    return defaultConstructType<T>();
 }
+
+
+
 
 } //namespace
 #endif

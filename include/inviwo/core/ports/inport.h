@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #ifndef IVW_INPORT_H
@@ -38,6 +38,8 @@
 namespace inviwo {
 
 class Outport;
+class ProcessorNetwork;
+class MultiInport;
 
 /**
  * \class Inport
@@ -45,54 +47,77 @@ class Outport;
  * The approved connection can be determined by the canConnectTo function.
  */
 class IVW_CORE_API Inport : public Port {
-
 public:
+    friend class Outport;
+    friend class ProcessorNetwork;
+    friend class MultiInport;
+
     Inport(std::string identifier = "");
     virtual ~Inport();
 
-    virtual bool isConnected() const;
-    virtual bool isReady() const;
+    virtual bool isConnected() const override = 0;
+    virtual bool isReady() const override;
+    virtual bool isChanged() const;
 
-    virtual void invalidate(InvalidationLevel invalidationLevel);
-    virtual void setInvalidationLevel(InvalidationLevel invalidationLevel) {};
+    // Called from the processor network to create connections.
+    virtual bool canConnectTo(Port* port) const = 0;
+    virtual void connectTo(Outport* outport) = 0;
+    virtual void disconnectFrom(Outport* outport) = 0;
+    
+    virtual bool isConnectedTo(Outport* outport) const = 0;
+    virtual Outport* getConnectedOutport() const = 0;
+    virtual std::vector<Outport*> getConnectedOutports() const = 0;
+    std::vector<Processor*> getPredecessors() const;
 
-    virtual bool canConnectTo(Port* port) const { return false; }
-    virtual void connectTo(Outport* outport) {};
-    virtual void disconnectFrom(Outport* outport) {};
-
-    virtual bool isConnectedTo(Outport* outport) const { return false; }
-
-    virtual Outport* getConnectedOutport() const { return nullptr; }
-    virtual std::vector<Outport*> getConnectedOutports() const { return std::vector<Outport*>(); }
-
-    std::vector<Processor*> getPredecessors();
-
-    virtual std::string getClassIdentifier() const {return "org.inviwo.Inport";}
-    virtual std::string getContentInfo() const {return "";}
-
+    /**
+     * The on change call back is invoked before Processor::process after a port has been connected,
+     * disconnected, or has changed its validation level. Note it is only called if process is also
+     * going to be called.
+     */
     template <typename T>
-    void onChange(T* o, void (T::*m)()) const {
-        onChangeCallback_.addMemberFunction(o,m);
-    }
-
+    const BaseCallBack* onChange(T* o, void (T::*m)()) const;
+    const BaseCallBack* onChange(std::function<void()> lambda) const;
+    
+    void removeOnChange(const BaseCallBack* callback);
     template <typename T>
-    void removeOnChange(T* o) const {
-        onChangeCallback_.removeMemberFunction(o);
-    }
+    void removeOnChange(T* o) const;
 
-    void callOnChangeIfChanged();
-    virtual bool isChanged();
+    // Called by the processor network.
+    void callOnChangeIfChanged() const;
+
+    // Usually called with true by Processor::setValid after the Processor::process
     virtual void setChanged(bool changed = true);
 
 protected:
-    template <typename T>
-    void getPredecessorsUsingPortType(std::vector<Processor*>&);
+    /**
+     *	Called by Outport::invalidate on its connected inports, which is call by 
+     *	Processor::invalidate. Will by default invalidate its processor. From above in the network.
+     */
+    virtual void invalidate(InvalidationLevel invalidationLevel);
+    /**
+     *	Called by Outport::setValid, which is call by Processor::setValid, which is called after 
+     *	Processor:process. From above in the network.
+     */
+    virtual void setValid() = 0;
+
+    // recursive implementation of std::vector<Processor*> Inport::getPredecessors() const
+    void getPredecessors(std::vector<Processor*>&) const;
 
     mutable CallBackList onChangeCallback_;
     bool changed_;
-
 };
 
-} // namespace
+template <typename T>
+const BaseCallBack* Inport::onChange(T* o, void (T::*m)()) const {
+    return onChangeCallback_.addMemberFunction(o, m);
+}
 
-#endif // IVW_INPORT_H
+template <typename T>
+void Inport::removeOnChange(T* o) const {
+    onChangeCallback_.removeMemberFunction(o);
+}
+
+
+}  // namespace
+
+#endif  // IVW_INPORT_H

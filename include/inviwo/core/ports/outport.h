@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #ifndef IVW_OUTPORT_H
@@ -34,59 +34,61 @@
 #include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/ports/port.h>
 
+#include <inviwo/core/processors/processor.h>
+
 namespace inviwo {
 
+class Inport;
 class SingleInport;
 class MultiInport;
-class Inport;
 
 /**
  * \class Outport
  *
- * \brief The Outport can be connected to an arbitary number of Inports.
+ * \brief The Outport can be connected to an arbitrary number of Inports.
  */
 class IVW_CORE_API Outport : public Port {
-
+    friend class Processor;
     friend class SingleInport;
     friend class MultiInport;
     friend class ImageInport;
+
 public:
-    Outport(std::string identifier = "",
-            InvalidationLevel invalidationLevel=INVALID_OUTPUT);
+    Outport(std::string identifier = "");
     virtual ~Outport();
 
-    virtual bool isConnected() const;
-    bool isConnectedTo(Inport* port) const;
+    virtual bool isConnected() const override;
+    virtual bool isReady() const override;
 
-    virtual bool isReady() const { return isConnected(); }
-
-    bool isValid() { return (getInvalidationLevel() == VALID); }
-
-    std::vector<Inport*> getConnectedInports() const { return connectedInports_; }
-
+    virtual InvalidationLevel getInvalidationLevel() const;
+    /**
+     *	Called by Processor::invalidate, will invalidate its connected inports.
+     */
     virtual void invalidate(InvalidationLevel invalidationLevel);
-    void invalidateConnectedInports(InvalidationLevel invalidationLevel);
 
-    virtual InvalidationLevel getInvalidationLevel() const { return invalidationLevel_; }
-    virtual void setInvalidationLevel(InvalidationLevel invalidationLevel);
-
-    std::vector<Processor*> getDirectSuccessors();
-
-    virtual std::string getClassIdentifier() const {return "org.inviwo.Outport";}
-    virtual std::string getContentInfo() const {return "";}
+    bool isConnectedTo(Inport* port) const;
+    
+    std::vector<Inport*> getConnectedInports() const;
+    std::vector<Processor*> getDirectSuccessors() const;
 
 protected:
+     /**
+     *	Called by Processor::setValid, will call setValid its connected inports.
+     */
+    virtual void setValid();
+
     void connectTo(Inport* port);
     void disconnectFrom(Inport* port);
 
-    template <typename T>
-    void getSuccessorsUsingPortType(std::vector<Processor*>&);
+    // recursive implementation of std::vector<Processor*> getDirectSuccessors() const;
+    void getSuccessors(std::vector<Processor*>&) const;
 
     InvalidationLevel invalidationLevel_;
 private:
     std::vector<Inport*> connectedInports_;
 };
 
-} // namespace
 
-#endif // IVW_OUTPORT_H
+}  // namespace
+
+#endif  // IVW_OUTPORT_H

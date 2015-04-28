@@ -33,11 +33,26 @@
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/properties/propertyowner.h>
+#include <inviwo/core/util/introspection.h>
 
 namespace inviwo {
 
 class Processor;
 class MultiInport;
+
+
+/**
+ *	Traits class to make ports and data less intertwined. Port traits will by default ask
+ *	it's data for a class identifier, a color code, and data info. You can specialize port traits for
+ *	type that does not have those methods, and where you can't add them easily. Note that if a
+ *	method is missing we will still compile and fail gracefully. 
+ */
+template <typename T>
+struct port_traits {
+    static std::string class_identifier() { return util::class_identifier<T>(); }
+    static uvec3 color_code() { return util::color_code<T>(); }
+    static std::string data_info(const T* data) { return util::data_info<T>(data); }
+};
 
 /**
  * \class Port
@@ -61,42 +76,30 @@ public:
     Port(std::string identifier = "");
     virtual ~Port();
 
+    std::string getIdentifier() const;
+    Processor* getProcessor() const;
+
     /**
      * Returns the RGB color code used to colorize all ports of this type. This color code is for
      * instance used in the NetworkEditor. To distinguish different port types through their color,
      * this method should be overloaded in derived classes.
      */
-    virtual uvec3 getColorCode() const;
-    /**
-     * All instances have the same color.
-     * Derived should declare its own and return DerivedClass::colorCode in getColorCode
-     */
-    static uvec3 colorCode;
-
-    Processor* getProcessor() const;
-    std::string getIdentifier() const;
-
+    virtual uvec3 getColorCode() const  = 0;
     virtual std::string getClassIdentifier() const = 0;
     virtual std::string getContentInfo() const = 0;
-
+    
     virtual bool isConnected() const = 0;
     virtual bool isReady() const = 0;
-
-    virtual void invalidate(InvalidationLevel invalidationLevel);
-    virtual InvalidationLevel getInvalidationLevel() const { return INVALID_OUTPUT; }
-    virtual void setInvalidationLevel(InvalidationLevel invalidationLevel) = 0;
 
     virtual void serialize(IvwSerializer& s) const;
     virtual void deserialize(IvwDeserializer& d);
 
 protected:
-    std::string identifier_;
-
     void setIdentifier(const std::string& name);
     void setProcessor(Processor* processor);
 
-private:
-    Processor* processor_;
+    std::string identifier_;
+    Processor* processor_; //< non-owning reference
 };
 
 } // namespace

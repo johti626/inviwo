@@ -33,8 +33,8 @@
 
 namespace inviwo {
 
-SingleInport::SingleInport(std::string identifier, InvalidationLevel invalidationLevel)
-    : Inport(identifier), connectedOutport_(nullptr), invalidationLevel_(invalidationLevel) {}
+SingleInport::SingleInport(std::string identifier)
+    : Inport(identifier), connectedOutport_(nullptr), invalidationLevel_(INVALID_OUTPUT) {}
 
 SingleInport::~SingleInport() {}
 
@@ -62,17 +62,24 @@ bool SingleInport::isConnectedTo(Outport* outport) const {
     return connectedOutport_==outport;
 }
 
-InvalidationLevel SingleInport::getInvalidationLevel() const{
-    return invalidationLevel_;
+Outport* SingleInport::getConnectedOutport() const  {
+    return connectedOutport_;
 }
 
-void SingleInport::setInvalidationLevel(InvalidationLevel invalidationLevel){
-    invalidationLevel_ = invalidationLevel;
-    setChanged();
+std::vector<Outport*> SingleInport::getConnectedOutports() const  {
+    if ( connectedOutport_ )
+        return std::vector<Outport*>(1, connectedOutport_);
+    else
+        return std::vector<Outport*>();
+}
+
+void SingleInport::setValid() {
+    invalidationLevel_ = VALID;
+    setChanged(true); 
 }
 
 void SingleInport::invalidate(InvalidationLevel invalidationLevel) {
-    if(getInvalidationLevel() == VALID && invalidationLevel >= INVALID_OUTPUT)
+    if(invalidationLevel_ == VALID && invalidationLevel >= INVALID_OUTPUT)
         onInvalidCallback_.invokeAll();
     invalidationLevel_ = std::max(invalidationLevel_, invalidationLevel);
     Inport::invalidate(invalidationLevel);

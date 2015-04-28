@@ -43,8 +43,7 @@ class ImageOutport;
 
 class IVW_CORE_API ImageInport : public DataInport<Image> {
 public:
-    ImageInport(std::string identifier, bool outportDeterminesSize = false,
-                InvalidationLevel invalidationLevel = INVALID_OUTPUT);
+    ImageInport(std::string identifier, bool outportDeterminesSize = false);
     virtual ~ImageInport();
 
     /**
@@ -61,11 +60,8 @@ public:
     void changeDataDimensions(ResizeEvent* resizeEvent);
     uvec2 getDimensions() const;
     const Image* getData() const;
-    uvec3 getColorCode() const;
     void setOutportDeterminesSize(bool outportDeterminesSize);
     bool isOutportDeterminingSize() const;
-    static uvec3 colorCode;
-    virtual std::string getClassIdentifier() const { return "org.inviwo.ImageInport"; }
     virtual std::string getContentInfo() const;
 
     void setResizeScale(vec2);
@@ -87,7 +83,6 @@ class IVW_CORE_API ImageOutport : public DataOutport<Image>, public EventHandler
 
 public:
     ImageOutport(std::string identifier, const DataFormatBase* format = DataVec4UINT8::get(),
-                 InvalidationLevel invalidationLevel = INVALID_OUTPUT,
                  bool handleResizeEvents = true);
 
     virtual ~ImageOutport();
@@ -113,8 +108,6 @@ public:
      * @param newDimension Dimension to be set
      */
     void setDimensions(const uvec2& newDimension);
-    uvec3 getColorCode() const;
-    virtual std::string getClassIdentifier() const;
 
     bool addResizeEventListener(EventListener*);
     bool removeResizeEventListener(EventListener*);

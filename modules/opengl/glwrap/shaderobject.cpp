@@ -47,9 +47,9 @@ ShaderObject::ShaderObject(GLenum shaderType, std::string fileName, bool compile
     initialize(compileShader);
 }
 
-ShaderObject::ShaderObject(const ShaderObject& rhs)
+ShaderObject::ShaderObject(const ShaderObject& rhs, bool compileShader)
     : shaderType_(rhs.shaderType_), fileName_(rhs.fileName_), id_(glCreateShader(rhs.shaderType_)) {
-    initialize(true);
+    initialize(compileShader);
 }
 
 ShaderObject& ShaderObject::operator=(const ShaderObject& that) {
@@ -66,6 +66,10 @@ ShaderObject& ShaderObject::operator=(const ShaderObject& that) {
 
 ShaderObject::~ShaderObject() {
     glDeleteShader(id_);
+}
+
+ShaderObject* ShaderObject::clone(bool compileShader) {
+    return new ShaderObject(*this, compileShader);
 }
 
 void ShaderObject::initialize(bool compileShader) {
@@ -203,7 +207,7 @@ std::string ShaderObject::embeddIncludes(std::string source, std::string fileNam
 
             if (!includeFileFound) {
                 throw OpenGLException("Include file " + includeFileName +
-                                      " not found in shader search paths.");
+                                      " not found in shader search paths.", IvwContext);
             }
 
         } else {
@@ -244,7 +248,7 @@ void ShaderObject::loadSource(std::string fileName) {
                 TextFileReader fileReader(absoluteFileName_);
                 source_ = fileReader.read();
             } catch (std::ifstream::failure&) {
-                throw OpenGLException("Cound not read shader file: " + fileName);
+                throw OpenGLException("Cound not read shader file: " + fileName, IvwContext);
             }
         } else { // try finding a Shader Resource
             std::string fileresourcekey = fileName;
@@ -253,7 +257,7 @@ void ShaderObject::loadSource(std::string fileName) {
             source_ = ShaderManager::getPtr()->getShaderResource(fileresourcekey);
         }
     } else {
-        throw OpenGLException("Shader file: " + fileName + " not found in shader search paths.");
+        throw OpenGLException("Shader file: " + fileName + " not found in shader search paths.", IvwContext);
     }
 }
 
@@ -340,7 +344,7 @@ void ShaderObject::compile() {
     if (!compiledOk) {
         std::string compilerLog = getShaderInfoLog();
         compilerLog = reformatShaderInfoLog(compilerLog);
-        throw OpenGLException(compilerLog);
+        throw OpenGLException(compilerLog, IvwContext);
     }
 }
 
