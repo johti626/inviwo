@@ -28,6 +28,7 @@
  *********************************************************************************/
 
 #include <inviwo/qt/widgets/inviwodockwidget.h>
+#include <inviwo/qt/widgets/inviwodockwidgettitlebar.h>
 #include <QKeyEvent>
 
 namespace inviwo {
@@ -37,6 +38,12 @@ InviwoDockWidget::InviwoDockWidget(QString title, QWidget* parent)
 #ifdef __APPLE__
     this->setStyleSheet("QDockWidget::title {padding-left: 45px; }");
 #endif
+
+    // adding custom title bar to dock widget
+    this->setTitleBarWidget(new InviwoDockWidgetTitleBar(this));
+
+    QObject::connect(this, SIGNAL(topLevelChanged(bool)),
+        this->titleBarWidget(), SLOT(floating(bool)));
 }
 
 InviwoDockWidget::~InviwoDockWidget() {}

@@ -63,8 +63,9 @@ public:
     virtual void initializeResources();
 
 protected:
-    virtual void process();
+    virtual void process(); 
     void centerViewOnGeometry();
+    void setNearFarPlane();
     void resetViewParams();
     void changeRenderMode();
 
@@ -75,6 +76,7 @@ protected:
 
     CameraProperty camera_;
     ButtonProperty centerViewOnGeometry_;
+    ButtonProperty setNearFarPlane_;
     ButtonProperty resetViewParams_;
     CameraTrackball trackball_;
     
@@ -84,6 +86,12 @@ protected:
     FloatProperty renderPointSize_;
     FloatProperty renderLineWidth_;
     SimpleLightingProperty lightingProperty_;
+
+    CompositeProperty layers_;
+    BoolProperty colorLayer_;
+    BoolProperty texCoordLayer_;
+    BoolProperty normalsLayer_;
+    BoolProperty veiwNormalsLayer_;
 
     Shader* shader_;
 
