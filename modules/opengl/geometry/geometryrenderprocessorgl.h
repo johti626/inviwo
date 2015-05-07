@@ -43,35 +43,32 @@
 #include <inviwo/core/properties/simplelightingproperty.h>
 #include <inviwo/core/rendering/geometrydrawer.h>
 #include <modules/opengl/openglmoduledefine.h>
+#include <modules/opengl/glwrap/shader.h>
 #include <vector>
 
 namespace inviwo {
 
-class Shader;
-class CameraTrackball;
-
 class IVW_MODULE_OPENGL_API GeometryRenderProcessorGL : public Processor {
 public:
     GeometryRenderProcessorGL();
+
+    GeometryRenderProcessorGL(const GeometryRenderProcessorGL&) = delete;
+    GeometryRenderProcessorGL& operator=(const GeometryRenderProcessorGL&) = delete;
+
     ~GeometryRenderProcessorGL();
 
     InviwoProcessorInfo();
 
-    virtual void initialize();
-    virtual void deinitialize();
-
     virtual void initializeResources();
+    virtual void process(); 
 
 protected:
-    virtual void process(); 
     void centerViewOnGeometry();
     void setNearFarPlane();
-    void resetViewParams();
     void changeRenderMode();
-
     void updateDrawers();
 
-    GeometryMultiInport inport_;
+    GeometryFlatMultiInport inport_;
     ImageOutport outport_;
 
     CameraProperty camera_;
@@ -87,16 +84,18 @@ protected:
     FloatProperty renderLineWidth_;
     SimpleLightingProperty lightingProperty_;
 
+
     CompositeProperty layers_;
     BoolProperty colorLayer_;
     BoolProperty texCoordLayer_;
     BoolProperty normalsLayer_;
     BoolProperty veiwNormalsLayer_;
 
-    Shader* shader_;
+    Shader shader_;
 
-    std::vector<GeometryDrawer*> drawers_;
-    std::vector<Inport*> drawersPort_;
+    using DrawerMap = std::multimap<const Outport*, std::unique_ptr<GeometryDrawer>>;
+    DrawerMap drawers_;
+
 };
 
 } // namespace

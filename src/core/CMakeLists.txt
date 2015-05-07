@@ -137,15 +137,14 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/geometryport.h
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/imageport.h
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/inport.h
-    ${IVW_INCLUDE_DIR}/inviwo/core/ports/multidatainport.h
-    ${IVW_INCLUDE_DIR}/inviwo/core/ports/multiinport.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/ports/inportiterable.h
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/outport.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/ports/outportiterable.h
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/port.h
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/portfactory.h
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/portfactoryobject.h
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/portinspector.h
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/portinspectorfactory.h
-    ${IVW_INCLUDE_DIR}/inviwo/core/ports/singleinport.h
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/vectordataport.h
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/volumeport.h
     ${IVW_INCLUDE_DIR}/inviwo/core/processors/canvasprocessor.h
@@ -221,6 +220,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/util/formatsdefinefunc.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/glm.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/group.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/util/imagecache.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/intersection/rayplaneintersection.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/intersection/raysphereintersection.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/introspection.h
@@ -239,6 +239,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/util/stringconversion.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/systemcapabilities.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/timer.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/util/utilities.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/vectoroperations.h
 )
 ivw_group("Header Files" ${HEADER_FILES})
@@ -346,20 +347,15 @@ set(SOURCE_FILES
     network/processornetwork.cpp
     network/processornetworkevaluator.cpp
     network/processornetworkobserver.cpp
-    ports/bufferport.cpp
-    ports/geometryport.cpp
     ports/imageport.cpp
     ports/inport.cpp
-    ports/multiinport.cpp
     ports/outport.cpp
     ports/port.cpp
     ports/portfactory.cpp
     ports/portfactoryobject.cpp
     ports/portinspector.cpp
     ports/portinspectorfactory.cpp
-    ports/singleinport.cpp
     ports/vectordataport.cpp
-    ports/volumeport.cpp
     processors/canvasprocessor.cpp
     processors/canvasprocessorwidget.cpp
     processors/processor.cpp
@@ -410,6 +406,7 @@ set(SOURCE_FILES
     util/fileobserver.cpp
     util/filesystem.cpp
     util/formats.cpp
+    util/imagecache.cpp
     util/intersection/rayplaneintersection.cpp
     util/intersection/raysphereintersection.cpp
     util/introspection.cpp
@@ -417,6 +414,7 @@ set(SOURCE_FILES
     util/logcentral.cpp
     util/observer.cpp    
     util/raiiutils.cpp
+    util/referencecounter.cpp
     util/rendercontext.cpp
     util/settings/linksettings.cpp    
     util/settings/settings.cpp    
@@ -427,6 +425,7 @@ set(SOURCE_FILES
     util/stringconversion.cpp
     util/systemcapabilities.cpp
     util/timer.cpp
+    util/utilities.cpp
 )
 ivw_group("Source Files" ${SOURCE_FILES})
 

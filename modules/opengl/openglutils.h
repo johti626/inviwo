@@ -40,42 +40,17 @@ namespace inviwo {
 
 namespace utilgl {
 
-struct TexParameter {
+struct IVW_MODULE_OPENGL_API TexParameter {
     TexParameter() = delete;
     TexParameter(TexParameter const&) = delete;
     TexParameter& operator=(TexParameter const& that) = delete;
 
-    TexParameter(const TextureUnit& unit, GLenum target, GLenum name, GLint value)
-        : unit_(unit.getEnum()), target_(target), name_(name), oldValue_{} {
-        glActiveTexture(unit_);
-        glGetTexParameteriv(target_, name_, &oldValue_);
-        glTexParameteri(target_, name_, value);
-        TextureUnit::setZeroUnit();
-    }
+    TexParameter(const TextureUnit& unit, GLenum target, GLenum name, GLint value);
 
-    TexParameter(TexParameter&& rhs)
-        : unit_(rhs.unit_), target_(rhs.target_), name_(rhs.name_), oldValue_(rhs.oldValue_) {
-        rhs.target_ = 0;
-    }
-    TexParameter& operator=(TexParameter&& that) {
-        if (this != &that) {
-            unit_ = 0;
-            std::swap(unit_, that.unit_);
-            target_ = 0;
-            std::swap(target_, that.target_);
-            name_ = that.name_;
-            oldValue_ = that.oldValue_;
-        }
-        return *this;
-    }
+    TexParameter(TexParameter&& rhs);
+    TexParameter& operator=(TexParameter&& that);
 
-    ~TexParameter() {
-        if(unit_ != 0 && target_ != 0) {
-            glActiveTexture(unit_);
-            glTexParameteri(target_, name_, oldValue_);
-            TextureUnit::setZeroUnit();
-        }
-    } 
+    ~TexParameter();
 
 private:
     GLint unit_;
@@ -83,6 +58,107 @@ private:
     GLenum name_;
     int oldValue_;
 };
+
+struct IVW_MODULE_OPENGL_API GlBoolState {
+    GlBoolState() = delete;
+    GlBoolState(GlBoolState const&) = delete;
+    GlBoolState& operator=(GlBoolState const& that) = delete;
+
+    GlBoolState(GLenum target, bool state);
+
+    GlBoolState(GlBoolState&& rhs);
+    GlBoolState& operator=(GlBoolState&& that);
+
+    operator bool();;
+
+    virtual ~GlBoolState();
+
+protected:
+    GLenum target_;
+    bool oldState_;
+    bool state_;
+};
+
+struct IVW_MODULE_OPENGL_API CullFaceState : public GlBoolState {
+    CullFaceState() = delete;
+    CullFaceState(CullFaceState const&) = delete;
+    CullFaceState& operator=(CullFaceState const& that) = delete;
+
+    CullFaceState(GLint mode);
+
+    CullFaceState(CullFaceState&& rhs);
+
+    CullFaceState& operator=(CullFaceState&& that);
+
+    virtual ~CullFaceState();
+
+    GLint getMode();
+
+protected:
+    GLint mode_;
+    GLint oldMode_;
+};
+
+struct IVW_MODULE_OPENGL_API PolygonModeState {
+    PolygonModeState() = delete;
+    PolygonModeState(PolygonModeState const&) = delete;
+    PolygonModeState& operator=(PolygonModeState const& that) = delete;
+
+    PolygonModeState(GLenum mode, GLfloat lineWidth, GLfloat pointSize);
+
+    PolygonModeState(PolygonModeState&& rhs);
+
+    PolygonModeState& operator=(PolygonModeState&& that);
+
+    virtual ~PolygonModeState();
+
+protected:
+    GLint mode_;
+    GLfloat lineWidth_;
+    GLfloat pointSize_;
+
+    GLint oldMode_;
+    GLfloat oldLineWidth_;
+    GLfloat oldPointSize_;
+};
+
+struct IVW_MODULE_OPENGL_API DepthFuncState  {
+    DepthFuncState() = delete;
+    DepthFuncState(DepthFuncState const&) = delete;
+    DepthFuncState& operator=(DepthFuncState const& that) = delete;
+
+    DepthFuncState(GLenum state);
+
+    DepthFuncState(DepthFuncState&& rhs);
+    DepthFuncState& operator=(DepthFuncState&& that);
+
+    virtual ~DepthFuncState();
+
+protected:
+    GLint oldState_;
+    GLint state_;
+};
+
+struct IVW_MODULE_OPENGL_API BlendModeState : public GlBoolState {
+    BlendModeState() = delete;
+    BlendModeState(BlendModeState const&) = delete;
+    BlendModeState& operator=(BlendModeState const& that) = delete;
+
+    BlendModeState(GLenum smode, GLenum dmode);
+    BlendModeState(BlendModeState&& rhs);
+    BlendModeState& operator=(BlendModeState&& that);
+
+    virtual ~BlendModeState();
+
+protected:
+    GLint smode_;
+    GLint dmode_;
+    GLint oldsMode_;
+    GLint olddMode_;
+};
+
+
+
 
 }  // namespace
 
