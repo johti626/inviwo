@@ -181,9 +181,10 @@ void InviwoApplication::deinitialize() {
     initialized_ = false;
 }
 
-std::string InviwoApplication::getPath(PathType pathType, const std::string& suffix ,const bool &createFolder) {
+std::string InviwoApplication::getPath(PathType pathType, const std::string& suffix,
+                                       const bool& createFolder) {
     std::string result = getBasePath();
-    
+
     switch (pathType) {
         case inviwo::InviwoApplication::PATH_DATA:
             result += "/data/";
@@ -202,8 +203,8 @@ std::string InviwoApplication::getPath(PathType pathType, const std::string& suf
             break;
 
         case inviwo::InviwoApplication::PATH_PORTINSPECTORS:
-                result += "/data/workspaces/portinspectors/";
-                break;
+            result += "/data/workspaces/portinspectors/";
+            break;
 
         case inviwo::InviwoApplication::PATH_SCRIPTS:
             result += "/data/scripts/";
@@ -237,7 +238,7 @@ std::string InviwoApplication::getPath(PathType pathType, const std::string& suf
             break;
     }
 
-    if(createFolder){
+    if (createFolder) {
         filesystem::createDirectoryRecursivly(result);
     }
     return result + suffix;

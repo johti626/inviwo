@@ -45,29 +45,30 @@ CameraProperty::CameraProperty(std::string identifier, std::string displayName, 
                                vec3 center, vec3 lookUp, Inport* inport,
                                InvalidationLevel invalidationLevel, PropertySemantics semantics)
     : CompositeProperty(identifier, displayName, invalidationLevel, semantics)
+    , value_(eye, center, lookUp, 0.1f, 100.f)
     , lookFrom_("lookFrom", "Look from", eye, -vec3(10.0f), vec3(10.0f), vec3(0.1f), VALID,
                 PropertySemantics("Spherical"))
     , lookTo_("lookTo", "Look to", center, -vec3(10.0f), vec3(10.0f), vec3(0.1f), VALID)
     , lookUp_("lookUp", "Look up", lookUp, -vec3(10.0f), vec3(10.0f), vec3(0.1f), VALID)
     , fovy_("fov", "FOV", 60.0f, 30.0f, 360.0f, 0.1f, VALID)
     , aspectRatio_("aspectRatio", "Aspect Ratio", 1.0f, 0.01f, 100.0f, 0.01f, VALID)
-    , farPlane_("far", "Far Plane", 100.0f, 1.0f, 1000.0f, 1.0f, VALID)
     , nearPlane_("near", "Near Plane", 0.1f, 0.001f, 10.f, 0.001f, VALID)
+    , farPlane_("far", "Far Plane", 100.0f, 1.0f, 1000.0f, 1.0f, VALID)
     , fitToBasis_("fitToBasis_", "Fit to basis", true, VALID)
     , lockInvalidation_(false)
     , inport_(inport)
     , data_(nullptr)
     , oldBasis_(0) {
-    lookFrom_.onChange(this, &CameraProperty::updateViewMatrix);
-    lookTo_.onChange(this, &CameraProperty::updateViewMatrix);
-    lookUp_.onChange(this, &CameraProperty::updateViewMatrix);
+    lookFrom_.onChange(this, &CameraProperty::lookFromChangedFromProperty);
+    lookTo_.onChange(this, &CameraProperty::lookToChangedFromProperty);
+    lookUp_.onChange(this, &CameraProperty::lookUpChangedFromProperty);
     addProperty(lookFrom_);
     addProperty(lookTo_);
     addProperty(lookUp_);
-    fovy_.onChange(this, &CameraProperty::updateProjectionMatrix);
-    aspectRatio_.onChange(this, &CameraProperty::updateProjectionMatrix);
-    nearPlane_.onChange(this, &CameraProperty::updateProjectionMatrix);
-    farPlane_.onChange(this, &CameraProperty::updateProjectionMatrix);
+    fovy_.onChange(this, &CameraProperty::verticalFieldOfViewChangedFromProperty);
+    aspectRatio_.onChange(this, &CameraProperty::aspectRatioChangedFromProperty);
+    nearPlane_.onChange(this, &CameraProperty::nearPlaneChangedFromProperty);
+    farPlane_.onChange(this, &CameraProperty::farPlaneChangedFromProperty);
     addProperty(fovy_);
     addProperty(aspectRatio_);
     addProperty(nearPlane_);
@@ -76,16 +77,12 @@ CameraProperty::CameraProperty(std::string identifier, std::string displayName, 
     fitToBasis_.onChange(this, &CameraProperty::fitReset);
     addProperty(fitToBasis_);
 
-    lockInvalidation();
-    updateViewMatrix();
-    updateProjectionMatrix();
-    unlockInvalidation();
-
     if (inport_) inport_->onChange(this, &CameraProperty::inportChanged);
 }
 
 CameraProperty::CameraProperty(const CameraProperty& rhs)
     : CompositeProperty(rhs)
+    , value_(rhs.value_)
     , lookFrom_(rhs.lookFrom_)
     , lookTo_(rhs.lookTo_)
     , lookUp_(rhs.lookUp_)
@@ -103,18 +100,31 @@ CameraProperty::CameraProperty(const CameraProperty& rhs)
     inportChanged();
 }
 
+CameraProperty& CameraProperty::operator=(const PerspectiveCamera& value) {
+    if (value_ != value) {
+        value_ = value;
+        bool lock = isInvalidationLocked();
+        if (!lock) lockInvalidation();
+
+        lookFrom_ = value.getLookFrom();
+        lookTo_ = value.getLookTo();
+        lookUp_ = value.getLookUp();
+        fovy_ = value.getFovy();
+        aspectRatio_ = value.getAspectRatio();
+        nearPlane_ = value.getNearPlaneDist();
+        farPlane_ = value.getFarPlaneDist();
+
+        if (!lock) unlockInvalidation();
+        propertyModified();
+    }
+    return *this;
+}
+
 CameraProperty& CameraProperty::operator=(const CameraProperty& that) {
     if (this != &that) {
         CompositeProperty::operator=(that);
-        lookFrom_ = that.lookFrom_;
-        lookTo_ = that.lookTo_;
-        lookUp_ = that.lookUp_;
-        fovy_ = that.fovy_;
-        aspectRatio_ = that.aspectRatio_;
-        nearPlane_ = that.nearPlane_;
-        farPlane_ = that.farPlane_;
-        fitToBasis_ = that.fitToBasis_;
-        
+        value_ = that.value_;
+       
         if(inport_) inport_->removeOnChange(this);
         inport_ = that.inport_;
         if (inport_) inport_->onChange(this, &CameraProperty::inportChanged);
@@ -126,11 +136,49 @@ CameraProperty& CameraProperty::operator=(const CameraProperty& that) {
     return *this;
 }
 
+void CameraProperty::set(const PerspectiveCamera& value) {
+    *this = value;
+}
+
+void CameraProperty::set(const Property* srcProperty) {
+    
+
+    const CameraProperty* cameraSrcProp = dynamic_cast<const CameraProperty*>(srcProperty);
+
+    if (cameraSrcProp) {
+        NetworkLock lock;
+        // Since we know all properties in this composite property
+        // we can set them directly:
+        lookFrom_ = cameraSrcProp->lookFrom_;
+        lookTo_ = cameraSrcProp->lookTo_;
+        lookUp_ = cameraSrcProp->lookUp_;
+
+        fovy_ = cameraSrcProp->fovy_;
+        aspectRatio_ = cameraSrcProp->aspectRatio_;
+        nearPlane_ = cameraSrcProp->nearPlane_;
+        farPlane_ = cameraSrcProp->farPlane_;
+
+        fitToBasis_ = cameraSrcProp->fitToBasis_;
+
+        value_ = cameraSrcProp->value_;
+
+        Property::set(srcProperty);
+    }
+}
+
 CameraProperty* CameraProperty::clone() const {
     return new CameraProperty(*this);
 }
 
-CameraProperty::~CameraProperty() {}
+void CameraProperty::resetToDefaultState() {
+    // Override CompositeProperty function to avoid
+    // invalidation before value_ (perspective camera) has been set.
+    for (auto& elem : properties_) {
+        elem->resetToDefaultState();
+    }
+    value_ = PerspectiveCamera(lookFrom_.get(), lookTo_.get(), lookUp_.get(), nearPlane_.get(), farPlane_.get(), fovy_.get(), aspectRatio_.get());
+    Property::resetToDefaultState();
+}
 
 void CameraProperty::resetCamera() {
     bool lock = isInvalidationLocked();
@@ -141,32 +189,42 @@ void CameraProperty::resetCamera() {
     lookUp_.resetToDefaultState();
     fovy_.resetToDefaultState();
 
+    // Update template value
+    get().setLookFrom(lookFrom_.get());
+    get().setLookTo(lookTo_.get());
+    get().setLookUp(lookUp_.get());
+    get().setFovy(fovy_.get());
+    
+
     if (!lock) unlockInvalidation();
 
     invalidateCamera();
 }
 
-void CameraProperty::setCamera(const CameraProperty* cam){
-    setLook(cam->getLookFrom(), cam->getLookTo(), cam->getLookUp());
-    setFovy(cam->getFovy());
-}
-
+// It seems like it is a job for the code managing interaction to consider the boundaries.
+// Need to change that code before clamping values.
+//void CameraProperty::setLookFrom(vec3 lookFrom) { lookFrom_.set(glm::clamp(lookFrom, lookFrom_.getMinValue(), lookFrom_.getMaxValue())); }
+//void CameraProperty::setLookTo(vec3 lookTo) { lookTo_.set(glm::clamp(lookTo, lookTo_.getMinValue(), lookTo_.getMaxValue())); }
 void CameraProperty::setLookFrom(vec3 lookFrom) { lookFrom_.set(lookFrom); }
 
 void CameraProperty::setLookTo(vec3 lookTo) { lookTo_.set(lookTo); }
 
 void CameraProperty::setLookUp(vec3 lookUp) { lookUp_.set(lookUp); }
 
-void CameraProperty::setFovy(float fovy) { fovy_.set(fovy); }
+void CameraProperty::setFovy(float fovy) { fovy_.set(glm::clamp(fovy, fovy_.getMinValue(), fovy_.getMaxValue())); }
+
+void CameraProperty::setAspectRatio(float aspectRatio) {
+    aspectRatio_.set(glm::clamp(aspectRatio, aspectRatio_.getMinValue(), aspectRatio_.getMaxValue()));
+}
 
 void CameraProperty::setLook(vec3 lookFrom, vec3 lookTo, vec3 lookUp) {
     bool lock = isInvalidationLocked();
 
     if (!lock) lockInvalidation();
 
-    lookFrom_.set(lookFrom);
-    lookTo_.set(lookTo);
-    lookUp_.set(lookUp);
+    setLookFrom(lookFrom);
+    setLookTo(lookTo);
+    setLookUp(lookUp);
 
     if (!lock) unlockInvalidation();
 
@@ -177,54 +235,41 @@ float CameraProperty::getNearPlaneDist() const { return nearPlane_.get(); }
 
 float CameraProperty::getFarPlaneDist() const { return farPlane_.get(); }
 
-void CameraProperty::setNearPlaneDist(float v) { nearPlane_.set(v); }
+void CameraProperty::setNearPlaneDist(float v) { nearPlane_.set(glm::clamp(v, nearPlane_.getMinValue(), nearPlane_.getMaxValue())); }
 
-void CameraProperty::setFarPlaneDist(float v) { farPlane_.set(v); }
+void CameraProperty::setFarPlaneDist(float v) { farPlane_.set(glm::clamp(v, farPlane_.getMinValue(), farPlane_.getMaxValue())); }
 
 
 // XYZ between -1 -> 1
 vec3 CameraProperty::getWorldPosFromNormalizedDeviceCoords(const vec3& ndcCoords) const {
-    float clipW = projectionMatrix_[2][3] /
-                  (ndcCoords.z - (projectionMatrix_[2][2] / projectionMatrix_[3][2]));
-    vec4 clipCoords = vec4(ndcCoords * clipW, clipW);
-    vec4 eyeCoords = inverseProjectionMatrix() * clipCoords;
-    vec4 worldCoords = inverseViewMatrix() * eyeCoords;
-    worldCoords /= worldCoords.w;
-    return worldCoords.xyz();
+    return get().getWorldPosFromNormalizedDeviceCoords(ndcCoords);
 }
 
 vec4 CameraProperty::getClipPosFromNormalizedDeviceCoords(const vec3& ndcCoords) const {
-    float clipW = projectionMatrix_[2][3] /
-        (ndcCoords.z - (projectionMatrix_[2][2] / projectionMatrix_[3][2]));
-    return vec4(ndcCoords * clipW, clipW);;
-    
+    return get().getClipPosFromNormalizedDeviceCoords(ndcCoords);    
 }
 
 void CameraProperty::setProjectionMatrix(float fovy, float aspect, float nearPlane,
                                          float farPlane) {
-    fovy_.set(fovy);
-    aspectRatio_.set(aspect);
-    farPlane_.set(farPlane);
-    nearPlane_.set(nearPlane);
-    updateProjectionMatrix();
-}
+    bool lock = isInvalidationLocked();
 
-void CameraProperty::updateProjectionMatrix() {
-    projectionMatrix_ = glm::perspective(glm::radians(fovy_.get()), aspectRatio_.get(),
-                                         nearPlane_.get(), farPlane_.get());
-    inverseProjectionMatrix_ = glm::inverse(projectionMatrix_);
+    if (!lock) lockInvalidation();
+
+    setFovy(fovy);
+    setAspectRatio(aspect);
+    setFarPlaneDist(farPlane);
+    setNearPlaneDist(nearPlane);
+
+    if (!lock) unlockInvalidation();
+
     invalidateCamera();
 }
 
-void CameraProperty::updateViewMatrix() {
-    lookRight_ = glm::normalize(glm::cross(lookTo_.get() - lookFrom_.get(), lookUp_.get()));
-    viewMatrix_ = glm::lookAt(lookFrom_.get(), lookTo_.get(), lookUp_.get());
-    inverseViewMatrix_ = glm::inverse(viewMatrix_);
-    invalidateCamera();
-}
 
 void CameraProperty::invalidateCamera() {
-    if (!isInvalidationLocked()) CompositeProperty::invalidate(INVALID_OUTPUT, this);
+    if (!isInvalidationLocked()) { 
+        CompositeProperty::invalidate(INVALID_OUTPUT, this);
+    }
 }
 
 void CameraProperty::invokeEvent(Event* event) {
@@ -234,20 +279,8 @@ void CameraProperty::invokeEvent(Event* event) {
         uvec2 canvasSize = resizeEvent->size();
         float width = (float)canvasSize[0];
         float height = (float)canvasSize[1];
-        setProjectionMatrix(fovy_.get(), width / height, nearPlane_.get(), farPlane_.get());
+        setAspectRatio(width / height);
     }
-}
-
-void CameraProperty::serialize(IvwSerializer& s) const {
-    CompositeProperty::serialize(s);
-}
-
-void CameraProperty::deserialize(IvwDeserializer& d) {
-    CompositeProperty::deserialize(d);
-    lockInvalidation();
-    updateViewMatrix();
-    updateProjectionMatrix();
-    unlockInvalidation();
 }
 
 void CameraProperty::setInport(Inport* inport) {
@@ -266,16 +299,15 @@ void CameraProperty::fitWithBasis(const mat3& basis) {
     lockInvalidation();
     float newFarPlane = farPlane_.get() * ratio;
     farPlane_.setMaxValue(farPlane_.getMaxValue() * ratio);
-    farPlane_.set(newFarPlane);
+    setFarPlaneDist(newFarPlane);
     vec3 oldOffset = lookFrom_.get() - lookTo_.get();
     vec3 newPos = lookTo_.get() + (oldOffset * ratio);
     lookFrom_.setMinValue(lookFrom_.getMinValue() * ratio);
     lookFrom_.setMaxValue(lookFrom_.getMaxValue() * ratio);
     lookTo_.setMinValue(lookTo_.getMinValue() * ratio);
     lookTo_.setMaxValue(lookTo_.getMaxValue() * ratio);
-    lookFrom_.set(newPos);
-    updateViewMatrix();
-    updateProjectionMatrix();
+    setLookFrom(newPos);
+
     unlockInvalidation();
     oldBasis_ = basis;
 }
@@ -316,56 +348,72 @@ void CameraProperty::inportChanged() {
     data_ = data;
 }
 
-vec3& CameraProperty::getLookFrom() {
-    return lookFrom_.get();
+void CameraProperty::lookFromChangedFromProperty() {
+    value_.setLookFrom(lookFrom_.get()); invalidateCamera();
+}
+
+void CameraProperty::lookToChangedFromProperty() {
+    value_.setLookTo(lookTo_.get()); invalidateCamera();
+}
+
+void CameraProperty::lookUpChangedFromProperty() {
+    value_.setLookUp(lookUp_.get()); invalidateCamera();
+}
+
+void CameraProperty::verticalFieldOfViewChangedFromProperty() {
+    value_.setFovy(fovy_.get()); invalidateCamera();
+}
+
+void CameraProperty::aspectRatioChangedFromProperty() {
+    value_.setAspectRatio(aspectRatio_.get()); invalidateCamera();
+}
+
+void CameraProperty::nearPlaneChangedFromProperty() {
+    value_.setNearPlaneDist(nearPlane_.get()); invalidateCamera();
+}
+
+void CameraProperty::farPlaneChangedFromProperty() {
+    value_.setFarPlaneDist(farPlane_.get()); invalidateCamera();
 }
 
 const vec3& CameraProperty::getLookFrom() const {
-    return lookFrom_.get();
-}
-
-vec3& CameraProperty::getLookTo() {
-    return lookTo_.get();
+    return value_.getLookFrom();
 }
 
 const vec3& CameraProperty::getLookTo() const {
-    return lookTo_.get();
-}
-
-vec3& CameraProperty::getLookUp() {
-    return lookUp_.get();
+    return value_.getLookTo();
 }
 
 const vec3& CameraProperty::getLookUp() const {
-    return lookUp_.get();
+    return value_.getLookUp();
 }
 
 vec3 CameraProperty::getLookRight() const {
-    return lookRight_;
+    return glm::cross(glm::normalize(get().getDirection()), get().getLookUp());
 }
 
 float CameraProperty::getFovy() const {
-    return fovy_.get();
+    return value_.getFovy();
 }
 
 float CameraProperty::getAspectRatio() const {
-    return aspectRatio_.get();
+    return value_.getAspectRatio();
 }
 
 const mat4& CameraProperty::viewMatrix() const {
-    return viewMatrix_;
+    return value_.viewMatrix();
 }
 
 const mat4& CameraProperty::projectionMatrix() const {
-    return projectionMatrix_;
+    return value_.projectionMatrix();
 }
 
 const mat4& CameraProperty::inverseViewMatrix() const {
-    return inverseViewMatrix_;
+    return value_.inverseViewMatrix();
 }
 
 const mat4& CameraProperty::inverseProjectionMatrix() const {
-    return inverseProjectionMatrix_;
+    return value_.inverseProjectionMatrix();
 }
 
 void CameraProperty::lockInvalidation() {

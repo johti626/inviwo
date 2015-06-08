@@ -28,6 +28,7 @@
  *********************************************************************************/
 
 #include <inviwo/core/interaction/cameratrackball.h>
+#include <inviwo/core/datastructures/camera.h>
 //#include <glm/gtx/decomposition.hpp>
 // Dependencies
 #include <glm/mat4x4.hpp>
@@ -37,43 +38,31 @@
 #include "glm/gtc/matrix_transform.hpp"
 
 namespace inviwo {
+PropertyClassIdentifier(CameraTrackball, "org.inviwo.Trackball");
 
 CameraTrackball::CameraTrackball(CameraProperty* cameraProp)
-    : Trackball(&cameraProp->getLookFrom(), &cameraProp->getLookTo(), &cameraProp->getLookUp())
+    : Trackball(cameraProp, &(cameraProp->get()))
     , cameraProp_(cameraProp)
 {
-    static_cast<TrackballObservable*>(this)->addObserver(this);
-    cameraProp_->onChange(this, &CameraTrackball::onCameraPropertyChange);
 }
 
 CameraTrackball::~CameraTrackball() {}
 
-void CameraTrackball::onAllTrackballChanged(const Trackball* trackball) {
-    cameraProp_->updateViewMatrix();
+CameraTrackball* CameraTrackball::clone() const {
+    return new CameraTrackball(*this);
 }
 
-void CameraTrackball::onLookFromChanged(const Trackball* trackball) {
-    // Don't allow zooming such that the lookAt point is further away then the far plane.
-    float maxDistance = cameraProp_->getFarPlaneDist() - (cameraProp_->getFarPlaneDist()*0.3f);
-    float dist = glm::distance(cameraProp_->getLookTo(), cameraProp_->getLookFrom());
-    if (maxDistance < dist)
-        cameraProp_->setLookFrom(
-            cameraProp_->getLookTo() +
-            (glm::normalize(cameraProp_->getLookFrom() - cameraProp_->getLookTo()) * maxDistance));
-
-    cameraProp_->updateViewMatrix();
-}
-
-void CameraTrackball::onLookToChanged(const Trackball* trackball) {
-    cameraProp_->updateViewMatrix();
-}
-
-void CameraTrackball::onLookUpChanged(const Trackball* trackball) {
-    cameraProp_->updateViewMatrix();
-}
-
-void CameraTrackball::onCameraPropertyChange(){
-    setPanSpeedFactor(cameraProp_->getFovy()/60.f);
-}
+//
+//void CameraTrackball::onLookFromChanged() {
+//    // Don't allow zooming such that the lookAt point is further away then the far plane.
+//    float maxDistance = cameraProp_->getFarPlaneDist() - (cameraProp_->getFarPlaneDist()*0.3f);
+//    float dist = glm::distance(cameraProp_->getLookTo(), cameraProp_->getLookFrom());
+//    if (maxDistance < dist)
+//        cameraProp_->setLookFrom(
+//            cameraProp_->getLookTo() +
+//            (glm::normalize(cameraProp_->getLookFrom() - cameraProp_->getLookTo()) * maxDistance));
+//
+//    //cameraProp_->updateViewMatrix();
+//}
 
 }  // namespace

@@ -51,22 +51,22 @@ public:
     /**
      * \brief Deserializer constructor
      *
-     * @param IvwDeserializer & s optional reference to existing deserializer.
-     * @param bool allowReference flag to manage references to avoid multiple object creation.
+     * @param s optional reference to existing deserializer.
+     * @param allowReference flag to manage references to avoid multiple object creation.
      */
     IvwDeserializer(IvwDeserializer& s, bool allowReference = true);
     /**
      * \brief Deserializer constructor
      *
-     * @param std::string fileName path to file that is to be deserialized.
-     * @param bool allowReference flag to manage references to avoid multiple object creation.
+     * @param fileName path to file that is to be deserialized.
+     * @param allowReference flag to manage references to avoid multiple object creation.
      */
     IvwDeserializer(std::string fileName, bool allowReference = true);
     /**
      * \brief Deserializes content from the stream using path to calculate relative paths to data.
      *
-     * @param std::iostream& stream Stream with content that is to be deserialized.
-     * @param std::string path A path that will be used to decode the location of data during
+     * @param stream Stream with content that is to be deserialized.
+     * @param path A path that will be used to decode the location of data during
      *deserialization.
      * @param bool allowReference flag to manage references to avoid multiple object creation.
      */
@@ -86,18 +86,18 @@ public:
      *
      * eg. xml tree with key=Properties and itemKey=Property
      *
-     * <Properties>
-     *      <Property identifier="enableMIP" displayName="MIP">
-     *          <value content="0" />
-     *      </Property>
-     *      <Property identifier="enableShading" displayName="Shading">
-     *          <value content="0" />
-     *      </Property>
-     * <Properties>
+     *     <Properties>
+     *          <Property identifier="enableMIP" displayName="MIP">
+     *              <value content="0" />
+     *          </Property>
+     *          <Property identifier="enableShading" displayName="Shading">
+     *              <value content="0" />
+     *          </Property>
+     *     <Properties>
      *
-     * @param const std::string & key vector key.
-     * @param std::vector<T> & sVector vector to be deserialized.
-     * @param const std::string & itemKey vector item key
+     * @param key vector key.
+     * @param sVector vector to be deserialized.
+     * @param itemKey vector item key
      */
     template <typename T>
     void deserialize(const std::string& key, std::vector<T*>& sVector, const std::string& itemKey);
@@ -123,14 +123,14 @@ public:
      *
      * eg. xml tree
      *
-     * <Properties>
-     *      <Property identifier="enableMIP" displayName="MIP">
-     *          <value content="0" />
-     *      </Property>
-     *      <Property identifier="enableShading" displayName="Shading">
-     *          <value content="0" />
-     *      </Property>
-     * <Properties>
+     *     <Properties>
+     *          <Property identifier="enableMIP" displayName="MIP">
+     *              <value content="0" />
+     *          </Property>
+     *          <Property identifier="enableShading" displayName="Shading">
+     *              <value content="0" />
+     *          </Property>
+     *     <Properties>
      *
      * In the above xml tree,
      *
@@ -144,16 +144,13 @@ public:
      *
      * Note: If children has attribute "type", then comparisionAttribute becomes meaningless.
      *       Because deserializer always allocates a new instance of type using registered
-     *factories.
+     *       factories. eg.,
+     *           <Processor type="EntryExitPoints" identifier="EntryExitPoints" reference="ref2" />
      *
-     *       eg., <Processor type="EntryExitPoints" identifier="EntryExitPoints" reference="ref2" />
-     *
-     * @param const std::string & key Map key or parent node of itemKey.
-     * @param std::map<K
-     * @param V *
-     * @param C> & sMap  map to be deserialized - source / input map.
-     * @param const std::string & itemKey map item key of childeren nodes.
-     * @param const std::string & comparisionAttribute  - forced comparison attribute.
+     * @param key Map key or parent node of itemKey.
+     * @param sMap  map to be deserialized - source / input map.
+     * @param itemKey map item key of childeren nodes.
+     * @param comparisionAttribute forced comparison attribute.
      */
     template <typename K, typename V, typename C, typename A>
     void deserialize(

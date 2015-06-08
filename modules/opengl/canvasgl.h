@@ -39,6 +39,7 @@ namespace inviwo {
 
 class Shader;
 class ImageGL;
+class LayerRAM;
 class MeshGL;
 class BufferObjectArray;
 
@@ -86,6 +87,24 @@ protected:
 
     void drawRect();
     void checkChannels(int);
+
+    /** 
+     * \brief Get depth layer RAM representation. Will return nullptr if depth layer does not exist.
+     *
+     * 
+     * @return const LayerRAM* Depth layer RAM representation if existing, nullptr otherwise.
+     */
+    const LayerRAM* getDepthLayerRAM() const;
+    /** 
+     * \brief Retrieve depth value in normalized device coordinates at screen coordinate.
+     *
+     * Depth is defined in [-1 1], where -1 is the near plane and 1 is the far plane.
+     * Will be 1 if no depth value is available.
+     * 
+     * @param uvec2 screenCoordinate Screen coordinates [0 dim-1]^2
+     * @return double NDC depth in [-1 1], 1 if no depth value exist.
+     */
+    double getDepthValueAtCoord(uvec2 screenCoordinate) const;
 
     static void enableDrawImagePlaneRect();
     static void disableDrawImagePlaneRect();

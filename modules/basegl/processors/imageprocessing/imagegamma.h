@@ -32,14 +32,14 @@
 
 #include <modules/basegl/baseglmoduledefine.h>
 #include <inviwo/core/common/inviwo.h>
-#include <modules/basegl/processors/imageglprocessor.h>
+#include <modules/basegl/processors/imageprocessing/imageglprocessor.h>
 #include <inviwo/core/properties/ordinalproperty.h>
 
 namespace inviwo {
 
 /** \docpage{org.inviwo.ImageGamma, Image Gamma}
  * Apply gamma correction to an input image. The alpha channel is not touched.
- * ![](imagegamma.png)
+ * ![](org.inviwo.ImageGamma.png?classIdentifier=org.inviwo.ImageGamma)
  * This processor applies a gamma correction as follows
  * 
  *     out.rgb = pow(in.rgb, gamma)

@@ -37,11 +37,35 @@
 #include <inviwo/core/datastructures/geometry/simplemesh.h>
 #include <inviwo/core/datastructures/geometry/plane.h>
 #include <inviwo/core/properties/boolproperty.h>
+#include <inviwo/core/properties/buttonproperty.h>
+#include <inviwo/core/properties/cameraproperty.h>
 #include <inviwo/core/properties/ordinalproperty.h>
-
 
 namespace inviwo {
 
+/** \docpage{org.inviwo.MeshClipping, Mesh Clipping}
+ * ![](org.inviwo.MeshClipping.png?classIdentifier=org.inviwo.MeshClipping)
+ *
+ * ...
+ * 
+ * ### Inports
+ *   * __geometry.input__ ...
+ * 
+ * ### Outports
+ *   * __geometry.output__ ...
+ * 
+ * ### Properties
+ *   * __Move Camera Along Normal__ ...
+ *   * __Plane Point__ ...
+ *   * __Render As Points by Default__ ...
+ *   * __Move Plane Point Along Normal__ ...
+ *   * __Camera__ ...
+ *   * __Plane Normal__ ...
+ *   * __Align Plane Normal To Camera Normal__ ...
+ *   * __Enable clipping__ ...
+ *   * __Plane Point Along Normal Move__ ...
+ *
+ */
 class IVW_MODULE_BASE_API MeshClipping : public Processor {
 public:
     MeshClipping();
@@ -55,6 +79,9 @@ public:
 protected:
     virtual void process();
 
+    void onMovePointAlongNormalToggled();
+    void onAlignPlaneNormalToCameraNormalPressed();
+
     Mesh* clipGeometryAgainstPlaneRevised(const Mesh*, Plane);
     Mesh* clipGeometryAgainstPlane(const Mesh*, Plane);
     float degreeToRad(float);
@@ -64,9 +91,16 @@ private:
     MeshOutport outport_;
 
     BoolProperty clippingEnabled_;
+    BoolProperty movePointAlongNormal_;
+    BoolProperty moveCameraAlongNormal_;
+    FloatProperty pointPlaneMove_;
     FloatVec3Property planePoint_;
     FloatVec3Property planeNormal_;
+    ButtonProperty alignPlaneNormalToCameraNormal_;
     BoolProperty renderAsPoints_;
+    CameraProperty camera_;
+
+    float previousPointPlaneMove_;
 
     static const float EPSILON;
 };

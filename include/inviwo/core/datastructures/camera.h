@@ -57,16 +57,30 @@ public:
     CameraBase(vec3 lookFrom = vec3(0.0f, 0.0f, 2.0f), vec3 lookTo = vec3(0.0f),
                vec3 lookUp = vec3(0.0f, 1.0f, 0.0f), float nearPlane = 0.01f,
                float farPlane = 10000.0f);
-    virtual ~CameraBase() {}
+    virtual ~CameraBase() = default;
+    CameraBase(const CameraBase& other) = default;
+    //CameraBase(CameraBase&& other) = default;
+    CameraBase& operator=(const CameraBase& other) = default;
 
-    vec3 getLookFrom() const;
+    vec3& getLookFrom() { return lookFrom_; }
+    const vec3& getLookFrom() const;
     void setLookFrom(vec3 val);
 
-    vec3 getLookTo() const;
+    vec3& getLookTo() { return lookTo_; }
+    const vec3& getLookTo() const;
     void setLookTo(vec3 val);
 
-    vec3 getLookUp() const;
+    vec3& getLookUp() { return lookUp_; }
+    const vec3& getLookUp() const;
     void setLookUp(vec3 val);
+
+
+    /** 
+     * \brief Get unnormalized direction of camera: lookTo - lookFrom
+     * 
+     * @return Unnormalized direction of camera
+     */
+    vec3 getDirection() const { return lookTo_ - lookFrom_; }
 
     float getNearPlaneDist() const;
     /** 
@@ -86,13 +100,33 @@ public:
 
     const mat4& viewMatrix() const;
     const mat4& projectionMatrix() const;
-    mat4 inverseViewMatrix() const;
-    mat4 inverseProjectionMatrix() const;
+    const mat4& inverseViewMatrix() const;
+    const mat4& inverseProjectionMatrix() const;
+
+    /**
+    * \brief Convert from normalized device coordinates (xyz in [-1 1]) to world coordinates.
+    *
+    * @param vec3 ndcCoords Coordinates in [-1 1]
+    * @return vec3 World space position
+    */
+    vec3 getWorldPosFromNormalizedDeviceCoords(const vec3& ndcCoords) const;
+
+    /**
+    * \brief Convert from normalized device coordinates (xyz in [-1 1]) to clip coordinates,
+    * where z value of -1 correspond to the near plane and 1 to the far plane. 
+    * Coordinates outside of the [-1 1]^3 range will be clipped.
+    *
+    * @param vec4 ndcCoords xyz clip-coordinates in [-1 1]^3, and the clip w-coordinate used for perspective division.
+    * @return vec4 Clip space position
+    */
+    vec4 getClipPosFromNormalizedDeviceCoords(const vec3& ndcCoords) const;
 
     virtual void serialize(IvwSerializer& s) const override;
     virtual void deserialize(IvwDeserializer& d) override;
 
 protected:
+
+    bool equalTo(const CameraBase& other) const;
     /**
      * \brief Calculate and return the projection matrix for the camera.
      *
@@ -128,7 +162,13 @@ public:
     PerspectiveCamera(vec3 lookFrom = vec3(0.0f, 0.0f, 2.0f), vec3 lookTo = vec3(0.0f),
                       vec3 lookUp = vec3(0.0f, 1.0f, 0.0f), float nearPlane = 0.01f,
                       float farPlane = 10000.0f, float fieldOfView = 60.f, float aspectRatio = 1.f);
-    virtual ~PerspectiveCamera() {}
+    virtual ~PerspectiveCamera() = default;
+    PerspectiveCamera(const PerspectiveCamera& other) = default;
+    //CameraBase(CameraBase&& other) = default;
+    PerspectiveCamera& operator=(const PerspectiveCamera& other) = default;
+
+    friend bool operator==(const PerspectiveCamera& lhs, const PerspectiveCamera& rhs);
+    friend bool operator!=(const PerspectiveCamera& lhs, const PerspectiveCamera& rhs);
 
     float getFovy() const;
     void setFovy(float val);
@@ -145,6 +185,9 @@ protected:
     float aspectRatio_;
 };
 
+bool operator==(const PerspectiveCamera& lhs, const PerspectiveCamera& rhs);
+bool operator!=(const PerspectiveCamera& lhs, const PerspectiveCamera& rhs);
+
 /**
  * \class OrthographicCamera
  *
@@ -158,9 +201,15 @@ public:
     OrthographicCamera(vec3 lookFrom = vec3(0.0f, 0.0f, 2.0f), vec3 lookTo = vec3(0.0f),
                        vec3 lookUp = vec3(0.0f, 1.0f, 0.0f), float nearPlane = 0.01f,
                        float farPlane = 10000.0f, vec4 frustum = vec4(-1, 1, -1, 1));
-    virtual ~OrthographicCamera() {}
+    virtual ~OrthographicCamera() = default;
+    OrthographicCamera(const OrthographicCamera& other) = default;
+    //CameraBase(CameraBase&& other) = default;
+    OrthographicCamera& operator=(const OrthographicCamera& other) = default;
 
-    vec4 getFrustum() const;
+    friend bool operator==(const OrthographicCamera& lhs, const OrthographicCamera& rhs);
+    friend bool operator!=(const OrthographicCamera& lhs, const OrthographicCamera& rhs);
+
+    const vec4& getFrustum() const;
     /**
      * \brief Left, right, bottom, top view volume
      *
@@ -169,7 +218,7 @@ public:
      * @param inviwo::vec4 val
      * @return void
      */
-    void setFrustum(inviwo::vec4 val);
+    void setFrustum(vec4 val);
 
     virtual void serialize(IvwSerializer& s) const override;
     virtual void deserialize(IvwDeserializer& d) override;
@@ -181,19 +230,22 @@ protected:
     vec4 frustum_;
 };
 
+bool operator==(const OrthographicCamera& lhs, const OrthographicCamera& rhs);
+bool operator!=(const OrthographicCamera& lhs, const OrthographicCamera& rhs);
+
 // Implementation details
 
-inline vec3 CameraBase::getLookFrom() const { return lookFrom_; }
+inline const vec3& CameraBase::getLookFrom() const { return lookFrom_; }
 inline void CameraBase::setLookFrom(vec3 val) {
     lookFrom_ = val;
     invalidateViewMatrix();
 }
-inline vec3 CameraBase::getLookTo() const { return lookTo_; }
+inline const vec3& CameraBase::getLookTo() const { return lookTo_; }
 inline void CameraBase::setLookTo(vec3 val) {
     lookTo_ = val;
     invalidateViewMatrix();
 }
-inline vec3 CameraBase::getLookUp() const { return lookUp_; }
+inline const vec3& CameraBase::getLookUp() const { return lookUp_; }
 inline void CameraBase::setLookUp(vec3 val) {
     lookUp_ = val;
     invalidateViewMatrix();
@@ -208,16 +260,6 @@ inline float CameraBase::getFarPlaneDist() const { return farPlaneDist_; }
 inline void CameraBase::setFarPlaneDist(float val) {
     farPlaneDist_ = val;
     invalidateProjectionMatrix();
-}
-
-inline mat4 CameraBase::inverseViewMatrix() const {
-    if (invalidViewMatrix_) viewMatrix();
-    return inverseViewMatrix_;
-}
-
-inline mat4 CameraBase::inverseProjectionMatrix() const {
-    if (invalidProjectionMatrix_) projectionMatrix();
-    return inverseProjectionMatrix_;
 }
 
 inline void CameraBase::invalidateViewMatrix() { invalidViewMatrix_ = true; }
@@ -235,10 +277,10 @@ inline void PerspectiveCamera::setAspectRatio(float val) {
 }
 
 inline mat4 PerspectiveCamera::calculateProjectionMatrix() const {
-    return glm::perspective(fovy_, aspectRatio_, nearPlaneDist_, farPlaneDist_);
+    return glm::perspective(glm::radians(fovy_), aspectRatio_, nearPlaneDist_, farPlaneDist_);
 };
 
-inline vec4 OrthographicCamera::getFrustum() const { return frustum_; }
+inline const vec4& OrthographicCamera::getFrustum() const { return frustum_; }
 
 inline void OrthographicCamera::setFrustum(inviwo::vec4 val) {
     frustum_ = val;

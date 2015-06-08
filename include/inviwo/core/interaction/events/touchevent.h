@@ -38,9 +38,28 @@ namespace inviwo {
 
 class IVW_CORE_API TouchPoint : public IvwSerializable {
 public:
+    enum TouchState {
+        TOUCH_STATE_NONE = 0,
+        TOUCH_STATE_STARTED = 1,    // Pressed
+        TOUCH_STATE_UPDATED = 2,    // Moved
+        TOUCH_STATE_STATIONARY = 4, // No movement
+        TOUCH_STATE_ENDED = 8,      // Released
+        TOUCH_STATE_ANY = TOUCH_STATE_STARTED | TOUCH_STATE_UPDATED | TOUCH_STATE_STATIONARY | TOUCH_STATE_ENDED
+    };
     TouchPoint() {};
-    TouchPoint(vec2 pos, vec2 posNormalized, vec2 prevPos, vec2 prevPosNormalized);
+    /** 
+     * @param vec2 pos Position in screen coordinates [0 dim-1]^2.
+     * @param vec2 posNormalized Position normalized to the size of the screen [0 1]^2.
+     * @param vec2 prevPos Previous position in screen coordinates [0 dim-1]^2.
+     * @param vec2 prevPosNormalized Previous position normalized to the size of the screen [0 1]^2.
+     * @param TouchPoint::TouchState touchState State of the touch point.
+     * @param double depth Depth value in normalized device coordinates ([-1 1]) at touch point, 1 if no depth is available.
+     */
+    TouchPoint(vec2 pos, vec2 posNormalized, vec2 prevPos, vec2 prevPosNormalized, TouchPoint::TouchState touchState, double depth = 1.0);
     virtual ~TouchPoint() {};
+
+
+    inline TouchPoint::TouchState state() const { return state_; }
     /** 
      * \brief Retrieve position in screen coordinates [0 dim-1]^2
      * Coordinate system:
@@ -81,6 +100,13 @@ public:
     */
     vec2 getPrevPosNormalized() const { return prevPosNormalized_; }
     void setPrevPosNormalized(vec2 val) { prevPosNormalized_ = val; }
+    /**
+    * Retrieve depth value in normalized device coordinates at touch point.
+    * Defined in [-1 1], where -1 is the near plane and 1 is the far plane.
+    * Will be 1 if no depth value is available.
+    */
+    double getDepth() const { return depth_; }
+    void setDepth(double val) { depth_ = val; }
 
     virtual void serialize(IvwSerializer& s) const;
     virtual void deserialize(IvwDeserializer& d);
@@ -91,19 +117,15 @@ protected:
     vec2 prevPos_;
     vec2 prevPosNormalized_;
 
+    TouchPoint::TouchState state_;
+    double depth_;
+
 };
 
 class IVW_CORE_API TouchEvent : public InteractionEvent {
 public:
-    enum TouchState {
-        TOUCH_STATE_NONE = 0,
-        TOUCH_STATE_STARTED = 1,
-        TOUCH_STATE_UPDATED = 2,
-        TOUCH_STATE_ENDED = 4,
-        TOUCH_STATE_ANY = TOUCH_STATE_STARTED | TOUCH_STATE_UPDATED | TOUCH_STATE_ENDED
-    };
-    TouchEvent(TouchEvent::TouchState state, uvec2 canvasSize = uvec2(0));
-    TouchEvent(std::vector<TouchPoint> touchPoints, TouchEvent::TouchState state, uvec2 canvasSize);
+    TouchEvent(uvec2 canvasSize = uvec2(0));
+    TouchEvent(std::vector<TouchPoint> touchPoints, uvec2 canvasSize);
 
     virtual TouchEvent* clone() const;
     virtual ~TouchEvent();
@@ -134,8 +156,6 @@ public:
     */
     vec2 getPrevCenterPointNormalized() const;
 
-    inline TouchEvent::TouchState state() const { return state_; }
-
     virtual std::string getClassIdentifier() const { return "org.inviwo.TouchEvent"; }
 
     virtual void serialize(IvwSerializer& s) const;
@@ -148,8 +168,6 @@ public:
 private:
     std::vector<TouchPoint> touchPoints_;
     uvec2 canvasSize_;
-
-    TouchEvent::TouchState state_;
 };
 
 } // namespace

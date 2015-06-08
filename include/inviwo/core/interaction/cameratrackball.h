@@ -36,8 +36,9 @@
 
 namespace inviwo {
 
-class IVW_CORE_API CameraTrackball : public Trackball, public TrackballObserver {
+class IVW_CORE_API CameraTrackball : public Trackball<CameraProperty> {
 public:
+    InviwoPropertyInfo();
     /**
      * Convenience clas for trackball using camera properties. Calls propertyModified() on camera when any of the positions or vectors change.
      * Rotates and moves the camera around a sphere. 
@@ -47,16 +48,13 @@ public:
      */
     CameraTrackball(CameraProperty* cameraProp);
     virtual ~CameraTrackball();
+    virtual CameraTrackball* clone() const;
 protected:
-    virtual void onAllTrackballChanged(const Trackball* trackball);
-    virtual void onLookFromChanged(const Trackball* trackball);
-    virtual void onLookToChanged(const Trackball* trackball);
-    virtual void onLookUpChanged(const Trackball* trackball);
-
-    void onCameraPropertyChange();
 
     CameraProperty* cameraProp_; //< non-owning reference
 };
+
+
 
 } // namespace
 

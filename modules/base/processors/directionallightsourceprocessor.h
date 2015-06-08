@@ -42,7 +42,20 @@
 namespace inviwo {
 
 class DirectionalLight;
-
+/** \docpage{org.inviwo.Directionallightsource, Directional light source}
+ * ![](org.inviwo.Directionallightsource.png?classIdentifier=org.inviwo.Directionallightsource)
+ *
+ * ...
+ * 
+ * ### Outports
+ *   * __DirectionalLightSource__ ...
+ * 
+ * ### Properties
+ *   * __Light power__ ...
+ *   * __Color__ ...
+ *   * __Light Source Position__ ...
+ *   * __Enabled__ ...
+ */
 class IVW_MODULE_BASE_API DirectionalLightSourceProcessor : public Processor {
 public:
     DirectionalLightSourceProcessor();

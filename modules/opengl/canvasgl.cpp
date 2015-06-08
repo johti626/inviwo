@@ -29,6 +29,7 @@
 
 #include "canvasgl.h"
 #include <inviwo/core/datastructures/geometry/mesh.h>
+#include <inviwo/core/datastructures/image/layerram.h>
 #include <inviwo/core/processors/processor.h>
 #include <modules/opengl/inviwoopengl.h>
 #include <modules/opengl/glwrap/shader.h>
@@ -227,6 +228,29 @@ void CanvasGL::checkChannels(int channels) {
         shader_->link();
         singleChannel_ = false;
     }
+}
+
+const LayerRAM* CanvasGL::getDepthLayerRAM() const{
+    if (image_) {
+        const Layer* depthLayer = image_->getDepthLayer();
+        if (depthLayer) {
+            return depthLayer->getRepresentation<LayerRAM>();
+        }
+        else
+            return nullptr;
+    }
+    else
+        return nullptr;
+}
+
+double CanvasGL::getDepthValueAtCoord(uvec2 coord) const{
+    const LayerRAM* depthLayerRAM = getDepthLayerRAM();
+    if (depthLayerRAM && !glm::any(glm::greaterThanEqual(coord, getScreenDimensions()))) {
+        // Convert to normalized device coordinates
+        return 2.0*depthLayerRAM->getValueAsSingleDouble(coord)-1.0;
+    }
+    else
+        return 1.0;
 }
 
 void CanvasGL::enableDrawImagePlaneRect() {

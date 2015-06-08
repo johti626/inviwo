@@ -50,21 +50,21 @@ public:
      *
      * The constructor creates a new binding between a specified action and event.
      *
-     * @param std::string identifier
-     * @param std::string displayName
-     * @param Event e The key or mouse event to bind to an action
-     * @param Action action The action to be bound to an event
-     * @param PropertySemantics semantics
+     * @param identifier
+     * @param displayName
+     * @param event The key or mouse event to bind to an action
+     * @param action The action to be bound to an event
+     * @param semantics
      */
     EventProperty(
-        std::string identifier, std::string displayName, InteractionEvent* e, Action* action,
+        std::string identifier, std::string displayName, InteractionEvent* event, Action* action,
         InvalidationLevel invalidationLevel = INVALID_OUTPUT,
         PropertySemantics semantics = PropertySemantics::Default);
 
     EventProperty(const EventProperty& rhs);
     EventProperty& operator=(const EventProperty& that);
     virtual EventProperty* clone() const;
-    virtual ~EventProperty();
+    virtual ~EventProperty() = default;
 
     /**
      * \brief Maps action to new event.
@@ -83,9 +83,9 @@ public:
     virtual void deserialize(IvwDeserializer& d);
 
 private:
-    InteractionEvent* event_;           //< owning reference
-    InteractionEvent* defaultEvent_;    //< owning reference
-    Action* action_;                    //< owning reference
+    std::unique_ptr<InteractionEvent> event_;           //< owning reference
+    std::unique_ptr<InteractionEvent> defaultEvent_;    //< owning reference
+    std::unique_ptr<Action> action_;                    //< owning reference
 };
 
 }  // namespace

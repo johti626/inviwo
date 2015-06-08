@@ -123,3 +123,7 @@ ivw_clean_tmp_files()
 #--------------------------------------------------------------------
 # Package creation
 include(cmake/packaging.cmake)
+
+#--------------------------------------------------------------------
+# Generate Doxygen setup. 
+add_subdirectory(tools/doxygen)

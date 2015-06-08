@@ -30,6 +30,7 @@
 #include <inviwo/qt/editor/helpwidget.h>
 #include <inviwo/qt/editor/processorpreview.h>
 #include <inviwo/core/util/stringconversion.h>
+#include <inviwo/core/util/filesystem.h>
 #include <inviwo/core/common/inviwoapplication.h>
 #include <QFrame>
 #include <QVBoxLayout>
@@ -43,6 +44,12 @@
 #include <QByteArray>
 #include <QCoreApplication>
 #include <QBuffer>
+
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
+#include <QUrlQuery>
+#include <QImageReader>
+#include <QImageWriter>
+#endif
 
 namespace inviwo {
 
@@ -102,9 +109,7 @@ void HelpWidget::showDocForClassName(std::string classIdentifier) {
     if (!helpEngine_) return;
     std::string className = joinString(splitString(classIdentifier, '.'), "_8");
 
-    QUrl url(
-        QString::fromStdString("qthelp://org.inviwo/doc/docpage-" + className + ".html"));
-
+    QUrl url(QString::fromStdString("qthelp://org.inviwo/doc/docpage-" + className + ".html"));
     QUrl foundUrl = helpEngine_->findFile(url);
 
     if (foundUrl.isValid()) {
@@ -132,23 +137,34 @@ QVariant HelpWidget::HelpBrowser::loadResource(int type, const QUrl& name) {
     QUrl url(name);
     if (name.isRelative()) url = source().resolved(url);
 
-    if (url.fileName() == "processor.png") {
-        std::string quary = url.query().toStdString();
-        auto pairs = splitString(quary, '$');
-        for (auto& pair : pairs) {
-            auto elem = splitString(pair, '=');
-            if (elem[0] == "classIdentifier") {
-                QImage img = util::generatePreview(elem[1]);
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
+    QUrlQuery query(url);
+    if (query.hasQueryItem("classIdentifier")) {
+        QString cid = query.queryItemValue("classIdentifier");
 
-                QByteArray data;
-                QBuffer buffer(&data);
-                buffer.open(QIODevice::WriteOnly);
-                img.save(&buffer, "PNG");
+        auto imageCache = InviwoApplication::getPtr()->getPath(InviwoApplication::PATH_SETTINGS);
+        imageCache += "image-cache";
+        filesystem::createDirectoryRecursivly(imageCache);
 
-                return data;
-            }
+        QString imgname(QString::fromStdString(imageCache) + "/" + cid + ".png");
+        QImageReader reader(imgname);
+        QImage img = reader.read();
+        if (!img.isNull()) {
+            return img;
+        } else {
+            QImage img = utilqt::generatePreview(cid);
+            QByteArray data;
+            QBuffer buffer(&data);
+            buffer.open(QIODevice::WriteOnly);
+            img.save(&buffer, "PNG");
+
+            QImageWriter writer(imgname);
+            writer.write(img);
+
+            return data;
         }
     }
+#endif
 
 #ifdef IVW_DEBUG  // Look for the html in the doc-qt folder.
     if (type == QTextDocument::HtmlResource || type == QTextDocument::ImageResource) {

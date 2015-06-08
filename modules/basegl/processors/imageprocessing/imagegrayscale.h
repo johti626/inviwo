@@ -32,7 +32,7 @@
 
 #include <modules/basegl/baseglmoduledefine.h>
 #include <inviwo/core/common/inviwo.h>
-#include <modules/basegl/processors/imageglprocessor.h>
+#include <modules/basegl/processors/imageprocessing/imageglprocessor.h>
 #include <inviwo/core/properties/baseoptionproperty.h>
 
 namespace inviwo {
@@ -50,7 +50,7 @@ namespace LuminanceModels {
 
 /** \docpage{org.inviwo.ImageGrayscale, Image Grayscale}
  * Compute a gray-scale image from a color input image. The alpha channel is not touched.
- * ![](imagegrayscale.png)
+ * ![](org.inviwo.ImageGrayscale.png?classIdentifier=org.inviwo.ImageGrayscale)
  * The input image is converted to gray-scale as follows
  * 
  *     grayValue = l.r * in.r + l.g * in.g + l.b * in.b

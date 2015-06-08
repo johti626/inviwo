@@ -42,6 +42,20 @@ namespace inviwo {
 
 class DiffuseLight;
 
+/** \docpage{org.inviwo.Diffuselightsource, Diffuse light source}
+ * ![](org.inviwo.Diffuselightsource.png?classIdentifier=org.inviwo.Diffuselightsource)
+ *
+ * ...
+ * 
+ * ### Outports
+ *   * __DiffuseLightSource__ ...
+ * 
+ * ### Properties
+ *   * __Light power__ ...
+ *   * __Light size__ ...
+ *   * __Color__ ...
+ *   * __Light Source Position__ ...
+ */
 class IVW_MODULE_BASE_API DiffuseLightSourceProcessor : public Processor {
 public:
     DiffuseLightSourceProcessor();

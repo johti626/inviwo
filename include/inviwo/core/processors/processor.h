@@ -69,6 +69,7 @@ class ResizeEvent;
 #define ProcessorCodeState(T, codeState) const CodeState T::CODE_STATE = codeState;
 
 /**
+ * \defgroup processors Processors
  * \class Processor
  *
  * \brief A processor generally performs operation on input data and outputs the new result.
@@ -88,7 +89,7 @@ public:
     /**
      * Sets the identifier of the Processor. If there already exist a processor with that identifier
      * it will append a number, starting at 2 to ensure uniqueness of identifiers.
-     * @param the new identifier
+     * @param identifier the new identifier
      * @return The identifier that was set including eventual appended number
      */
     std::string setIdentifier(const std::string& identifier);
