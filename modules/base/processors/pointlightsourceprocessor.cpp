@@ -86,12 +86,6 @@ PointLightSourceProcessor::~PointLightSourceProcessor() {
     delete lightSource_;
     removeInteractionHandler(lightInteractionHandler_);
     delete lightInteractionHandler_;
-    const std::vector<InteractionHandler*>& interactionHandlers = getInteractionHandlers();
-    for (auto handler : interactionHandlers) {
-        removeInteractionHandler(handler);
-        LogWarn("Interaction handler was not removed and deleted");
-    }
-
 }
 
 void PointLightSourceProcessor::process() {
@@ -117,10 +111,7 @@ void PointLightSourceProcessor::updatePointLightSource(PointLight* lightSource) 
 
 void PointLightSourceProcessor::handleInteractionEventsChanged() {
     if (interactionEvents_.get() > 0) {
-        if (!hasInteractionHandler())
-            addInteractionHandler(lightInteractionHandler_);
-
-        
+        addInteractionHandler(lightInteractionHandler_);
     } else {
         removeInteractionHandler(lightInteractionHandler_);
     }
@@ -140,6 +131,10 @@ PointLightSourceProcessor::PointLightInteractionHandler::PointLightInteractionHa
     static_cast<TrackballObservable*>(&trackball_)->addObserver(this);
     camera_->onChange(this, &PointLightInteractionHandler::onCameraChanged); 
 }
+
+void PointLightSourceProcessor::PointLightInteractionHandler::serialize(IvwSerializer& s) const {}
+
+void PointLightSourceProcessor::PointLightInteractionHandler::deserialize(IvwDeserializer& d) {}
 
 void PointLightSourceProcessor::PointLightInteractionHandler::invokeEvent(Event* event) {
     //if(event->hasBeenUsed())

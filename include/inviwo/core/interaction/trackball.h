@@ -148,6 +148,17 @@ protected:
     vec3* lookFrom_;
     vec3* lookTo_;
     vec3* lookUp_;
+    
+    // Interaction restrictions
+    // Options to restrict translation along view-space axes.
+    BoolProperty allowHorizontalPanning_; ///< Enable/disable horizontal panning
+    BoolProperty allowVerticalPanning_;   ///< Enable/disable vertical panning
+    BoolProperty allowZooming_;           ///< Enable/disable zooming
+
+    // Options to restrict rotation around view-space axes.
+    BoolProperty allowHorizontalRotation_;    ///< Enable/disable rotation around horizontal axis
+    BoolProperty allowVerticalRotation_;      ///< Enable/disable rotation around vertical axis
+    BoolProperty allowViewDirectionRotation_; ///< Enable/disable rotation around view direction axis
 
     BoolProperty handleInteractionEvents_;
 
