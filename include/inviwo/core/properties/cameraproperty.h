@@ -111,6 +111,12 @@ public:
     void setNearPlaneDist(float v);
     void setFarPlaneDist(float v);
 
+    vec3 getLookFromMinValue() const { return lookFrom_.getMinValue(); }
+    vec3 getLookFromMaxValue() const { return lookFrom_.getMaxValue(); }
+
+    vec3 getLookToMinValue() const { return lookTo_.getMinValue(); }
+    vec3 getLookToMaxValue() const { return lookTo_.getMaxValue(); }
+
     /** 
      * \brief Convert from normalized device coordinates (xyz in [-1 1]) to world coordinates.
      * 

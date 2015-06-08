@@ -30,10 +30,6 @@
 #ifndef IVW_FORMATS_H
 #define IVW_FORMATS_H
 
-#pragma warning(disable : 4723)
-#pragma warning(disable : 4756)
-#pragma warning(disable : 4244) // min/max to double.
-
 #include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/util/glm.h>
 #include <inviwo/core/util/stringconversion.h>
@@ -627,6 +623,8 @@ auto DataFormatBase::dispatch(T& obj, Args&&... args) const -> typename T::type 
             return obj.template dispatch<DataVec4UINT32>(std::forward<Args>(args)...);
         case DataFormatEnums::Vec4UINT64:
             return obj.template dispatch<DataVec4UINT64>(std::forward<Args>(args)...);
+        case DataFormatEnums::NOT_SPECIALIZED:
+        case DataFormatEnums::NUMBER_OF_FORMATS:
         default:
             return nullptr;
     }

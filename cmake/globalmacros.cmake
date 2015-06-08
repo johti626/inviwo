@@ -620,27 +620,8 @@ endmacro()
 
 #--------------------------------------------------------------------
 # Creates VS folder structure
-macro(ivw_vs_folder project_name folder_name)
-    #--------------------------------------------------------------------
-    # VS Ignore Libs and folder structure
-    if(WIN32)
-      if(MSVC)
-         set_target_properties(${project_name} PROPERTIES
-            LINK_FLAGS_DEBUG
-            ${VS_MULTITHREADED_DEBUG_DLL_IGNORE_LIBRARY_FLAGS} FOLDER ${folder_name})
-         set_target_properties(${project_name} PROPERTIES
-             LINK_FLAGS_RELWITHDEBINFO
-             ${VS_MULTITHREADED_RELEASE_DLL_IGNORE_LIBRARY_FLAGS} FOLDER ${folder_name})
-         set_target_properties(${project_name} PROPERTIES
-             LINK_FLAGS_RELEASE
-             ${VS_MULTITHREADED_RELEASE_DLL_IGNORE_LIBRARY_FLAGS} FOLDER ${folder_name})
-         set_target_properties(${project_name} PROPERTIES
-             LINK_FLAGS_MINSIZEREL
-             ${VS_MULTITHREADED_RELEASE_DLL_IGNORE_LIBRARY_FLAGS} FOLDER ${folder_name})
-        endif(MSVC)
-    else()
-         set_target_properties(${project_name} PROPERTIES FOLDER ${folder_name})
-    endif(WIN32)
+macro(ivw_folder project_name folder_name)
+    set_target_properties(${project_name} PROPERTIES FOLDER ${folder_name})
 endmacro()
 
 #--------------------------------------------------------------------
@@ -708,21 +689,21 @@ macro(ivw_define_standard_definitions project_name)
 endmacro()
 
 #--------------------------------------------------------------------
-# Define QT defintions
+# Define QT definitions
 macro(ivw_define_qt_definitions)
 	add_definitions(-DQT_CORE_LIB
                     -DQT_GUI_LIB)
 endmacro()
 
 #--------------------------------------------------------------------
-# Add defintion
+# Add definition
 macro(ivw_add_definition def)
     add_definitions(-D${def})
     list(APPEND _allDefinitions -D${def})
 endmacro()
 
 #--------------------------------------------------------------------
-# Add defintion to list only 
+# Add definition to list only 
 macro(ivw_add_definition_to_list def)
     list(APPEND _allDefinitions -D${def})
 endmacro()
@@ -730,12 +711,18 @@ endmacro()
 #--------------------------------------------------------------------
 # Add folder to module pack
 macro(ivw_add_to_module_pack folder)
-if(IVW_PACKAGE_PROJECT)
-    get_filename_component(FOLDER_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-    install(DIRECTORY ${folder}
-             DESTINATION modules/${FOLDER_NAME}
-             COMPONENT ${_cpackName})
-endif()
+    if(IVW_PACKAGE_PROJECT)
+        get_filename_component(FOLDER_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+        if(APPLE)
+            install(DIRECTORY ${folder}
+                     DESTINATION Inviwo.app/Contents/Resources/modules/${FOLDER_NAME}
+                     COMPONENT ${_cpackName})
+        else()
+            install(DIRECTORY ${folder}
+                     DESTINATION modules/${FOLDER_NAME}
+                     COMPONENT ${_cpackName})
+        endif()
+    endif()
 endmacro()
 
 #--------------------------------------------------------------------
@@ -786,7 +773,7 @@ macro(ivw_create_module)
   
   #--------------------------------------------------------------------
   # Add project to VS module folder
-  #ivw_vs_folder(inviwo-module-${_projectName} modules)
+  #ivw_folder(inviwo-module-${_projectName} modules)
   
   #--------------------------------------------------------------------
   # Make package (for other modules to find)
@@ -803,13 +790,13 @@ endmacro()
 #--------------------------------------------------------------------
 # Creates project with initial variables
 macro(ivw_set_pch_disabled_for_module)
-  set(_pchDisabledForThisModule TRUE)
+    set(_pchDisabledForThisModule TRUE)
 endmacro()
 
 #--------------------------------------------------------------------
 # Optimize compilation with pre-compilied headers from inviwo core
 macro(ivw_compile_optimize_inviwo_core)
-      if(PRECOMPILED_HEADERS)
+    if(PRECOMPILED_HEADERS)
 		if(_pchDisabledForThisModule)
 			set_target_properties(${_projectName} PROPERTIES COTIRE_ENABLE_PRECOMPILED_HEADER FALSE)
 		endif()
@@ -817,8 +804,8 @@ macro(ivw_compile_optimize_inviwo_core)
 		 get_target_property(_prefixHeader inviwo-core COTIRE_CXX_PREFIX_HEADER)
 		 set_target_properties(${_projectName} PROPERTIES COTIRE_CXX_PREFIX_HEADER_INIT "${_prefixHeader}")
 		 cotire(${_projectName})
-      endif()
-	  # else()
+    endif()
+	# else()
 			# get_target_property(_pchFile inviwo-core COTIRE_CXX_PRECOMPILED_HEADER)
 			# cotire_setup_pch_file_inclusion(
 					# ${_language} ${_target} ${_wholeTarget} "${_prefixFile}" "${_pchFile}" ${_sourceFiles})
@@ -827,77 +814,91 @@ macro(ivw_compile_optimize_inviwo_core)
 			# file(COPY ${PDB_FILES} DESTINATION ${_target})
 			# file(GLOB IDB_FILES "${pchFileDir}/*.idb")
 			# file(COPY ${IDB_FILES} DESTINATION ${_target})
-		# endif()
+	# endif()
 endmacro()
 
 #--------------------------------------------------------------------
 # Optimize compilation with pre-compilied headers
 macro(ivw_compile_optimize)
-      #set_target_properties(${_projectName} PROPERTIES COTIRE_ENABLE_PRECOMPILED_HEADER FALSE)
-      if(PRECOMPILED_HEADERS)
-		  set_target_properties(${_projectName} PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
-		  list(APPEND _allPchDirs ${IVW_EXTENSIONS_DIR})
-		  set_target_properties(${_projectName} PROPERTIES COTIRE_PREFIX_HEADER_INCLUDE_PATH "${_allPchDirs}")
-		  cotire(${_projectName})
-      endif()
-      #target_link_libraries(${_projectName}_unity ${_allLibs})
+    #set_target_properties(${_projectName} PROPERTIES COTIRE_ENABLE_PRECOMPILED_HEADER FALSE)
+    if(PRECOMPILED_HEADERS)
+        set_target_properties(${_projectName} PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
+		list(APPEND _allPchDirs ${IVW_EXTENSIONS_DIR})
+		set_target_properties(${_projectName} PROPERTIES COTIRE_PREFIX_HEADER_INCLUDE_PATH "${_allPchDirs}")
+		cotire(${_projectName})
+    endif()
+    #target_link_libraries(${_projectName}_unity ${_allLibs})
 endmacro()
 
 #--------------------------------------------------------------------
 # Make package (with configure file etc)
 macro(ivw_make_package package_name project_name)
-if(IVW_PACKAGE_PROJECT AND BUILD_SHARED_LIBS)  
-   #--------------------------------------------------------------------
-   # Add to package
-if(WIN32)
-   install(TARGETS ${project_name}
-            RUNTIME DESTINATION bin
-            COMPONENT ${_cpackName})
-else()
-    install(TARGETS ${project_name}
-            RUNTIME DESTINATION bin
-            BUNDLE DESTINATION bin
-	        ARCHIVE DESTINATION lib
-            LIBRARY DESTINATION lib
-            COMPONENT ${_cpackName})
-endif()
-endif()
 
-  #--------------------------------------------------------------------
-  # Append headers etc of project to include list
-  #set(REST ${ARGN})
-  #if(NOT REST)
-    #get_filename_component(CURRENT_PARENT_DIR ${CMAKE_CURRENT_SOURCE_DIR} PATH)
-    #list(APPEND _allIncludeDirs ${CURRENT_PARENT_DIR})
-  #else()
-  #  list(APPEND _allIncludeDirs ${ARGN})
-  #endif()
-  list(APPEND _allLibsDir "${IVW_LIBRARY_DIR}")
-  if(WIN32 AND BUILD_SHARED_LIBS)
-	set(PROJECT_LIBRARIES optimized ${IVW_LIBRARY_DIR}/Release/${project_name}.lib debug ${IVW_LIBRARY_DIR}/Debug/${project_name}${CMAKE_DEBUG_POSTFIX}.lib)
-  else()
-	set(PROJECT_LIBRARIES optimized ${project_name} debug ${project_name}${CMAKE_DEBUG_POSTFIX})
-  endif()
-  list(APPEND _allLibs ${PROJECT_LIBRARIES})
+    if(IVW_PACKAGE_PROJECT AND BUILD_SHARED_LIBS)  
+       #--------------------------------------------------------------------
+       # Add to package
+        if(WIN32)
+           install(TARGETS ${project_name}
+                    RUNTIME DESTINATION bin
+                    COMPONENT ${_cpackName})
+        
+        elseif(APPLE)
+            install(TARGETS ${project_name}
+                    RUNTIME DESTINATION bin
+                    BUNDLE DESTINATION .
+                    ARCHIVE DESTINATION Inviwo.app/Contents/MacOS
+                    LIBRARY DESTINATION Inviwo.app/Contents/MacOS
+                    COMPONENT ${_cpackName})
+        else()
+            install(TARGETS ${project_name}
+                    RUNTIME DESTINATION bin
+                    BUNDLE DESTINATION bin
+        	        ARCHIVE DESTINATION lib
+                    LIBRARY DESTINATION lib
+                    COMPONENT ${_cpackName})
+        endif()
+    endif()
+
+    #--------------------------------------------------------------------
+    # Append headers etc of project to include list
+    #set(REST ${ARGN})
+    #if(NOT REST)
+    #   get_filename_component(CURRENT_PARENT_DIR ${CMAKE_CURRENT_SOURCE_DIR} PATH)
+    #   list(APPEND _allIncludeDirs ${CURRENT_PARENT_DIR})
+    #else()
+    #   list(APPEND _allIncludeDirs ${ARGN})
+    #endif()
+
+    list(APPEND _allLibsDir "${IVW_LIBRARY_DIR}")
+    if(WIN32 AND BUILD_SHARED_LIBS)
+        set(PROJECT_LIBRARIES 
+            optimized ${IVW_LIBRARY_DIR}/Release/${project_name}.lib 
+            debug ${IVW_LIBRARY_DIR}/Debug/${project_name}${CMAKE_DEBUG_POSTFIX}.lib)
+    else()
+	   set(PROJECT_LIBRARIES 
+           optimized ${project_name} 
+           debug ${project_name}${CMAKE_DEBUG_POSTFIX})
+    endif()
+    list(APPEND _allLibs ${PROJECT_LIBRARIES})
   
-  remove_duplicates(uniqueIncludes ${_allIncludes})
-  remove_duplicates(uniqueIncludeDirs ${_allIncludeDirs})
-  remove_duplicates(uniqueLibsDir ${_allLibsDir})
-  clean_library_list(_allLibs)
-  remove_duplicates(uniqueDefs ${_allDefinitions})
-  remove_duplicates(uniqueLinkFlags ${_allLinkFlags})
+    remove_duplicates(uniqueIncludes ${_allIncludes})
+    remove_duplicates(uniqueIncludeDirs ${_allIncludeDirs})
+    remove_duplicates(uniqueLibsDir ${_allLibsDir})
+    clean_library_list(_allLibs)
+    remove_duplicates(uniqueDefs ${_allDefinitions})
+    remove_duplicates(uniqueLinkFlags ${_allLinkFlags})
+    
+    string(TOUPPER ${package_name} u_package_name)
+    set(package_name ${u_package_name})
+    set(_allIncludes ${uniqueIncludes})
+    set(_allIncludeDirs ${uniqueIncludeDirs})
+    set(_allLibsDir ${uniqueLibsDir})
+    set(_allLibs ${_allLibs})
+    set(_allDefinitions ${uniqueDefs})
+    set(_allLinkFlags ${uniqueLinkFlags})
+    set(_project_name ${project_name})
   
-  string(TOUPPER ${package_name} u_package_name)
-  set(package_name ${u_package_name})
-  set(_allIncludes ${uniqueIncludes})
-  set(_allIncludeDirs ${uniqueIncludeDirs})
-  set(_allLibsDir ${uniqueLibsDir})
-  set(_allLibs ${_allLibs})
-  set(_allDefinitions ${uniqueDefs})
-  set(_allLinkFlags ${uniqueLinkFlags})
-  set(_project_name ${project_name})
-  
-  configure_file(${IVW_CMAKE_SOURCE_MODULE_DIR}/mod_package_template.cmake ${IVW_CMAKE_BINARY_MODULE_DIR}/Find${package_name}.cmake @ONLY IMMEDIATE)
+    configure_file(${IVW_CMAKE_SOURCE_MODULE_DIR}/mod_package_template.cmake ${IVW_CMAKE_BINARY_MODULE_DIR}/Find${package_name}.cmake @ONLY IMMEDIATE)
 endmacro()
 
 #--------------------------------------------------------------------
@@ -988,7 +989,7 @@ macro(ivw_add_dependency_libraries)
 endmacro()
 
 #--------------------------------------------------------------------
-# Adds dependancy and includes package variables to the project
+# Adds dependency and includes package variables to the project
 macro(ivw_add_dependencies)
     foreach (package ${ARGN})
       #--------------------------------------------------------------------
@@ -1116,6 +1117,37 @@ macro(ivw_add_dependencies)
        endif()
       
     endforeach()
+endmacro()
+
+#--------------------------------------------------------------------
+# Adds special qt dependency and includes package variables to the project
+macro(ivw_qt_add_dependencies qtarget ivw_comp)
+    find_package(${qtarget} QUIET REQUIRED)
+    if(${qtarget}_FOUND AND IVW_PACKAGE_PROJECT)
+        if(WIN32)
+            set(QTARGET_DIR "${${qtarget}_DIR}/../../../bin")
+            install(FILES ${QTARGET_DIR}/${qtarget}${CMAKE_DEBUG_POSTFIX}.dll 
+                    DESTINATION bin 
+                    COMPONENT ${ivw_comp} 
+                    CONFIGURATIONS Debug)
+            install(FILES ${QTARGET_DIR}/${qtarget}.dll 
+                    DESTINATION bin 
+                    COMPONENT ${ivw_comp} 
+                    CONFIGURATIONS Release)
+        elseif(APPLE)
+            foreach(plugin ${${qtarget}_PLUGINS})
+                get_target_property(_loc ${plugin} LOCATION)
+                get_filename_component(_path ${_loc} DIRECTORY)
+                get_filename_component(_dirname ${_path} NAME)
+                install(FILES ${_loc} 
+                        DESTINATION Inviwo.app/Contents/plugins/${_dirname} 
+                        COMPONENT ${ivw_comp})
+            endforeach()
+        else()
+
+
+        endif()
+    endif()
 endmacro()
 
 #--------------------------------------------------------------------

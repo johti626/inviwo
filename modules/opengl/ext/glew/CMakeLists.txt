@@ -50,7 +50,7 @@ source_group("CMake Files" FILES ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt)
 add_library(GLEW ${SOURCE_FILES} ${HEADER_FILES})
 
 # InViWo Macros
-ivw_vs_folder(GLEW ext)
+ivw_folder(GLEW ext)
 
 target_link_libraries(GLEW
     ${OPENGL_LIBRARIES}
@@ -63,6 +63,14 @@ if(WIN32)
    install(TARGETS GLEW
             RUNTIME DESTINATION bin
             COMPONENT modules)
+else(APPLE)
+    install(TARGETS GLEW
+            RUNTIME DESTINATION bin
+            BUNDLE DESTINATION .
+            ARCHIVE DESTINATION Inviwo.app/Contents/MacOS
+            LIBRARY DESTINATION Inviwo.app/Contents/MacOS
+            COMPONENT modules)
+
 else()
     install(TARGETS GLEW
             RUNTIME DESTINATION bin

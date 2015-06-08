@@ -66,9 +66,6 @@ set(HEADER_FILES
 )
 ivw_group("Header Files" ${HEADER_FILES})
 
-ivw_qt_wrap_cpp(MOC_FILES ${MOC_FILES})
-source_group("MOC Files" FILES ${MOC_FILES})
-
 #--------------------------------------------------------------------
 # Add source files
 set(SOURCE_FILES
@@ -135,13 +132,58 @@ ivw_define_qt_definitions()
 
 #--------------------------------------------------------------------
 # Create library
+find_package(Qt5Core QUIET REQUIRED)
+ivw_qt_wrap_cpp(MOC_FILES ${MOC_FILES})
+source_group("MOC Files" FILES ${MOC_FILES})
 add_library(inviwo-qtwidgets ${SOURCE_FILES} ${MOC_FILES} ${HEADER_FILES})
 
 # Add qt dependencies to this list
 if(DESIRED_QT_VERSION MATCHES 5)
-    ivw_add_dependencies(Qt5Core Qt5Gui Qt5Widgets)    
+     set(IVW_WIDGETS_QT_DEPENDS
+        Qt5Core
+        Qt5Gui
+        Qt5Widgets
+        Qt5Help
+    )
+
+    foreach(qtarget ${IVW_WIDGETS_QT_DEPENDS})
+        ivw_add_dependencies(${qtarget})  
+        ivw_qt_add_dependencies(${qtarget} qt_widgets)
+    endforeach()
+
 else()
     ivw_add_dependencies(Qt)
+    set(QT_DONT_USE_QTCORE FALSE)
+    set(QT_DONT_USE_QTGUI FALSE)
+    set(QT_DONT_USE_QTHELP FALSE)
+    set(QT_USE_QT3SUPPORT FALSE)
+    set(QT_USE_QTASSISTANT FALSE)
+    set(QT_USE_QTDESIGNER FALSE)
+    set(QT_USE_QTMOTIF FALSE)
+    set(QT_USE_QTMAIN FALSE)
+    set(QT_USE_QTNETWORK FALSE)
+    set(QT_USE_QTNSPLUGIN FALSE)
+    set(QT_USE_QTOPENGL FALSE)
+    set(QT_USE_QTSQL FALSE)
+    set(QT_USE_QTXML FALSE)
+    set(QT_USE_QTSVG FALSE)
+    set(QT_USE_QTTEST FALSE)
+    set(QT_USE_QTUITOOLS FALSE)
+    set(QT_USE_QTDBUS FALSE)
+    set(QT_USE_QTSCRIPT FALSE)
+    set(QT_USE_QTASSISTANTCLIENT FALSE)
+    set(QT_USE_QTWEBKIT FALSE)
+    set(QT_USE_QTXMLPATTERNS FALSE)
+    set(QT_USE_PHONON FALSE)
+    
+    if(IVW_PACKAGE_PROJECT)
+        if(WIN32)
+            install(FILES ${QT_BINARY_DIR}/QtCore${CMAKE_DEBUG_POSTFIX}4.dll DESTINATION bin COMPONENT qt_widgets CONFIGURATIONS Debug)
+            install(FILES ${QT_BINARY_DIR}/QtCore4.dll DESTINATION bin COMPONENT qt_widgets CONFIGURATIONS Release)
+            install(FILES ${QT_BINARY_DIR}/QtGui${CMAKE_DEBUG_POSTFIX}4.dll DESTINATION bin COMPONENT qt_widgets CONFIGURATIONS Debug)
+            install(FILES ${QT_BINARY_DIR}/QtGui4.dll DESTINATION bin COMPONENT qt_widgets CONFIGURATIONS Release)
+        endif()
+    endif()
 endif()
 
 # Add core dependencies to this list

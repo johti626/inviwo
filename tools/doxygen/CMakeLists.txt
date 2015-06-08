@@ -234,10 +234,11 @@ endfunction()
 
 
 if(${IVW_DOXYGEN_PROJECT})
-	find_package(Perl QUIET)    # sets, PERL_FOUND, PERL_EXECUTABLE
-	find_package(Doxygen QUIET) # sets, DOXYGEN_FOUND, DOXYGEN_EXECUTABLE, 
-						        # DOXYGEN_DOT_FOUND, DOXYGEN_DOT_EXECUTABLE
-	
+	find_package(Perl QUIET)    		# sets, PERL_FOUND, PERL_EXECUTABLE
+	find_package(Doxygen QUIET) 		# sets, DOXYGEN_FOUND, DOXYGEN_EXECUTABLE, 
+						        		# DOXYGEN_DOT_FOUND, DOXYGEN_DOT_EXECUTABLE	
+	find_package(PythonInterp QUIET)	# sets, PYTHONINTERP_FOUND PYTHON_EXECUTABLE
+
 	if(NOT ${DOXYGEN_FOUND})
 		return()
 	endif()
@@ -250,6 +251,17 @@ if(${IVW_DOXYGEN_PROJECT})
 	set(IVW_DOXY_OUT ${CMAKE_CURRENT_BINARY_DIR})
 	set(IVW_DOXY_TAG_FILES "")
 	set(IVW_DOXY_DEPENDS "")
+
+	if(PYTHONINTERP_FOUND)
+		set(FILER_PATTERNS_LIST
+			"\"*.frag=${PYTHON_EXECUTABLE} ${IVW_DOXY_DIR}/filter/glslfilter.py\""
+            "\"*.vert=${PYTHON_EXECUTABLE} ${IVW_DOXY_DIR}/filter/glslfilter.py\""
+            "\"*.geom=${PYTHON_EXECUTABLE} ${IVW_DOXY_DIR}/filter/glslfilter.py\""
+            "\"*.glsl=${PYTHON_EXECUTABLE} ${IVW_DOXY_DIR}/filter/glslfilter.py\""
+         )
+        string(REGEX REPLACE ";" " \\\\\n                         " FILER_PATTERNS "${FILER_PATTERNS_LIST}")
+		set(FILER_PATTERNS ${FILER_PATTERNS})
+	endif()
 
 	set(IVW_DOXY_EXTRA_FILES 
 		"${IVW_DOXY_DIR}/style/img_downArrow.png"

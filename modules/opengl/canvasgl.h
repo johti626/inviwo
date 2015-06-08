@@ -54,7 +54,7 @@ public:
     virtual void activate();
     void defaultGLState();
 
-    virtual void render(const Image* im, LayerType layerType = COLOR_LAYER);
+    virtual void render(const Image* im, LayerType layerType = COLOR_LAYER , size_t idx = 0);
     virtual void resize(uvec2 size);
     virtual void glSwapBuffers();
     virtual void update();
@@ -81,12 +81,12 @@ public:
 protected:
     virtual void initializeSquare();
 
-    void renderLayer();
+    void renderLayer(size_t idx = 0);
     void renderNoise();
     void renderTexture(int);
 
     void drawRect();
-    void checkChannels(int);
+    void checkChannels(std::size_t);
 
     /** 
      * \brief Get depth layer RAM representation. Will return nullptr if depth layer does not exist.
@@ -101,10 +101,10 @@ protected:
      * Depth is defined in [-1 1], where -1 is the near plane and 1 is the far plane.
      * Will be 1 if no depth value is available.
      * 
-     * @param uvec2 screenCoordinate Screen coordinates [0 dim-1]^2
+     * @param ivec2 screenCoordinate Screen coordinates [0 dim-1]^2
      * @return double NDC depth in [-1 1], 1 if no depth value exist.
      */
-    double getDepthValueAtCoord(uvec2 screenCoordinate) const;
+    double getDepthValueAtCoord(ivec2 screenCoordinate) const;
 
     static void enableDrawImagePlaneRect();
     static void disableDrawImagePlaneRect();
@@ -120,6 +120,7 @@ private:
     Shader* shader_;
     Shader* noiseShader_;
     int singleChannel_;
+    size_t previousRenderedLayerIdx_;
 
 };
 

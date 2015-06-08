@@ -53,7 +53,9 @@ CanvasGL::CanvasGL(uvec2 dimensions)
     , layerType_(COLOR_LAYER)
     , shader_(nullptr)
     , noiseShader_(nullptr)
-    , singleChannel_(false) {}
+    , singleChannel_(false)
+    , previousRenderedLayerIdx_(0) 
+{}
 
 CanvasGL::~CanvasGL() {
     deinitialize();
@@ -105,18 +107,18 @@ void CanvasGL::defaultGLState(){
 
 void CanvasGL::activate() {}
 
-void CanvasGL::render(const Image* image, LayerType layerType) {
+void CanvasGL::render(const Image* image, LayerType layerType, size_t idx) {
     image_ = image;
     layerType_ = layerType;
     pickingContainer_->setPickingSource(image_);    
     if (image_) {
         imageGL_ = image_->getRepresentation<ImageGL>();
-        if (imageGL_ && imageGL_->getLayerGL(layerType_)) {
-            checkChannels(imageGL_->getLayerGL(layerType_)->getDataFormat()->getComponents());
+        if (imageGL_ && imageGL_->getLayerGL(layerType_, idx)) {
+            checkChannels(imageGL_->getLayerGL(layerType_, idx)->getDataFormat()->getComponents());
         } else {
             checkChannels(image_->getDataFormat()->getComponents());
         }
-        renderLayer();
+        renderLayer(idx);
     } else {
         imageGL_ = nullptr;
         renderNoise();
@@ -132,7 +134,7 @@ void CanvasGL::resize(uvec2 size) {
 void CanvasGL::glSwapBuffers() {}
 
 void CanvasGL::update() {
-    renderLayer();
+    renderLayer(previousRenderedLayerIdx_);
 }
 
 void CanvasGL::attachImagePlanRect(BufferObjectArray* arrayObject) {
@@ -156,9 +158,10 @@ void CanvasGL::multiDrawImagePlaneRect(int instances) {
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, instances);
 }
 
-void CanvasGL::renderLayer() {
+void CanvasGL::renderLayer(size_t idx) {
+    previousRenderedLayerIdx_ = idx;
     if (imageGL_) {
-        const LayerGL* layerGL = imageGL_->getLayerGL(layerType_);
+        const LayerGL* layerGL = imageGL_->getLayerGL(layerType_,idx);
         if (layerGL) {
             TextureUnit textureUnit;
             layerGL->bindTexture(textureUnit.getEnum());
@@ -216,7 +219,7 @@ void CanvasGL::drawRect() {
     rectArray_->unbind();
 }
 
-void CanvasGL::checkChannels(int channels) {
+void CanvasGL::checkChannels(std::size_t channels) {
     if (!singleChannel_ && channels == 1) {
         shader_->getFragmentShaderObject()->addShaderDefine("SINGLE_CHANNEL");
         shader_->getFragmentShaderObject()->build();
@@ -243,11 +246,25 @@ const LayerRAM* CanvasGL::getDepthLayerRAM() const{
         return nullptr;
 }
 
-double CanvasGL::getDepthValueAtCoord(uvec2 coord) const{
+double CanvasGL::getDepthValueAtCoord(ivec2 coord) const{
     const LayerRAM* depthLayerRAM = getDepthLayerRAM();
-    if (depthLayerRAM && !glm::any(glm::greaterThanEqual(coord, getScreenDimensions()))) {
+    if (depthLayerRAM) {
+        uvec2 screenDims = getScreenDimensions();
+        uvec2 depthDims = depthLayerRAM->getDimensions();
+        coord = glm::max(coord, ivec2(0));
+
+        float depthScreenRatioX = glm::floor(static_cast<float>(depthDims.x) / static_cast<float>(screenDims.x));
+        float depthScreenRatioY = glm::floor(static_cast<float>(depthDims.y) / static_cast<float>(screenDims.y));
+        uvec2 coordDepth;
+        coordDepth.x = static_cast<unsigned int>(depthScreenRatioX*static_cast<float>(coord.x));
+        coordDepth.y = static_cast<unsigned int>(depthScreenRatioY*static_cast<float>(coord.y));
+        depthDims -= 1;
+        coordDepth = glm::min(coordDepth, depthDims);
+
+        double depthValue = depthLayerRAM->getValueAsSingleDouble(coordDepth);
+
         // Convert to normalized device coordinates
-        return 2.0*depthLayerRAM->getValueAsSingleDouble(coord)-1.0;
+        return 2.0*depthValue - 1.0;
     }
     else
         return 1.0;
