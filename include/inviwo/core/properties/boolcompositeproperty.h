@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2013-2015 Inviwo Foundation
+ * Copyright (c) 2012-2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,24 +24,37 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
+ * 
  *********************************************************************************/
 
-#ifndef IVW_GEOMETRYPORT_H
-#define IVW_GEOMETRYPORT_H
+#ifndef IVW_BOOLCOMPOSITEPROPERTY_H
+#define IVW_BOOLCOMPOSITEPROPERTY_H
 
 #include <inviwo/core/common/inviwocoredefine.h>
-#include <inviwo/core/ports/datainport.h>
-#include <inviwo/core/ports/dataoutport.h>
-#include <inviwo/core/datastructures/geometry/geometry.h>
+#include <inviwo/core/common/inviwo.h>
+#include <inviwo/core/properties/compositeproperty.h>
+ #include <inviwo/core/properties/boolproperty.h>
 
 namespace inviwo {
 
-using GeometryInport = DataInport<Geometry>;
-using GeometryMultiInport = DataInport<Geometry, 0>;
-using GeometryFlatMultiInport = DataInport<Geometry, 0, true>;
-using GeometryOutport =  DataOutport<Geometry>;
+class IVW_CORE_API BoolCompositeProperty : public CompositeProperty {
+public:
+    InviwoPropertyInfo();
 
-}  // namespace
+    BoolCompositeProperty(std::string identifier, std::string displayName, bool checked=false,
+                      InvalidationLevel invalidationLevel = INVALID_RESOURCES,
+                      PropertySemantics semantics = PropertySemantics::Default);
+    
+    virtual BoolCompositeProperty* clone() const;
+    virtual ~BoolCompositeProperty();
 
-#endif  // IVW_GEOMETRYPORT_H
+    virtual bool isChecked() const;
+    virtual void setChecked(bool checked);
+    
+private:
+    BoolProperty checked_;
+};
+
+} // namespace
+
+#endif // IVW_BOOLCOMPOSITEPROPERTY_H

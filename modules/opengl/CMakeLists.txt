@@ -12,8 +12,7 @@ set(HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/canvasgl.h
     ${CMAKE_CURRENT_SOURCE_DIR}/canvasprocessorgl.h
     ${CMAKE_CURRENT_SOURCE_DIR}/clockgl.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/geometry/geometrygl.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/geometry/geometryrenderprocessorgl.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/geometry/meshrenderprocessorgl.h
     ${CMAKE_CURRENT_SOURCE_DIR}/geometry/meshgl.h
     ${CMAKE_CURRENT_SOURCE_DIR}/glformats.h
     ${CMAKE_CURRENT_SOURCE_DIR}/glwrap/bufferobject.h
@@ -41,7 +40,7 @@ set(HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/openglmodule.h
     ${CMAKE_CURRENT_SOURCE_DIR}/openglsettings.h
     ${CMAKE_CURRENT_SOURCE_DIR}/openglutils.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/rendering/meshdrawer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/rendering/meshdrawergl.h
     ${CMAKE_CURRENT_SOURCE_DIR}/shaderutils.h
     ${CMAKE_CURRENT_SOURCE_DIR}/textureobserver.h
     ${CMAKE_CURRENT_SOURCE_DIR}/textureutils.h
@@ -61,8 +60,7 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/canvasgl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/canvasprocessorgl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/clockgl.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/geometry/geometrygl.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/geometry/geometryrenderprocessorgl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/geometry/meshrenderprocessorgl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/geometry/meshgl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/glwrap/bufferobject.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/glwrap/bufferobjectarray.cpp
@@ -88,7 +86,7 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/openglmodule.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/openglsettings.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/openglutils.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/rendering/meshdrawer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/rendering/meshdrawergl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/shaderutils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/textureutils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/volume/volumegl.cpp
@@ -119,6 +117,7 @@ set(SHADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/utils/compositing.glsl
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/utils/depth.glsl
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/utils/gradients.glsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/glsl/utils/intersection.glsl
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/utils/raycastgeometry.glsl
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/utils/sampler2d.glsl
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/utils/sampler3d.glsl

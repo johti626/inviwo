@@ -34,7 +34,7 @@
 #include <inviwo/core/ports/imageport.h>
 #include <modules/opengl/image/compositeprocessorgl.h>
 #include <inviwo/core/datastructures/geometry/mesh.h>
-#include <modules/opengl/rendering/meshdrawer.h>
+#include <modules/opengl/rendering/meshdrawergl.h>
 #include <inviwo/core/properties/ordinalproperty.h>
 #include <inviwo/core/properties/buttonproperty.h>
 #include <inviwo/core/properties/eventproperty.h>
@@ -42,6 +42,8 @@
 namespace inviwo {
 
 /** \docpage{org.inviwo.DrawPoints, Draw Points}
+ * ![](processor.png?classIdentifier=org.inviwo.DrawPoints)
+ * 
  * Interactive 2D point drawing 
  * 
  * Hold Ctrl+D and click/move Left Mouse Button to Draw
@@ -53,8 +55,8 @@ namespace inviwo {
  *   * __ImageOutport__ The output image.
  * 
  * ### Properties
- *   * __PointSize_ Defines size of all points.
- *   * __PointColor_ Defines color of all points.
+ *   * __PointSize__ Defines size of all points.
+ *   * __PointColor__ Defines color of all points.
  *   * __ClearButton__ Button to clear all points.
  */
 
@@ -95,7 +97,7 @@ private:
 
 
     Mesh* points_;
-    MeshDrawer* pointDrawer_;
+    MeshDrawerGL* pointDrawer_;
 
     Shader* pointShader_;
 

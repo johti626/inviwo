@@ -30,7 +30,7 @@
 #include "volumeslicegl.h"
 #include <modules/opengl/volume/volumegl.h>
 #include <modules/opengl/image/layergl.h>
-#include <modules/opengl/rendering/meshdrawer.h>
+#include <modules/opengl/rendering/meshdrawergl.h>
 #include <modules/opengl/glwrap/textureunit.h>
 #include <modules/opengl/textureutils.h>
 #include <modules/opengl/volumeutils.h>
@@ -424,8 +424,8 @@ void VolumeSliceGL::renderPositionIndicator() {
         updateIndicatorMesh();
     }
 
-    MeshDrawer drawer(meshCrossHair_);
-    MeshDrawer drawerBox(meshBox_);
+    MeshDrawerGL drawer(meshCrossHair_);
+    MeshDrawerGL drawerBox(meshBox_);
 
     glEnable(GL_LINE_SMOOTH);
     glEnable(GL_BLEND);

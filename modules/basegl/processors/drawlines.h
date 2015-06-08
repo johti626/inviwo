@@ -34,7 +34,7 @@
 #include <inviwo/core/ports/imageport.h>
 #include <modules/opengl/image/compositeprocessorgl.h>
 #include <inviwo/core/datastructures/geometry/mesh.h>
-#include <modules/opengl/rendering/meshdrawer.h>
+#include <modules/opengl/rendering/meshdrawergl.h>
 #include <inviwo/core/properties/ordinalproperty.h>
 #include <inviwo/core/properties/buttonproperty.h>
 #include <inviwo/core/properties/eventproperty.h>
@@ -45,6 +45,8 @@ class Shader;
 
 
 /** \docpage{org.inviwo.DrawLines, Draw Lines}
+* ![](processor.png?classIdentifier=org.inviwo.DrawLines)
+* 
 * Interactive 2D line drawing
 *
 * Hold Ctrl+D and click/move Left Mouse Button to Draw
@@ -56,8 +58,8 @@ class Shader;
 *   * __ImageOutport__ The output image.
 *
 * ### Properties
-*   * __LineSize_ Defines size of all lines.
-*   * __LineColor_ Defines color of all lines.
+*   * __LineSize__ Defines size of all lines.
+*   * __LineColor__ Defines color of all lines.
 *   * __ClearButton__ Button to clear all lines.
 */
 
@@ -99,7 +101,7 @@ private:
     EventProperty keyEnableDraw_;
 
     Mesh* lines_;
-    MeshDrawer* lineDrawer_;
+    MeshDrawerGL* lineDrawer_;
 
     Shader* lineShader_;
 

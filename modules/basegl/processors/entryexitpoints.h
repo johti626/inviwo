@@ -35,16 +35,31 @@
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/properties/boolproperty.h>
 #include <inviwo/core/properties/cameraproperty.h>
-#include <inviwo/core/ports/geometryport.h>
+#include <inviwo/core/ports/meshport.h>
 #include <inviwo/core/ports/imageport.h>
 #include <inviwo/core/ports/volumeport.h>
-#include <inviwo/core/rendering/geometrydrawer.h>
+#include <inviwo/core/rendering/meshdrawer.h>
 #include <modules/opengl/inviwoopengl.h>
 #include <modules/opengl/glwrap/shader.h>
 #include <inviwo/core/common/inviwoapplication.h>
 #include <inviwo/core/interaction/cameratrackball.h>
 
 namespace inviwo {
+
+/** \docpage{org.inviwo.EntryExitPoints, Entry exit points}
+ * ![](processor.png?classIdentifier=org.inviwo.EntryExitPoints)
+ * Computes the entry and exit points of a triangle mesh from the camera position in texture space. 
+ * The output color will be zero if no intersection is found, otherwise .
+ * ### Inports
+ *   * __MeshInport__ The mesh to intersect.
+ *
+ * ### Outports
+ *   * __ImageOutport__ The first hit point.
+ *   * __ImageOutport__ The last hit point.
+ * 
+ * ### Properties
+ *   * __Camera__ Camera of the scene.
+ */
 
 class IVW_MODULE_BASEGL_API EntryExitPoints : public Processor {
 public:
@@ -61,7 +76,7 @@ protected:
     void onGeometryChange();
 
 private:
-    GeometryInport geometryPort_;
+    MeshInport inport_;
     ImageOutport entryPort_;
     ImageOutport exitPort_;
 
@@ -72,7 +87,7 @@ private:
     Shader* genericShader_;
     Shader* capNearClippingPrg_;
     Image* tmpEntryPoints_;
-    GeometryDrawer* drawer_;
+    MeshDrawer* drawer_;
 };
 
 } // namespace

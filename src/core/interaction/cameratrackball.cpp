@@ -28,12 +28,20 @@
  *********************************************************************************/
 
 #include <inviwo/core/interaction/cameratrackball.h>
+//#include <glm/gtx/decomposition.hpp>
+// Dependencies
+#include <glm/mat4x4.hpp>
+#include "glm/vec3.hpp"
+#include "glm/vec4.hpp"
+#include "glm/gtc/quaternion.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 
 namespace inviwo {
 
 CameraTrackball::CameraTrackball(CameraProperty* cameraProp)
     : Trackball(&cameraProp->getLookFrom(), &cameraProp->getLookTo(), &cameraProp->getLookUp())
-    , cameraProp_(cameraProp) {
+    , cameraProp_(cameraProp)
+{
     static_cast<TrackballObservable*>(this)->addObserver(this);
     cameraProp_->onChange(this, &CameraTrackball::onCameraPropertyChange);
 }

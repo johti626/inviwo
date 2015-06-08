@@ -36,6 +36,7 @@
 #include <inviwo/core/interaction/events/mouseevent.h>
 #include <inviwo/core/interaction/events/keyboardevent.h>
 #include <inviwo/core/interaction/events/resizeevent.h>
+#include <inviwo/core/interaction/events/touchevent.h>
 #include <inviwo/core/interaction/action.h>
 #include <inviwo/core/io/serialization/ivwserializable.h>
 #include <inviwo/core/properties/boolproperty.h>
@@ -100,7 +101,7 @@ public:
 protected:
     void setPanSpeedFactor(float psf);
 
-private:
+protected:
     enum Direction { UP = 0, LEFT, DOWN, RIGHT };
 
     vec3 mapNormalizedMousePosToTrackball(const vec2& mousePos, float dist = 1.f);
@@ -129,8 +130,13 @@ private:
     void zoomIn(Event* event);
     void zoomOut(Event* event);
     
-    void pinchGesture(Event* event);
-    void panGesture(Event* event);
+    /** 
+     * \brief Rotates around the direction vector, 
+     * zooms along the direction vector and translates along up/right vector.
+     * 
+     * @param Event * event TouchEvent
+     */
+    void touchGesture(Event* event);
 
     float pixelWidth_;
     float panSpeedFactor_;
@@ -162,9 +168,9 @@ private:
     EventProperty stepPanLeft_;
     EventProperty stepPanDown_;
     EventProperty stepPanRight_;
-    
-    EventProperty pinchGesture_;
-    EventProperty panGesture_;
+
+    EventProperty touchGesture_;
+
 };
 }
 

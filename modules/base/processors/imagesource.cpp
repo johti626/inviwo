@@ -46,8 +46,8 @@ ProcessorCodeState(ImageSource, CODE_STATE_STABLE);
 ImageSource::ImageSource()
     : Processor()
     , outport_("image.outport", DataVec4UINT8::get(), false)
-    , imageFileName_("imageFileName", "Image file name", "", "image")
-    , imageDimension_("imageDimension_", "Image Dimension", ivec2(0), ivec2(0), ivec2(10000),
+    , imageFileName_("imageFileName", "File name", "", "image")
+    , imageDimension_("imageDimension_", "Dimension", ivec2(0), ivec2(0), ivec2(10000),
                       ivec2(1), VALID, PropertySemantics("Text"))
     , isDeserializing_(false) {
     addPort(outport_);
@@ -85,7 +85,7 @@ void ImageSource::load() {
         try {
             Layer* outLayer = reader->readMetaData(imageFileName_.get());
             // Call getRepresentation here to force read a ram representation.
-            // Otherwise the default image size, i.e. 256x265, will be reported 
+            // Otherwise the default image size, i.e. 256x265, will be reported
             // until you do the conversion. Since the LayerDisk does not have any metadata.
             outLayer->getRepresentation<LayerRAM>();
             Image* outImage = new Image(outLayer);
@@ -95,7 +95,9 @@ void ImageSource::load() {
             imageDimension_.set(outLayer->getDimensions());
 
         } catch (DataReaderException const& e) {
-            util::log(e.getContext(), "Could not load data: " + imageFileName_.get() + ", " + e.getMessage(), LogLevel::Error);
+            util::log(e.getContext(),
+                      "Could not load data: " + imageFileName_.get() + ", " + e.getMessage(),
+                      LogLevel::Error);
             imageFileName_.set("");
         }
         delete reader;

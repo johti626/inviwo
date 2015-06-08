@@ -33,12 +33,29 @@
 #include <modules/base/basemoduledefine.h>
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/processors/processor.h>
-#include <inviwo/core/ports/geometryport.h>
+#include <inviwo/core/ports/meshport.h>
 #include <inviwo/core/ports/volumeport.h>
 #include <inviwo/core/properties/boolproperty.h>
 #include <inviwo/core/properties/minmaxproperty.h>
 
 namespace inviwo {
+/** \docpage{org.inviwo.CubeProxyGeometry, Cube Proxy Geometry}
+ * ![](processor.png?classIdentifier=org.inviwo.CubeProxyGeometry)
+ *
+ * Constructs a cube proxy geometry.
+ * 
+ * ### Inports
+ *   * __Inport__ Inpout Volume
+ *
+ * ### Outports
+ *   * __Outport__ Output cubeproxy geometry.
+ * 
+ * ### Properties
+ *   * __Enable Clipping__ Enable axis aligned clipping of the mesh
+ *   * __Clip X Slices__ Clip X axis
+ *   * __Clip Y Slices__ Clip Y axis
+ *   * __Clip Z Slices__ Clip Z axis
+ */
 
 class IVW_MODULE_BASE_API CubeProxyGeometry : public Processor {
 public:
@@ -54,7 +71,7 @@ protected:
 
 private:
     VolumeInport inport_;
-    GeometryOutport outport_;
+    MeshOutport outport_;
 
     BoolProperty clippingEnabled_;
 

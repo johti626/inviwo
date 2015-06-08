@@ -34,7 +34,7 @@
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/interaction/cameratrackball.h>
 #include <inviwo/core/properties/cameraproperty.h>
-#include <inviwo/core/ports/geometryport.h>
+#include <inviwo/core/ports/meshport.h>
 #include <inviwo/core/ports/imageport.h>
 #include <inviwo/core/ports/volumeport.h>
 #include <inviwo/core/common/inviwoapplication.h>
@@ -44,10 +44,11 @@
 
 namespace inviwo {
 /** \docpage{org.inviwo.EntryExitPointsCL, Entry-exit points}
+ * ![](processor.png?classIdentifier=org.inviwo.EntryExitPointsCL)
  * Computes the entry and exit points of a triangle mesh from the camera position in texture space. 
  * The output color will be zero if no intersection is found, otherwise .
  * ### Inports
- *   * __GeometryInport__ The mesh to intersect.
+ *   * __MeshInport__ The mesh to intersect.
  *
  * ### Outports
  *   * __ImageOutport__ The first hit point.
@@ -80,7 +81,7 @@ protected:
 
 
 private:
-    GeometryInport geometryPort_;
+    MeshInport geometryPort_;
     ImageOutport entryPort_;
     ImageOutport exitPort_;
 
