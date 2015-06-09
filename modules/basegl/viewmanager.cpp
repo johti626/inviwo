@@ -41,12 +41,12 @@ Event* ViewManager::registerEvent(Event* event) {
         activePosition_ = flipY(mouseEvent->pos(), mouseEvent->canvasSize());
         if (!viewportActive_ && mouseEvent->state() == MouseEvent::MOUSE_STATE_PRESS) {
             viewportActive_ = true;
-            activeView_ = findView(activePosition_);
+            activeView_ = static_cast<int>(findView(activePosition_));
         } else if (viewportActive_ && mouseEvent->state() == MouseEvent::MOUSE_STATE_RELEASE) {
             viewportActive_ = false;
         }
 
-        if (activeView_ >= 0 && activeView_ < views_.size()) {
+        if (activeView_ >= 0 && activeView_ < static_cast<long>(views_.size())) {
             MouseEvent* newEvent = mouseEvent->clone();
             const ivec4& view = views_[activeView_];
             newEvent->modify(flipY(activePosition_ - ivec2(view.x, view.y), ivec2(view.z, view.w)),
@@ -61,12 +61,12 @@ Event* ViewManager::registerEvent(Event* event) {
                                 gestureEvent->canvasSize());
         if (!viewportActive_ && gestureEvent->state() == GestureEvent::GESTURE_STATE_STARTED) {
             viewportActive_ = true;
-            activeView_ = findView(activePosition_);
+            activeView_ = static_cast<int>(findView(activePosition_));
         } else if (viewportActive_ && gestureEvent->state() == GestureEvent::GESTURE_STATE_ENDED) {
             viewportActive_ = false;
         }
 
-        if (activeView_ >= 0 && activeView_ < views_.size()) {
+        if (activeView_ >= 0 && activeView_ < static_cast<long>(views_.size())) {
             GestureEvent* newEvent = gestureEvent->clone();
             const ivec4& view = views_[activeView_];
             newEvent->modify(
@@ -82,13 +82,13 @@ Event* ViewManager::registerEvent(Event* event) {
         activePosition_ = flipY(touchEvent->getCenterPoint(), touchEvent->canvasSize());
         if (!viewportActive_ && touchEvent->getTouchPoints().front().state() == TouchPoint::TOUCH_STATE_STARTED) {
             viewportActive_ = true;
-            activeView_ = findView(activePosition_);
+            activeView_ = static_cast<int>(findView(activePosition_));
         } else if (viewportActive_ && touchEvent->getTouchPoints().front().state() ==
             TouchPoint::TOUCH_STATE_ENDED) {
             viewportActive_ = false;
         }
 
-        if (activeView_ >= 0 && activeView_ < views_.size()) {
+        if (activeView_ >= 0 && activeView_ < static_cast<long>(views_.size())) {
             // Modify all touch points
             const ivec4& view = views_[activeView_];
             vec2 viewportOffset(view.x, view.y);

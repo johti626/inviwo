@@ -40,6 +40,10 @@
 #define GLM_FORCE_SIZE_T_LENGTH
 #endif
 
+#include <warn/push>
+#include <warn/ignore/shadow>
+#include <warn/ignore/sign-compare>
+
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_precision.hpp>
@@ -54,8 +58,11 @@
 
 #include <half/half.hpp>
 
+#include <warn/pop>
+
 #include <limits>
 #include <type_traits>
+
 
 namespace inviwo {
 
@@ -157,7 +164,7 @@ template <class U, glm::precision P, template <typename, glm::precision> class v
           class BinaryOperation>
 typename std::enable_if<util::rank<vecType<U, P>>::value == 1, U >::type
     accumulate(vecType<U, P> const& x, U init, BinaryOperation op) {
-    for (int i = 0; i < util::extent<vecType<U, P>,0>::value; ++i) init = op(init, x[i]);
+    for (size_t i = 0; i < util::extent<vecType<U, P>,0>::value; ++i) init = op(init, x[i]);
 
     return init;
 }
@@ -166,8 +173,8 @@ template <class U, glm::precision P, template <typename, glm::precision> class v
           class BinaryOperation>
 typename std::enable_if<util::rank<vecType<U, P>>::value == 2, U >::type
     accumulate(vecType<U, P> const& x, U init, BinaryOperation op) {
-    for (int i = 0; i < util::extent<vecType<U, P>,0>::value; ++i)
-        for (int j = 0; j< util::extent<vecType<U, P>,1>::value; ++j)
+    for (size_t i = 0; i < util::extent<vecType<U, P>,0>::value; ++i)
+        for (size_t j = 0; j< util::extent<vecType<U, P>,1>::value; ++j)
             init = op(init, x[i][j]);
 
     return init;

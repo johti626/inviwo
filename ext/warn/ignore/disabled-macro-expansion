@@ -27,32 +27,18 @@
  * 
  *********************************************************************************/
 
-#ifndef IVW_IMAGEPROCESSORGL_H
-#define IVW_IMAGEPROCESSORGL_H
+#if !defined(IVW_WARN_PUSH_)
+# error "`warn/ignore/disabled-macro-expansion` used without `warn/push`"
+#endif
 
-#include <modules/opengl/openglmoduledefine.h>
-#include <inviwo/core/common/inviwo.h>
-#include <inviwo/core/processors/processor.h>
+#if defined(IVW_WARN_PUSH_DISABLED_MACRO_EXPANSION_)
+# error "`warn/ignore/disabled-macro-expansion` already included"
+#else
+# define IVW_WARN_DISABLED_MACRO_EXPANSION_
+#endif
 
-namespace inviwo {
-  
-class Shader;
-
-class IVW_MODULE_OPENGL_API ImageProcessorGL : public Processor {
-
-public:
-    ImageProcessorGL();
-    ImageProcessorGL(std::string shaderFileName);
-    virtual ~ImageProcessorGL();
-
-    // overloaded method called when INVALID_RESOURCE property is set
-    virtual void initializeResources() override;
-
-protected:
-    std::string shaderFileName_;
-    Shader* shader_;
-};
-
-} // namespace
-
-#endif // IVW_IMAGEPROCESSORGL_H
+#if (__clang__)
+# if __has_warning("-Wdisabled-macro-expansion")
+#  pragma clang diagnostic ignored "-Wdisabled-macro-expansion"
+# endif
+#endif

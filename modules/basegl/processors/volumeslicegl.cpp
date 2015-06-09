@@ -150,7 +150,7 @@ VolumeSliceGL::VolumeSliceGL()
     rotationAroundAxis_.addOption("180", "180 deg", 2);
     rotationAroundAxis_.addOption("270", "270 deg", 3);
     rotationAroundAxis_.addOption("free", "Free rotation", 4);
-    rotationAroundAxis_.set(0.f);
+    rotationAroundAxis_.set(0);
     rotationAroundAxis_.setCurrentStateAsDefault();
 
     volumeWrapping_.addOption("color", "Fill with color", GL_CLAMP_TO_EDGE);
@@ -565,15 +565,15 @@ void VolumeSliceGL::updateMaxSliceNumber() {
     }
     disableInvalidation();
     uvec3 dims = inport_.getData()->getDimensions();
-    if (dims.x != sliceX_.getMaxValue()) {
+    if (static_cast<int>(dims.x) != sliceX_.getMaxValue()) {
         sliceX_.setMaxValue(static_cast<int>(dims.x));
         sliceX_.set(static_cast<int>(dims.x) / 2);
     }
-    if (dims.y != sliceY_.getMaxValue()) {
+    if (static_cast<int>(dims.y) != sliceY_.getMaxValue()) {
         sliceY_.setMaxValue(static_cast<int>(dims.y));
         sliceY_.set(static_cast<int>(dims.y) / 2);
     }
-    if (dims.z != sliceZ_.getMaxValue()) {
+    if (static_cast<int>(dims.z) != sliceZ_.getMaxValue()) {
         sliceZ_.setMaxValue(static_cast<int>(dims.z));
         sliceZ_.set(static_cast<int>(dims.z) / 2);
     }

@@ -75,7 +75,11 @@ ivw_define_qt_definitions()
 
 #--------------------------------------------------------------------
 # Create library
-find_package(Qt5Core QUIET REQUIRED)
+if(DESIRED_QT_VERSION MATCHES 5)
+    find_package(Qt5Core QUIET REQUIRED)
+else()
+    find_package(Qt QUIET REQUIRED)
+endif()
 ivw_qt_wrap_cpp(MOC_FILES ${MOC_FILES})
 source_group("MOC Files" FILES ${MOC_FILES})
 add_library(inviwo-qteditor ${SOURCE_FILES} ${MOC_FILES} ${HEADER_FILES})
@@ -91,11 +95,11 @@ if(DESIRED_QT_VERSION MATCHES 5)
 
     foreach(qtarget ${IVW_EDITOR_QT_DEPENDS})
         ivw_add_dependencies(${qtarget})  
-        ivw_qt_add_dependencies(${qtarget} qt_editor)
+        ivw_qt_add_to_install(${qtarget} qt_editor)
     endforeach()
 
     foreach(qtarget Qt5Sql Qt5Network)
-        ivw_qt_add_dependencies(${qtarget} qt_editor)
+        ivw_qt_add_to_install(${qtarget} qt_editor)
     endforeach()
 
     ivw_add_dependencies(InviwoQtWidgets )

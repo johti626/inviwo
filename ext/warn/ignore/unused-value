@@ -24,28 +24,29 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
+ * 
  *********************************************************************************/
 
-#include "imageprocessorgl.h"
-#include <modules/opengl/glwrap/shader.h>
+#if !defined(IVW_WARN_PUSH_)
+# error "`warn/ignore/unused-value` used without `warn/push`"
+#endif
 
-namespace inviwo {
+#if defined(IVW_WARN_PUSH_UNUSED_VALUE_)
+# error "`warn/ignore/unused-value` already included"
+#else
+# define IVW_WARN_UNUSED_VALUE_
+#endif
 
-ImageProcessorGL::ImageProcessorGL()
-    : Processor(), shaderFileName_("pipethrough.frag"), shader_(nullptr) {
-    shader_ = new Shader(shaderFileName_);
-}
+#if (__clang__)
+# if __has_warning("-Wunused-value")
+#  pragma clang diagnostic ignored "-Wunused-value"
+# endif
+#endif
 
-ImageProcessorGL::ImageProcessorGL(std::string shaderFileName)
-    : Processor(), shaderFileName_(shaderFileName), shader_(nullptr) {
-    shader_ = new Shader(shaderFileName_);
-}
+#if (__GNUC__)
+# pragma GCC diagnostic ignored "-Wunused-value"
+#endif
 
-ImageProcessorGL::~ImageProcessorGL() {
-    delete shader_;
-}
-
-void ImageProcessorGL::initializeResources() { shader_->rebuild(); }
-
-}  // namespace
+#if (_MSC_VER)
+# pragma warning(disable: 4555)
+#endif

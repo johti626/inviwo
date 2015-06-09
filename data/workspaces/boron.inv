@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <InviwoTreeData version="1.0">
     <!-- Don't edit the following code -->
-    <ProcessorNetworkVersion content="10" />
+    <ProcessorNetworkVersion content="11" />
     <Processors>
         <Processor type="org.inviwo.Background" identifier="Background">
             <InPorts>
@@ -151,7 +151,7 @@
                         </Property>
                         <Property type="org.inviwo.FloatProperty" identifier="aspectRatio">
                             <minvalue content="0" />
-                            <maxvalue content="1" />
+                            <maxvalue content="100" />
                             <increment content="0.1" />
                         </Property>
                         <Property type="org.inviwo.FloatProperty" identifier="near" />
@@ -281,7 +281,7 @@
                         </Property>
                         <Property type="org.inviwo.FloatProperty" identifier="aspectRatio">
                             <minvalue content="0" />
-                            <maxvalue content="1" />
+                            <maxvalue content="100" />
                             <increment content="0.1" />
                         </Property>
                         <Property type="org.inviwo.FloatProperty" identifier="near" />

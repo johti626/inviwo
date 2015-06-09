@@ -30,13 +30,15 @@
 include(${CMAKE_CURRENT_LIST_DIR}/clean_library_list.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/cotire.cmake)
 
-mark_as_advanced(COTIRE_ADDITIONAL_PREFIX_HEADER_IGNORE_EXTENSIONS 
-COTIRE_ADDITIONAL_PREFIX_HEADER_IGNORE_PATH 
-COTIRE_DEBUG 
-COTIRE_MAXIMUM_NUMBER_OF_UNITY_INCLUDES 
-COTIRE_MINIMUM_NUMBER_OF_TARGET_SOURCES
-COTIRE_UNITY_SOURCE_EXCLUDE_EXTENSIONS
-COTIRE_VERBOSE)
+mark_as_advanced(
+    COTIRE_ADDITIONAL_PREFIX_HEADER_IGNORE_EXTENSIONS 
+    COTIRE_ADDITIONAL_PREFIX_HEADER_IGNORE_PATH 
+    COTIRE_DEBUG 
+    COTIRE_MAXIMUM_NUMBER_OF_UNITY_INCLUDES 
+    COTIRE_MINIMUM_NUMBER_OF_TARGET_SOURCES
+    COTIRE_UNITY_SOURCE_EXCLUDE_EXTENSIONS
+    COTIRE_VERBOSE
+)
 
 #--------------------------------------------------------------------
 # Creates project with initial variables
@@ -637,6 +639,24 @@ macro(ivw_define_standard_properties project_name)
 		set_property(TARGET ${project_name} PROPERTY CXX_STANDARD 11)
 		set_property(TARGET ${project_name} PROPERTY CXX_STANDARD_REQUIRED ON)
 	endif()
+
+    #--------------------------------------------------------------------
+    # Specify warnings
+    if(APPLE)
+        #https://developer.apple.com/library/mac/documentation/DeveloperTools/Reference/XcodeBuildSettingRef/1-Build_Setting_Reference/build_setting_ref.html
+        set_property(TARGET ${project_name}  PROPERTY XCODE_ATTRIBUTE_GCC_WARN_NON_VIRTUAL_DESTRUCTOR YES)
+        set_property(TARGET ${project_name}  PROPERTY XCODE_ATTRIBUTE_GCC_WARN_UNUSED_FUNCTION YES)
+        set_property(TARGET ${project_name}  PROPERTY XCODE_ATTRIBUTE_GCC_WARN_UNUSED_VARIABLE YES)
+        set_property(TARGET ${project_name}  PROPERTY XCODE_ATTRIBUTE_GCC_WARN_HIDDEN_VIRTUAL_FUNCTIONS YES)
+        set_property(TARGET ${project_name}  PROPERTY XCODE_ATTRIBUTE_GCC_WARN_ABOUT_MISSING_FIELD_INITIALIZERS YES)
+        set_property(TARGET ${project_name}  PROPERTY XCODE_ATTRIBUTE_GCC_WARN_ABOUT_RETURN_TYPE YES)
+        set_property(TARGET ${project_name}  PROPERTY XCODE_ATTRIBUTE_GCC_WARN_EFFECTIVE_CPLUSPLUS_VIOLATIONS YES)
+        set_property(TARGET ${project_name}  PROPERTY XCODE_ATTRIBUTE_GCC_WARN_PEDANTIC YES)
+        set_property(TARGET ${project_name}  PROPERTY XCODE_ATTRIBUTE_GCC_WARN_SHADOW YES)
+        set_property(TARGET ${project_name}  PROPERTY XCODE_ATTRIBUTE_GCC_WARN_SIGN_COMPARE YES)
+        set_property(TARGET ${project_name}  PROPERTY XCODE_ATTRIBUTE_CLANG_WARN_ENUM_CONVERSION YES)
+        set_property(TARGET ${project_name}  PROPERTY XCODE_ATTRIBUTE_WARNING_CFLAGS "-Wunreachable-code")
+    endif()
 endmacro()
 
 #--------------------------------------------------------------------
@@ -800,34 +820,27 @@ macro(ivw_compile_optimize_inviwo_core)
 		if(_pchDisabledForThisModule)
 			set_target_properties(${_projectName} PROPERTIES COTIRE_ENABLE_PRECOMPILED_HEADER FALSE)
 		endif()
-		 set_target_properties(${_projectName} PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
-		 get_target_property(_prefixHeader inviwo-core COTIRE_CXX_PREFIX_HEADER)
-		 set_target_properties(${_projectName} PROPERTIES COTIRE_CXX_PREFIX_HEADER_INIT "${_prefixHeader}")
-		 cotire(${_projectName})
+
+        set_target_properties(${_projectName} PROPERTIES COTIRE_PREFIX_HEADER_IGNORE_PATH 
+            "${COTIRE_PREFIX_HEADER_IGNORE_PATH};$IVW_COTIRE_EXCLUDES}")
+        set_target_properties(${_projectName} PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
+        get_target_property(_prefixHeader inviwo-core COTIRE_CXX_PREFIX_HEADER)
+        set_target_properties(${_projectName} PROPERTIES COTIRE_CXX_PREFIX_HEADER_INIT "${_prefixHeader}")
+        cotire(${_projectName})
     endif()
-	# else()
-			# get_target_property(_pchFile inviwo-core COTIRE_CXX_PRECOMPILED_HEADER)
-			# cotire_setup_pch_file_inclusion(
-					# ${_language} ${_target} ${_wholeTarget} "${_prefixFile}" "${_pchFile}" ${_sourceFiles})
-			# get_filename_component(pchFileDir ${_pchFile} PATH)
-			# file(GLOB PDB_FILES "${pchFileDir}/*.pdb")
-			# file(COPY ${PDB_FILES} DESTINATION ${_target})
-			# file(GLOB IDB_FILES "${pchFileDir}/*.idb")
-			# file(COPY ${IDB_FILES} DESTINATION ${_target})
-	# endif()
 endmacro()
 
 #--------------------------------------------------------------------
 # Optimize compilation with pre-compilied headers
 macro(ivw_compile_optimize)
-    #set_target_properties(${_projectName} PROPERTIES COTIRE_ENABLE_PRECOMPILED_HEADER FALSE)
     if(PRECOMPILED_HEADERS)
+        set_target_properties(${_projectName} PROPERTIES COTIRE_PREFIX_HEADER_IGNORE_PATH 
+            "${COTIRE_PREFIX_HEADER_IGNORE_PATH};${IVW_COTIRE_EXCLUDES}")
         set_target_properties(${_projectName} PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
 		list(APPEND _allPchDirs ${IVW_EXTENSIONS_DIR})
 		set_target_properties(${_projectName} PROPERTIES COTIRE_PREFIX_HEADER_INCLUDE_PATH "${_allPchDirs}")
 		cotire(${_projectName})
     endif()
-    #target_link_libraries(${_projectName}_unity ${_allLibs})
 endmacro()
 
 #--------------------------------------------------------------------
@@ -1121,31 +1134,30 @@ endmacro()
 
 #--------------------------------------------------------------------
 # Adds special qt dependency and includes package variables to the project
-macro(ivw_qt_add_dependencies qtarget ivw_comp)
-    find_package(${qtarget} QUIET REQUIRED)
-    if(${qtarget}_FOUND AND IVW_PACKAGE_PROJECT)
-        if(WIN32)
-            set(QTARGET_DIR "${${qtarget}_DIR}/../../../bin")
-            install(FILES ${QTARGET_DIR}/${qtarget}${CMAKE_DEBUG_POSTFIX}.dll 
-                    DESTINATION bin 
-                    COMPONENT ${ivw_comp} 
-                    CONFIGURATIONS Debug)
-            install(FILES ${QTARGET_DIR}/${qtarget}.dll 
-                    DESTINATION bin 
-                    COMPONENT ${ivw_comp} 
-                    CONFIGURATIONS Release)
-        elseif(APPLE)
-            foreach(plugin ${${qtarget}_PLUGINS})
-                get_target_property(_loc ${plugin} LOCATION)
-                get_filename_component(_path ${_loc} DIRECTORY)
-                get_filename_component(_dirname ${_path} NAME)
-                install(FILES ${_loc} 
-                        DESTINATION Inviwo.app/Contents/plugins/${_dirname} 
-                        COMPONENT ${ivw_comp})
-            endforeach()
-        else()
-
-
+macro(ivw_qt_add_to_install qtarget ivw_comp)
+    if(IVW_PACKAGE_PROJECT)
+        find_package(${qtarget} QUIET REQUIRED)
+        if(${qtarget}_FOUND)
+            if(WIN32)
+                set(QTARGET_DIR "${${qtarget}_DIR}/../../../bin")
+                install(FILES ${QTARGET_DIR}/${qtarget}${CMAKE_DEBUG_POSTFIX}.dll 
+                        DESTINATION bin 
+                        COMPONENT ${ivw_comp} 
+                        CONFIGURATIONS Debug)
+                install(FILES ${QTARGET_DIR}/${qtarget}.dll 
+                        DESTINATION bin 
+                        COMPONENT ${ivw_comp} 
+                        CONFIGURATIONS Release)
+            elseif(APPLE)
+                foreach(plugin ${${qtarget}_PLUGINS})
+                    get_target_property(_loc ${plugin} LOCATION)
+                    get_filename_component(_path ${_loc} DIRECTORY)
+                    get_filename_component(_dirname ${_path} NAME)
+                    install(FILES ${_loc} 
+                            DESTINATION Inviwo.app/Contents/plugins/${_dirname} 
+                            COMPONENT ${ivw_comp})
+                endforeach()
+            endif()
         endif()
     endif()
 endmacro()

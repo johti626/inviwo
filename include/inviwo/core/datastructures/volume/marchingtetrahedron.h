@@ -35,7 +35,7 @@
 
 #include <inviwo/core/datastructures/volume/volumeram.h>
 #include <inviwo/core/datastructures/volume/volumeoperation.h>
-#include <modules/experimental/datastructures/kdtree.h>
+#include <inviwo/core/datastructures/kdtree.h>
 #include <inviwo/core/datastructures/geometry/basicmesh.h>
 #include <inviwo/core/datastructures/volume/volumeramprecision.h>
 
@@ -200,27 +200,31 @@ private:
 
     template <typename T>
     static double toSingle(const glm::detail::tvec2<T, glm::defaultp> &v) {
-        return v.x;
+        return static_cast<double>(v.x);
     }
     template <typename T>
     static double toSingle(const glm::detail::tvec3<T, glm::defaultp> &v) {
-        return v.x;
+        return static_cast<double>(v.x);
     }
     template <typename T>
     static double toSingle(const glm::detail::tvec4<T, glm::defaultp> &v) {
-        return v.x;
+        return static_cast<double>(v.x);
     }
 
     template <typename T>
     static double toSingle(const T &v) {
-        return v;
+        return static_cast<double>(v);
     }
 
     static glm::vec3 interpolate(const glm::vec3 &p0, const double &v0, const glm::vec3 &p1,
                                  const double &v1) {
-        float t = 0;
-        if (v0 != v1) t = v0 / (v0 - v1);
-        return t * p1 + (1 - t) * p0;
+        double t = 0;
+        
+        if (v0 != v1) 
+            t = v0 / (v0 - v1);
+        
+        float tF = static_cast<float>(t);
+        return tF * p1 + (1.f - tF) * p0;
     }
 };
 

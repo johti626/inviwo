@@ -54,13 +54,18 @@ void VolumeLaplacian::process() {
         break;
     #include <inviwo/core/util/formatsdefinefunc.h>
 
+    case NUMBER_OF_FORMATS:
+    case NOT_SPECIALIZED:
     default:
         break;
     }
     }
     */
 
+    #include <warn/push>
+    #include <warn/ignore/switch-enum>
     CallFunctionWithTemplateArgsForType(processRepresentation, inport_.getData()->getDataFormat()->getId());
+    #include <warn/pop>
 }
 
 } // namespace
