@@ -32,8 +32,13 @@
 
 #include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/common/inviwo.h>
+#include <inviwo/core/util/stdextensions.h>
 
 namespace inviwo {
+
+/* using type erasure
+ * https://aherrmann.github.io/programming/2014/10/19/type-erasure-with-merged-concepts/
+ */
 
 template <typename T>
 struct OutportIterable {
@@ -41,155 +46,78 @@ struct OutportIterable {
     virtual ~OutportIterable() {}
 
     class const_iterator : public std::iterator<std::forward_iterator_tag, T> {
-        using self = const_iterator;
-        using ContIter = typename std::vector<T>::const_iterator;
-        using PtrContIter = typename std::vector<T*>::const_iterator;
-
-        enum class Kind { Ptr, Cont, PtrCont };
-
     public:
-        const_iterator()
-            : kind_(Kind::Ptr)
-            , end_(true)
-            , ptr_(nullptr)
-            , iter_()
-            , iterEnd_()
-            , ptriter_()
-            , ptriterEnd_() {}
-
-        explicit const_iterator(const T* ptr, bool end)
-            : kind_(Kind::Ptr)
-            , end_(end)
-            , ptr_(ptr)
-            , iter_()
-            , iterEnd_()
-            , ptriter_()
-            , ptriterEnd_() {
-            if (!ptr) end_ = true;
-        }
-        explicit const_iterator(ContIter iBegin, ContIter iEnd)
-            : kind_(Kind::Cont)
-            , end_(false)
-            , ptr_(nullptr)
-            , iter_(iBegin)
-            , iterEnd_(iEnd)
-            , ptriter_()
-            , ptriterEnd_() {
-            if (iter_ == iterEnd_) end_ = true;
-        }
-        explicit const_iterator(PtrContIter iBegin, PtrContIter iEnd)
-            : kind_(Kind::PtrCont)
-            , end_(false)
-            , ptr_(nullptr)
-            , iter_()
-            , iterEnd_()
-            , ptriter_(iBegin)
-            , ptriterEnd_(iEnd) {
-            if (ptriter_ == ptriterEnd_) end_ = true;
-        }
-
-        self& operator++() {
-            switch (kind_) {
-                default:
-                case Kind::Ptr:
-                    end_ = true;
-                    break;
-                case Kind::Cont:
-                    iter_++;
-                    if (iter_ == iterEnd_) end_ = true;
-                    break;
-                case Kind::PtrCont:
-                    ptriter_++;
-                    if (ptriter_ == ptriterEnd_) end_ = true;
-                    break;
+        const_iterator() : self_(nullptr){};
+        template <typename Wrapper>
+        const_iterator(Wrapper wrapper)
+            : self_(util::make_unique<Model<Wrapper>>(wrapper)) {}
+        const_iterator(const const_iterator& rhs)
+            : self_(rhs.self_ ? rhs.self_->clone() : nullptr) {}
+        const_iterator& operator=(const const_iterator& that) {
+            if (this != &that) {
+                std::unique_ptr<Concept> s(that.self_ ? that.self_->clone() : nullptr);
+                std::swap(s, self_);
             }
             return *this;
         }
-        self operator++(int) {
-            self i = *this;
-            switch (kind_) {
-                default:
-                case Kind::Ptr:
-                    end_ = true;
-                    break;
-                case Kind::Cont:
-                    iter_++;
-                    if (iter_ == iterEnd_) end_ = true;
-                    break;
-                case Kind::PtrCont:
-                    ptriter_++;
-                    if (ptriter_ == ptriterEnd_) end_ = true;
-                    break;
-            }
+
+        const_iterator& operator++() {
+            self_->inc();
+            return *this;
+        }
+        const_iterator operator++(int) {
+            const_iterator i{*this};
+            self_->inc();
             return i;
         }
 
-        const T& operator*() {
-            switch (kind_) {
-                default:
-                case Kind::Ptr:
-                    return *ptr_;
-                case Kind::Cont:
-                    return *iter_;
-                case Kind::PtrCont:
-                    return **ptriter_;
-            }
-        }
-        const T* operator->() {
-            switch (kind_) {
-                default:
-                case Kind::Ptr:
-                    return ptr_;
-                case Kind::Cont:
-                    return &(*iter_);
-                case Kind::PtrCont:
-                    return *ptriter_;
-            }
-        }
-
-        bool operator==(const self& rhs) const {
-            if (end_ && rhs.end_)
+        const T& operator*() { return self_->getref(); }
+        const T* operator->() { return self_->getptr(); }
+        bool operator==(const const_iterator& rhs) const {
+            if (!self_ && !(rhs.self_))
                 return true;
-            else if (end_ != rhs.end_)
+            else if (!self_ || !(rhs.self_))
                 return false;
-            else {
-                switch (kind_) {
-                    default:
-                    case Kind::Ptr:
-                        return ptr_ == rhs.ptr_;
-                    case Kind::Cont:
-                        return iter_ == rhs.iter_;
-                    case Kind::PtrCont:
-                        return ptriter_ == rhs.ptriter_;
-                }
-            }
+            else
+                return self_->equal(*(rhs.self_));
         }
-        bool operator!=(const self& rhs) const {
-            if (end_ && rhs.end_)
+        bool operator!=(const const_iterator& rhs) const {
+            if (!self_ && !(rhs.self_))
                 return false;
-            else if (end_ != rhs.end_)
+            else if (!self_ || !(rhs.self_))
                 return true;
-            else {
-                switch (kind_) {
-                    default:
-                    case Kind::Ptr:
-                        return ptr_ != rhs.ptr_;
-                    case Kind::Cont:
-                        return iter_ != rhs.iter_;
-                    case Kind::PtrCont:
-                        return ptriter_ != rhs.ptriter_;
-                }
-            }
+            else
+                return !self_->equal(*(rhs.self_));
         }
 
     private:
-        Kind kind_;
-        bool end_;
-        const T* ptr_;
-        ContIter iter_;
-        ContIter iterEnd_;
-        PtrContIter ptriter_;
-        PtrContIter ptriterEnd_;
+        struct Concept {
+            virtual ~Concept() = default;
+            virtual Concept* clone() = 0;
+            virtual void inc() = 0;
+            virtual const T& getref() = 0;
+            virtual const T* getptr() = 0;
+            virtual bool equal(const Concept& that) = 0;
+        };
+
+        template <typename U>
+        class Model : public Concept {
+        public:
+            Model(U data) : data_(data) {}
+
+            virtual Model<U>* clone() { return new Model<U>(*this); };
+            virtual void inc() override { data_.inc(); };
+            virtual const T& getref() override { return data_.getref(); };
+            virtual const T* getptr() override { return data_.getptr(); };
+            virtual bool equal(const Concept& that) override {
+                return data_.equal(static_cast<const Model<U>&>(that).data_);
+            };
+
+        private:
+            U data_;
+        };
+
+        std::unique_ptr<Concept> self_;
     };
 
     virtual const_iterator begin() const = 0;
@@ -199,51 +127,189 @@ struct OutportIterable {
 template <typename T>
 class DataOutport;
 
-template <typename T>
+// Base template for single data ptr
+template <typename T, typename Enable = void>
 struct OutportIterableImpl : public OutportIterable<T> {
     OutportIterableImpl(DataOutport<T>* port) : port_(port) {}
     using const_iterator = typename OutportIterable<T>::const_iterator;
 
     virtual const_iterator begin() const override {
-        return const_iterator(port_->getConstData(), false);
+        return const_iterator(Wrapper(port_->getConstData(), false));
     }
     virtual const_iterator end() const override {
-        return const_iterator(port_->getConstData(), true);
+        return const_iterator(Wrapper(port_->getConstData(), true));
     }
 
 private:
+    class Wrapper {
+    public:
+        Wrapper() : data_(nullptr), end_(true) {}
+        Wrapper(const T* data, bool end) : data_(data), end_(end || !data) {}
+
+        void inc() { end_ = true; };
+        const T& getref() { return *data_; };
+        const T* getptr() { return data_; };
+        bool equal(const Wrapper& rhs) {
+            if (end_ && rhs.end_)
+                return true;
+            else if (end_ != rhs.end_)
+                return false;
+            else
+                return data_ == rhs.data_;
+        };
+
+    private:
+        const T* data_;
+        bool end_;
+    };
+
     DataOutport<T>* port_;
 };
-template <typename T>
-struct OutportIterableImpl<std::vector<T>> : public OutportIterable<T> {
-    OutportIterableImpl(DataOutport<std::vector<T>>* port) : port_(port) {}
+
+// Specialization for vector of data
+template <typename T, typename Alloc>
+struct OutportIterableImpl<std::vector<T, Alloc>> : public OutportIterable<T> {
+    using container = std::vector<T, Alloc>;
     using const_iterator = typename OutportIterable<T>::const_iterator;
 
+    OutportIterableImpl(DataOutport<container>* port) : port_(port) {}
+
     virtual const_iterator begin() const override {
-        return const_iterator(port_->getConstData()->begin(), port_->getConstData()->end());
+        auto data = port_->getConstData();
+        return const_iterator(Wrapper(data->begin(), data->end()));
     };
     virtual const_iterator end() const override {
-        return const_iterator(port_->getConstData()->end(), port_->getConstData()->end());
+        auto data = port_->getConstData();
+        return const_iterator(Wrapper(data->end(), data->end()));
     };
 
 private:
-    DataOutport<std::vector<T>>* port_;
+    class Wrapper {
+    public:
+        using Iter = typename std::vector<T>::const_iterator;
+
+        Wrapper() : iter_(), iterEnd_(), end_(true) {}
+        Wrapper(Iter begin, Iter end) : iter_(begin), iterEnd_(end), end_(iter_ == iterEnd_) {}
+
+        void inc() {
+            iter_++;
+            if (iter_ == iterEnd_) end_ = true;
+        };
+        const T& getref() { return *iter_; };
+        const T* getptr() { return &(*iter_); };
+        bool equal(const Wrapper& rhs) {
+            if (end_ && rhs.end_)
+                return true;
+            else if (end_ != rhs.end_)
+                return false;
+            else
+                return iter_ == rhs.iter_;
+        }
+
+    private:
+        Iter iter_;
+        Iter iterEnd_;
+        bool end_;
+    };
+
+    DataOutport<container>* port_;
 };
 
-template <typename T>
-struct OutportIterableImpl<std::vector<T*>> : public OutportIterable<T> {
-    OutportIterableImpl(DataOutport<std::vector<T*>>* port) : port_(port) {}
+// Specialization for vector of data ptr.
+template <typename T, typename Alloc>
+struct OutportIterableImpl<std::vector<T*, Alloc>> : public OutportIterable<T> {
+    using container = std::vector<T*, Alloc>;
     using const_iterator = typename OutportIterable<T>::const_iterator;
 
+    OutportIterableImpl(DataOutport<container>* port) : port_(port) {}
+
     virtual const_iterator begin() const override {
-        return const_iterator(port_->getConstData()->begin(), port_->getConstData()->end());
+        auto data = port_->getConstData();
+        return const_iterator(Wrapper(data->begin(), data->end()));
     };
     virtual const_iterator end() const override {
-        return const_iterator(port_->getConstData()->end(), port_->getConstData()->end());
+        auto data = port_->getConstData();
+        return const_iterator(Wrapper(data->end(), data->end()));
     };
 
 private:
-    DataOutport<std::vector<T*>>* port_;
+    class Wrapper {
+    public:
+        using Iter = typename container::const_iterator;
+
+        Wrapper() : iter_(), iterEnd_(), end_(true) {}
+        Wrapper(Iter begin, Iter end) : iter_(begin), iterEnd_(end), end_(iter_ == iterEnd_) {}
+
+        void inc() {
+            iter_++;
+            if (iter_ == iterEnd_) end_ = true;
+        };
+        const T& getref() { return (**iter_); };
+        const T* getptr() { return (*iter_); };
+        bool equal(const Wrapper& rhs) {
+            if (end_ && rhs.end_)
+                return true;
+            else if (end_ != rhs.end_)
+                return false;
+            else
+                return iter_ == rhs.iter_;
+        }
+
+    private:
+        Iter iter_;
+        Iter iterEnd_;
+        bool end_;
+    };
+
+    DataOutport<container>* port_;
+};
+
+// Specialization for vector of unique_ptr<data>.
+template <typename T, typename Deleter, typename Alloc>
+struct OutportIterableImpl<std::vector<std::unique_ptr<T, Deleter>, Alloc>>
+    : public OutportIterable<T> {
+    using container = std::vector<std::unique_ptr<T, Deleter>, Alloc>;
+    using const_iterator = typename OutportIterable<T>::const_iterator;
+
+    OutportIterableImpl(DataOutport<container>* port) : port_(port) {}
+
+    virtual const_iterator begin() const override {
+        auto data = port_->getConstData();
+        return const_iterator(Wrapper(data->begin(), data->end()));
+    };
+    virtual const_iterator end() const override {
+        auto data = port_->getConstData();
+        return const_iterator(Wrapper(data->end(), data->end()));
+    };
+
+private:
+    class Wrapper {
+    public:
+        using Iter = typename container::const_iterator;
+        Wrapper() : iter_(), iterEnd_(), end_(true) {}
+        Wrapper(Iter begin, Iter end) : iter_(begin), iterEnd_(end), end_(iter_ == iterEnd_) {}
+        void inc() {
+            iter_++;
+            if (iter_ == iterEnd_) end_ = true;
+        };
+        const T& getref() { return (*(*iter_).get()); };
+        const T* getptr() { return (*iter_).get(); };
+        bool equal(const Wrapper& rhs) {
+            if (end_ && rhs.end_)
+                return true;
+            else if (end_ != rhs.end_)
+                return false;
+            else
+                return iter_ == rhs.iter_;
+        }
+
+    private:
+        Iter iter_;
+        Iter iterEnd_;
+        bool end_;
+    };
+
+    DataOutport<container>* port_;
 };
 
 }  // namespace

@@ -85,9 +85,9 @@ template <typename T, size_t N, bool Flat>
 std::string inviwo::DataInport<T, N, Flat>::getClassIdentifier() const {
     switch (N) {
         case 0:
-            return port_traits<T>::class_identifier() + (Flat ? "Flat" : "") + "Inport";
-        case 1:
             return port_traits<T>::class_identifier() + (Flat ? "Flat" : "") + "MultiInport";
+        case 1:
+            return port_traits<T>::class_identifier() + (Flat ? "Flat" : "") + "Inport";
         default:
             return port_traits<T>::class_identifier() + (Flat ? "Flat" : "") + toString(N) +
                    "Inport";
@@ -181,9 +181,8 @@ std::vector<std::pair<Outport*, const T*>> inviwo::DataInport<T, N, Flat>::getSo
         // Safe to static cast since we are unable to connect other outport types.
         
         if (Flat) {
-            auto oi = dynamic_cast<OutportIterable<T>*>(outport);
-            if (oi) {
-                for (auto& elem : *oi) res.emplace_back(outport, &elem);
+            if(auto iterable = dynamic_cast<OutportIterable<T>*>(outport)) {
+                for (auto& elem : *iterable) res.emplace_back(outport, &elem);
             }
         } else {
             auto dataport = static_cast<DataOutport<T>*>(outport);

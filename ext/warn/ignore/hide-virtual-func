@@ -27,42 +27,16 @@
  * 
  *********************************************************************************/
 
-#ifndef IVW_INVIWODOCKWIDGET_H
-#define IVW_INVIWODOCKWIDGET_H
+#if !defined(IVW_WARN_PUSH_)
+# error "`warn/ignore/hide-virtual-func` used without `warn/push`"
+#endif
 
-#include <inviwo/qt/widgets/inviwoqtwidgetsdefine.h>
-#include <QDockWidget>
+#if defined(IVW_WARN_PUSH_HIDE_VIRTUAL_FUNC_)
+# error "`warn/ignore/hide-virtual-func` already included"
+#else
+# define IVW_WARN_HIDE_VIRTUAL_FUNC_
+#endif
 
-
-class QKeyEvent;
-class QLayout;
-
-namespace inviwo {
-
-    class InviwoDockWidgetTitleBar;
-
-class IVW_QTWIDGETS_API InviwoDockWidget : public QDockWidget {
-    Q_OBJECT
-
-public:
-    InviwoDockWidget(QString title, QWidget* parent);
-    virtual ~InviwoDockWidget();
-    virtual void show();
-    virtual void keyPressEvent(QKeyEvent* keyEvent);
-
-    void setSticky(bool sticky);
-    bool isSticky() const;
-
-    void setContents(QWidget *widget);
-    void setContents(QLayout *layout);
-
-protected slots:
-    void updateWindowTitle(const QString &string);
-
-private:
-    InviwoDockWidgetTitleBar* dockWidgetTitleBar_;
-};
-
-} // namespace
-
-#endif // IVW_INVIWODOCKWIDGET_H
+#if (_MSC_VER)
+# pragma warning(disable: 4263)
+#endif
