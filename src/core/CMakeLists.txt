@@ -27,18 +27,17 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/diskrepresentation.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/geometry/basicmesh.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/geometry/edge.h
-    ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/geometry/meshdisk2ramconverter.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/geometry/geometrytype.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/geometry/mesh.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/geometry/meshdisk.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/geometry/meshdisk2ramconverter.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/geometry/meshram.h
-	${IVW_INCLUDE_DIR}/inviwo/core/datastructures/geometry/meshrepresentation.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/geometry/meshrepresentation.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/geometry/plane.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/geometry/polygon.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/geometry/simplemesh.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/geometry/simplemeshcreator.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/histogram.h
-    ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/kdtree.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/image/image.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/image/imagedisk.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/image/imageram.h
@@ -60,7 +59,6 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/spatialdata.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/transferfunction.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/transferfunctiondatapoint.h
-    ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/volume/marchingtetrahedron.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/volume/volume.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/volume/volumeborder.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/volume/volumedisk.h
@@ -68,8 +66,6 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/volume/volumeramconverter.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/volume/volumeramhistogram.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/volume/volumeramprecision.h
-    ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/volume/volumeramsubsample.h
-    ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/volume/volumeramsubset.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/volume/volumerepresentation.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/action.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/cameratrackball.h
@@ -129,10 +125,10 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/bufferport.h
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/datainport.h
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/dataoutport.h
-    ${IVW_INCLUDE_DIR}/inviwo/core/ports/meshport.h
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/imageport.h
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/inport.h
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/inportiterable.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/ports/meshport.h
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/outport.h
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/outportiterable.h
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/port.h
@@ -156,9 +152,8 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/processors/progressbar.h
     ${IVW_INCLUDE_DIR}/inviwo/core/processors/progressbarowner.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/advancedmaterialproperty.h
-    ${IVW_INCLUDE_DIR}/inviwo/core/properties/baseoptionproperty.h
-    ${IVW_INCLUDE_DIR}/inviwo/core/properties/boolproperty.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/boolcompositeproperty.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/properties/boolproperty.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/buttonproperty.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/cameraproperty.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/compositeproperty.h
@@ -168,6 +163,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/imageeditorproperty.h    
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/invalidationlevel.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/minmaxproperty.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/properties/optionproperty.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/ordinalproperty.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/planeproperty.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/property.h
@@ -283,15 +279,12 @@ set(SOURCE_FILES
     datastructures/spatialdata.cpp
     datastructures/transferfunction.cpp
     datastructures/transferfunctiondatapoint.cpp
-    datastructures/volume/marchingtetrahedron.cpp
     datastructures/volume/volume.cpp
     datastructures/volume/volumeborder.cpp
     datastructures/volume/volumedisk.cpp
     datastructures/volume/volumeram.cpp
     datastructures/volume/volumeramconverter.cpp
     datastructures/volume/volumeramprecision.cpp
-    datastructures/volume/volumeramsubsample.cpp
-    datastructures/volume/volumeramsubset.cpp
     datastructures/volume/volumerepresentation.cpp
     interaction/action.cpp
     interaction/cameratrackball.cpp
@@ -363,7 +356,6 @@ set(SOURCE_FILES
     processors/processorwidgetobserver.cpp
     processors/progressbar.cpp
     properties/advancedmaterialproperty.cpp
-    properties/baseoptionproperty.cpp
     properties/boolcompositeproperty.cpp
     properties/boolproperty.cpp
     properties/buttonproperty.cpp
@@ -373,6 +365,7 @@ set(SOURCE_FILES
     properties/eventproperty.cpp
     properties/fileproperty.cpp
     properties/imageeditorproperty.cpp
+    properties/optionproperty.cpp
     properties/planeproperty.cpp
     properties/property.cpp
     properties/propertyconverter.cpp

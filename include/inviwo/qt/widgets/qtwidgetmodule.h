@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #ifndef IVW_QTWIDGETMODULE_H
@@ -34,38 +34,14 @@
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/common/inviwomodule.h>
 
-#include <QString>
-#include <QLocale>
-
 namespace inviwo {
 
 class IVW_QTWIDGETS_API QtWidgetModule : public InviwoModule {
-
 public:
     QtWidgetModule();
     virtual ~QtWidgetModule() {}
-
 };
 
-template<typename T>
-class IVW_QTWIDGETS_API QStringHelper{
-public:
-    static QString toLocaleString(QLocale locale,T value){
-        return locale.toString(value);
-    }
-};
+}  // namespace
 
-template<>
-class IVW_QTWIDGETS_API QStringHelper<long int>{
-public:
-    static QString toLocaleString(QLocale locale,long int value){
-        return locale.toString(static_cast<long long>(value));
-    }
-};
-
-
-
-} // namespace
-
-#endif // IVW_QTWIDGETMODULE_H
-
+#endif  // IVW_QTWIDGETMODULE_H

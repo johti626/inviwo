@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #ifndef IVW_PROPERTYCONVERTERMANAGER_H
@@ -32,6 +32,9 @@
 
 #include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/common/inviwo.h>
+#include <inviwo/core/properties/propertyconverter.h>
+
+#include <unordered_map>
 
 namespace inviwo {
 
@@ -50,13 +53,15 @@ public:
                     const std::string &dstClassIdentifier) const;
     bool canConvert(const Property *srcProperty, const Property *dstProperty) const;
 
-    PropertyConverter *getConverter(const std::string &srcClassIdentifier,
-                                    const std::string &dstClassIdentifier) const;
+    const PropertyConverter *getConverter(const std::string &srcClassIdentifier,
+                                          const std::string &dstClassIdentifier) const;
 
-    PropertyConverter *getConverter(const Property *srcProperty, const Property *dstProperty) const;
+    const PropertyConverter *getConverter(const Property *srcProperty,
+                                          const Property *dstProperty) const;
 
 private:
-    std::map<std::pair<std::string, std::string>, PropertyConverter*> converters_;
+    PropertyConverter identityConverter_;
+    std::unordered_map<std::pair<std::string, std::string>, PropertyConverter *> converters_;
 };
 
 template <typename T>

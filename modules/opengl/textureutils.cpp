@@ -53,11 +53,10 @@ void activateTargetAndCopySource(ImageOutport& outport, ImageInport& inport, Ima
     Image* outImage = outport.getData();
     ImageGL* outImageGL = outImage->getEditableRepresentation<ImageGL>();
 
-    // Make sure the inport has a GL representation
     const Image* inImage = inport.getData();
-    inImage->getRepresentation<ImageGL>();
+    const ImageGL* inImageGL = inImage->getRepresentation<ImageGL>();
+    inImageGL->copyRepresentationsTo(outImageGL);
 
-    inport.passOnDataToOutport(&outport);
     outImageGL->activateBuffer(type);
 }
 

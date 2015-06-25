@@ -27,7 +27,7 @@
  *
  *********************************************************************************/
 
-#include <inviwo/core/datastructures/volume/volumeramsubsample.h>
+#include "volumeramsubsample.h"
 
 namespace inviwo {
 

@@ -34,10 +34,9 @@
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/ports/volumeport.h>
 #include <inviwo/core/processors/processor.h>
-#include <inviwo/core/processors/progressbarowner.h>
 #include <modules/basegl/processors/volumeprocessing/volumeglprocessor.h>
 #include <inviwo/core/properties/ordinalproperty.h>
-#include <inviwo/core/properties/baseoptionproperty.h>
+#include <inviwo/core/properties/optionproperty.h>
 
 namespace inviwo {
 
@@ -52,7 +51,7 @@ namespace inviwo {
  *   * __Kernel size__ ...
  *
  */
-class IVW_MODULE_BASEGL_API VolumeLowPass : public VolumeGLProcessor , public ProgressBarOwner { 
+class IVW_MODULE_BASEGL_API VolumeLowPass : public VolumeGLProcessor { 
 public:
     VolumeLowPass();
     virtual ~VolumeLowPass();

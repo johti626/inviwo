@@ -30,24 +30,24 @@
 #ifndef IVW_MARCHINGTETRAHEDRON_H
 #define IVW_MARCHINGTETRAHEDRON_H
 
-#include <inviwo/core/common/inviwocoredefine.h>
+#include <modules/base/basemoduledefine.h>
 #include <inviwo/core/common/inviwo.h>
 
 #include <inviwo/core/datastructures/volume/volumeram.h>
-#include <inviwo/core/datastructures/kdtree.h>
 #include <inviwo/core/datastructures/geometry/basicmesh.h>
 #include <inviwo/core/datastructures/volume/volumeramprecision.h>
 
+#include <modules/base/datastructures/kdtree.h>
+
 namespace inviwo {
 
-class IVW_CORE_API MarchingTetrahedron {
+class IVW_MODULE_BASE_API MarchingTetrahedron {
 public:
     static Mesh *apply(const VolumeRepresentation *in, const double &iso, const vec4 &color);
 };
 
 namespace detail {
-
-struct IVW_CORE_API MarchingTetrahedronDispatcher {
+struct IVW_MODULE_BASE_API MarchingTetrahedronDispatcher {
     using type = Mesh *;
     template <class T>
     Mesh *dispatch(const VolumeRepresentation *in, const double &iso, const vec4 &color);
@@ -59,15 +59,15 @@ double getValue(const T *src, size3_t pos, size3_t dim, double iso) {
     return -(v - iso);
 }
 
-void evaluateTetra(K3DTree<size_t> &vertexTree, IndexBufferRAM *indexBuffer,
+void evaluateTetra(K3DTree<size_t, float> &vertexTree, IndexBufferRAM *indexBuffer,
                    std::vector<vec3> &positions, std::vector<vec3> &normals, const glm::vec3 &p0,
                    const double &v0, const glm::vec3 &p1, const double &v1, const glm::vec3 &p2,
                    const double &v2, const glm::vec3 &p3, const double &v3);
 
-size_t addVertex(K3DTree<size_t> &vertexTree, std::vector<vec3> &positions,
+size_t addVertex(K3DTree<size_t, float> &vertexTree, std::vector<vec3> &positions,
                  std::vector<vec3> &normals, const vec3 pos);
 
-void addTriangle(K3DTree<size_t> &vertexTree, IndexBufferRAM *indexBuffer,
+void addTriangle(K3DTree<size_t, float> &vertexTree, IndexBufferRAM *indexBuffer,
                  std::vector<vec3> &positions, std::vector<vec3> &normals, const glm::vec3 &a,
                  const glm::vec3 &b, const glm::vec3 &c);
 
@@ -83,7 +83,7 @@ Mesh *inviwo::detail::MarchingTetrahedronDispatcher::dispatch(const VolumeRepres
     const VolumeRAMPrecision<T> *volume = dynamic_cast<const VolumeRAMPrecision<T> *>(in);
     if (!volume) return nullptr;
 
-    K3DTree<size_t> vertexTree;
+    K3DTree<size_t, float> vertexTree;
 
     BasicMesh *mesh = new BasicMesh();
     auto indexBuffer = mesh->addIndexBuffer(GeometryEnums::TRIANGLES, GeometryEnums::NONE);

@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2013-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,26 +24,42 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#ifndef IVW_GEOMETRYGL_H
-#define IVW_GEOMETRYGL_H
+#ifndef IVW_QSTRINGHELPER_H
+#define IVW_QSTRINGHELPER_H
 
-#include <modules/opengl/openglmoduledefine.h>
-#include <modules/opengl/inviwoopengl.h>
-#include <inviwo/core/datastructures/geometry/geometryrepresentation.h>
+#include <inviwo/qt/widgets/inviwoqtwidgetsdefine.h>
+#include <inviwo/core/common/inviwo.h>
+
+#include <QString>
+#include <QLocale>
 
 namespace inviwo {
 
-class IVW_MODULE_OPENGL_API GeometryGL : public GeometryRepresentation {
-
+template <typename T>
+class QStringHelper {
 public:
-    GeometryGL();
-    GeometryGL(const GeometryGL& rhs);
-    virtual ~GeometryGL();
+    static QString toLocaleString(QLocale locale, T value) { return locale.toString(value); }
 };
 
-} // namespace
+template <>
+class QStringHelper<long int> {
+public:
+    static QString toLocaleString(QLocale locale, long int value) {
+        return locale.toString(static_cast<long long>(value));
+    }
+};
 
-#endif // IVW_GEOMETRYGL_H
+template <>
+class QStringHelper<unsigned long int> {
+public:
+    static QString toLocaleString(QLocale locale, unsigned long int value) {
+        return locale.toString(static_cast<unsigned long long>(value));
+    }
+};
+
+}  // namespace
+
+#endif  // IVW_QSTRINGHELPER_H

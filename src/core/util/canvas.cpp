@@ -123,6 +123,7 @@ void Canvas::resize(uvec2 canvasSize) {
     screenDimensions_ = canvasSize;
 
     if (propagator_) {
+        NetworkLock lock;
         RenderContext::getPtr()->activateDefaultRenderContext();
         ResizeEvent* resizeEvent = new ResizeEvent(screenDimensions_);
         resizeEvent->setPreviousSize(previousScreenDimensions_);
@@ -165,6 +166,7 @@ void Canvas::mouseMoveEvent(MouseEvent* e) {
 }
 
 void Canvas::mouseButtonEvent(MouseEvent* e){
+    NetworkLock lock;
     bool picked = pickingContainer_->performMousePick(e);
     if (!picked)
         interactionEvent(e);
@@ -187,7 +189,26 @@ void Canvas::gestureEvent(GestureEvent* e) {
 }
 
 void Canvas::touchEvent(TouchEvent* e){
-    interactionEvent(e);
+    NetworkLock lock;
+    bool picked = pickingContainer_->performTouchPick(e);
+    if (!picked){
+        interactionEvent(e);
+    }
+    else if (e->hasTouchPoints()){
+        // As one touch point is handle as mouse event
+        // Send out a mouse event if only one touch point remains
+        const std::vector<TouchPoint>& touchPoints = e->getTouchPoints();
+        if (touchPoints.size() == 1){
+            MouseEvent mouseEvent(touchPoints[0].getPos(),
+                MouseEvent::MOUSE_BUTTON_LEFT, MouseEvent::MOUSE_STATE_MOVE,
+                InteractionEvent::MODIFIER_NONE, e->canvasSize(),
+                touchPoints[0].getDepth());
+            interactionEvent(&mouseEvent);
+        }
+        else{
+            interactionEvent(e);
+        }
+    }
 }
 
 void Canvas::setEventPropagator(EventPropagator* propagator) {

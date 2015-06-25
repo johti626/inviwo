@@ -39,12 +39,13 @@ namespace inviwo {
 class IVW_CORE_API TouchPoint : public IvwSerializable {
 public:
     enum TouchState {
-        TOUCH_STATE_NONE = 0,
-        TOUCH_STATE_STARTED = 1,    // Pressed
-        TOUCH_STATE_UPDATED = 2,    // Moved
-        TOUCH_STATE_STATIONARY = 4, // No movement
-        TOUCH_STATE_ENDED = 8,      // Released
-        TOUCH_STATE_ANY = TOUCH_STATE_STARTED | TOUCH_STATE_UPDATED | TOUCH_STATE_STATIONARY | TOUCH_STATE_ENDED
+        TOUCH_STATE_NONE = 1 << 0,
+        TOUCH_STATE_STARTED = 1 << 1,    // Pressed
+        TOUCH_STATE_UPDATED = 1 << 2,    // Moved
+        TOUCH_STATE_STATIONARY = 1 << 3, // No movement
+        TOUCH_STATE_ENDED = 1 << 4,      // Released
+        TOUCH_STATE_ANY = TOUCH_STATE_STARTED | TOUCH_STATE_UPDATED | TOUCH_STATE_STATIONARY | TOUCH_STATE_ENDED,
+        TOUCH_STATE_ANY_AND_NONE = TOUCH_STATE_NONE | TOUCH_STATE_ANY
     };
     TouchPoint() {};
     /** 
@@ -168,6 +169,14 @@ public:
     * @return vec2 sum(touch points) / nPoints
     */
     vec2 getPrevCenterPointNormalized() const;
+
+    /**
+    * \brief Retrieve pointers to the two closest touch points
+    *
+    * @return std::vector<const TouchPoint*>, pointers to the two closest touch points
+    *  vector can have less then two elements, which indicate that not enough points exist
+    */
+    std::vector<const TouchPoint*> findClosestTwoTouchPoints() const;
 
     virtual std::string getClassIdentifier() const { return "org.inviwo.TouchEvent"; }
 

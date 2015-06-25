@@ -38,7 +38,6 @@
 #include "utils/shading.glsl"
 #include "utils/raycastgeometry.glsl"
 
-
 uniform VolumeParameters volumeParameters;
 uniform sampler3D volume;
 
@@ -47,6 +46,7 @@ uniform sampler2D transferFunction;
 uniform ImageParameters entryParameters;
 uniform sampler2D entryColor;
 uniform sampler2D entryDepth;
+uniform sampler2D entryPicking;
 
 uniform ImageParameters exitParameters;
 uniform sampler2D exitColor;
@@ -118,8 +118,6 @@ vec4 rayTraversal(vec3 entryPoint, vec3 exitPoint, vec2 texCoords) {
 }
 
 
-
-
 void main() {
     vec2 texCoords = gl_FragCoord.xy * outportParameters.reciprocalDimensions;
     vec3 entryPoint = texture(entryColor, texCoords).rgb;
@@ -129,4 +127,5 @@ void main() {
 
     vec4 color = rayTraversal(entryPoint, exitPoint, texCoords);
     FragData0 = color;
+    PickingData = texture(entryPicking, texCoords);
 }

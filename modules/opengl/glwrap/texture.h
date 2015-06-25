@@ -74,7 +74,7 @@ public:
     void unbind() const;
 
     void download(void* data) const;
-
+    void downloadToPBO() const;
     void loadFromPBO(const Texture*);
 
 protected:
@@ -83,9 +83,8 @@ protected:
     void unbindFromPBO() const;
     void unbindToPBO() const;
 
-    void downloadToPBO() const;
-
-    void setupAsyncReadBackPBO();
+    void setupAsyncReadBackPBO() const;
+    void setPBOAsInvalid();
 
     void setNChannels();
     void setSizeInBytes();
@@ -106,7 +105,8 @@ private:
     GLuint byteSize_;
     GLuint numChannels_;
 
-    mutable bool dataInReadBackPBO_;
+    mutable bool pboBackIsSetup_;
+    mutable bool pboBackHasData_;
 };
 
 } // namespace

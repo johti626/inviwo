@@ -335,16 +335,20 @@ void CanvasQt::mouseMoveEvent(QMouseEvent* e) {
 #endif
 
 
-    if (e->buttons() == Qt::LeftButton || e->buttons() == Qt::RightButton || e->buttons() == Qt::MiddleButton) {
-        ivec2 screenPos(e->pos().x(), e->pos().y());
-        ivec2 screenPosInvY(screenPos.x, static_cast<int>(getScreenDimensions().y) - 1 - screenPos.y);
-        MouseEvent mouseEvent(screenPos,
-                              EventConverterQt::getMouseButton(e), MouseEvent::MOUSE_STATE_MOVE,
-                              EventConverterQt::getModifier(e), getScreenDimensions(),
-                              getDepthValueAtCoord(screenPosInvY));
-        e->accept();
-        Canvas::mouseMoveEvent(&mouseEvent);
-    }
+    ivec2 screenPos(e->pos().x(), e->pos().y());
+    ivec2 screenPosInvY(screenPos.x, static_cast<int>(getScreenDimensions().y) - 1 - screenPos.y);
+
+    // Optimization, do not sample depth value when hovering, i.e. move without holding a mouse button
+    int button = EventConverterQt::getMouseButton(e);
+    double depth = 1.0;
+    if (button != MouseEvent::MOUSE_BUTTON_NONE)
+        depth = getDepthValueAtCoord(screenPosInvY);
+
+    MouseEvent mouseEvent(screenPos, button, MouseEvent::MOUSE_STATE_MOVE,
+                            EventConverterQt::getModifier(e), getScreenDimensions(),
+                            depth);
+    e->accept();
+    Canvas::mouseMoveEvent(&mouseEvent);
 }
 
 void CanvasQt::wheelEvent(QWheelEvent* e){
@@ -475,16 +479,21 @@ void CanvasQt::touchEvent(QTouchEvent* touch) {
             touchState = TouchPoint::TOUCH_STATE_NONE;
         }
 
+        ivec2 pixelCoord = ivec2(static_cast<int>(glm::floor(screenTouchPos.x)),
+            screenSize.y - 1 - static_cast<int>(glm::floor(screenTouchPos.y)));
+
         touchPoints.push_back(
             TouchPoint(touchPoint.id(), screenTouchPos,
             (screenTouchPos + 0.5f) / screenSize,
             prevScreenTouchPos,
             (prevScreenTouchPos + 0.5f) / screenSize,
-            touchState, getDepthValueAtCoord(ivec2(screenTouchPos.x, screenSize.y-1-screenTouchPos.y)
-                                             , depthLayerRAM)));
+            touchState, getDepthValueAtCoord(pixelCoord, depthLayerRAM)));
     }
+
     TouchEvent touchEvent(touchPoints, getScreenDimensions());
     touch->accept();
+
+    // We need to send out touch event all the time to support one -> two finger touch switch
     Canvas::touchEvent(&touchEvent);
 
     // Mouse events will be triggered for touch events by Qt4 and Qt >= 5.3.0
