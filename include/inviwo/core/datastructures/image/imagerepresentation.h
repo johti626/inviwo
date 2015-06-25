@@ -46,8 +46,7 @@ public:
     virtual ImageRepresentation* clone() const = 0;
     virtual ~ImageRepresentation();
 
-    virtual void performOperation(DataOperation*) const;
-    uvec2 getDimensions() const;
+    size2_t getDimensions() const;
 
     /**
      * Copy and resize the representations of this onto the target.

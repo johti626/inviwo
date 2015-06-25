@@ -31,12 +31,13 @@
 
 namespace inviwo {
 
-    TouchPoint::TouchPoint(vec2 pos, vec2 posNormalized, vec2 prevPos, vec2 prevPosNormalized, TouchPoint::TouchState touchState, double depth)
-    : pos_(pos), posNormalized_(posNormalized), prevPos_(prevPos), prevPosNormalized_(prevPosNormalized), state_(touchState), depth_(depth) {
+TouchPoint::TouchPoint(int id, vec2 pos, vec2 posNormalized, vec2 prevPos, vec2 prevPosNormalized, TouchPoint::TouchState touchState, double depth)
+: id_(id), pos_(pos), posNormalized_(posNormalized), prevPos_(prevPos), prevPosNormalized_(prevPosNormalized), state_(touchState), depth_(depth) {
 
 }
 
 void TouchPoint::serialize(IvwSerializer& s) const {
+    s.serialize("id", id_);
     s.serialize("pos", pos_);
     s.serialize("posNormalized", posNormalized_);
     s.serialize("prevPos", prevPos_);
@@ -47,6 +48,7 @@ void TouchPoint::serialize(IvwSerializer& s) const {
 }
 
 void TouchPoint::deserialize(IvwDeserializer& d) {
+    d.deserialize("id", id_);
     d.deserialize("pos", pos_);
     d.deserialize("posNormalized", posNormalized_);
     d.deserialize("prevPos", prevPos_);
@@ -66,6 +68,22 @@ TouchEvent* TouchEvent::clone() const {
 }
 
 TouchEvent::~TouchEvent() {}
+
+bool TouchEvent::hasTouchPoints() const { 
+    return !touchPoints_.empty(); 
+}
+
+const std::vector<TouchPoint>& TouchEvent::getTouchPoints() const { 
+    return touchPoints_; 
+}
+
+std::vector<TouchPoint>& TouchEvent::getTouchPoints() { 
+    return touchPoints_; 
+}
+
+void TouchEvent::setTouchPoints(std::vector<TouchPoint> val) { 
+    touchPoints_ = val; 
+}
 
 vec2 TouchEvent::getCenterPoint() const {
     if (touchPoints_.empty()) {

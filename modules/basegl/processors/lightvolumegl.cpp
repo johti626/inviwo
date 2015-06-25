@@ -119,10 +119,10 @@ LightVolumeGL::LightVolumeGL()
     , mergeShader_(nullptr)
     , mergeFBO_(nullptr)
     , internalVolumesInvalid_(false)
-    , volumeDimOut_(uvec3(0))
-    , lightDir_(vec3(0.f))
-    , lightPos_(vec3(0.f))
-    , lightColor_(vec4(1.f))
+    , volumeDimOut_(0)
+    , lightDir_(0.f)
+    , lightPos_(0.f)
+    , lightColor_(1.f)
     , calculatedOnes_(false) {
     addPort(inport_);
     addPort(outport_);
@@ -225,7 +225,7 @@ void LightVolumeGL::process() {
     //Perform propagation passes
     for (int i=0; i<2; ++i) {
         propParams_[i].fbo->activate();
-        glViewport(0, 0, volumeDimOut_.x, volumeDimOut_.y);
+        glViewport(0, 0, static_cast<GLsizei>(volumeDimOut_.x), static_cast<GLsizei>(volumeDimOut_.y));
 
         if (reattach)
             propParams_[i].fbo->attachColorTexture(propParams_[i].vol->getTexture(), 0);
@@ -264,7 +264,7 @@ void LightVolumeGL::process() {
     mergeShader_->setUniform("blendingFactor_", blendingFactor_);
     //Perform merge pass
     mergeFBO_->activate();
-    glViewport(0, 0, volumeDimOut_.x, volumeDimOut_.y);
+    glViewport(0, 0, static_cast<GLsizei>(volumeDimOut_.x), static_cast<GLsizei>(volumeDimOut_.y));
 
     if (reattach)
         mergeFBO_->attachColorTexture(outVolumeGL->getTexture(), 0);
@@ -360,8 +360,8 @@ bool LightVolumeGL::lightSourceChanged() {
 
 bool LightVolumeGL::volumeChanged(bool lightColorChanged) {
     const Volume* input = inport_.getData();
-    glm::uvec3 inDim = input->getDimensions();
-    glm::uvec3 outDim = uvec3(inDim.x/volumeSizeOption_.get(), inDim.y/volumeSizeOption_.get(), inDim.z/volumeSizeOption_.get());
+    size3_t inDim = input->getDimensions();
+    size3_t outDim{inDim.x/volumeSizeOption_.get(), inDim.y/volumeSizeOption_.get(), inDim.z/volumeSizeOption_.get()};
 
     if (internalVolumesInvalid_ || (volumeDimOut_ != outDim)) {
         volumeDimOut_ = outDim;
@@ -419,7 +419,7 @@ bool LightVolumeGL::volumeChanged(bool lightColorChanged) {
 
 void LightVolumeGL::volumeSizeOptionChanged() {
     if (inport_.hasData()) {
-        if ((inport_.getData()->getDimensions()/uvec3(volumeSizeOption_.get())) != volumeDimOut_) {
+        if ((inport_.getData()->getDimensions()/size3_t(volumeSizeOption_.get())) != volumeDimOut_) {
             internalVolumesInvalid_ = true;
         }
     }

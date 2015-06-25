@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2013-2015 Inviwo Foundation
+ * Copyright (c) 2012-2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,37 +24,29 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#ifndef IVW_GEOMETRY_H
-#define IVW_GEOMETRY_H
-
-#include <inviwo/core/common/inviwocoredefine.h>
-#include <inviwo/core/datastructures/datagroup.h>
-#include <inviwo/core/datastructures/spatialdata.h>
-#include <inviwo/core/datastructures/geometry/geometryrepresentation.h>
+#include <inviwo/core/datastructures/volume/volumeborder.h>
 
 namespace inviwo {
 
-class CameraProperty;
+bool VolumeBorders::operator!=(const VolumeBorders& vb) const {
+    return (llf != vb.llf || urb != vb.urb);
+}
 
-class IVW_CORE_API Geometry : public DataGroup, public SpatialEntity<3> {
+bool VolumeBorders::operator==(const VolumeBorders& vb) const {
+    return (llf == vb.llf && urb == vb.urb);
+}
 
-public:
-    Geometry();
-    Geometry(const Geometry& rhs);
-    Geometry& operator=(const Geometry& that);
-    virtual Geometry* clone() const;
-    virtual ~Geometry();
+VolumeBorders::VolumeBorders(const size3_t& llfBorder, const size3_t& urbBorder)
+    : llf(llfBorder), urb(urbBorder) {}
 
-    virtual const SpatialCameraCoordinateTransformer<3>& getCoordinateTransformer(const CameraProperty* camera) const;
-    using SpatialEntity<3>::getCoordinateTransformer;
+VolumeBorders::VolumeBorders(size_t front, size_t back, size_t left, size_t right, size_t lower,
+                             size_t upper)
+    : llf(size3_t(front, left, lower)), urb(size3_t(back, right, upper)) {}
 
-    static uvec3 COLOR_CODE;
-    static const std::string CLASS_IDENTIFIER; 
-};
+VolumeBorders::VolumeBorders()
+    : llf(size3_t(0, 0, 0)), urb(size3_t(0, 0, 0)), numVoxels(0), hasBorder(false) {}
 
-} // namespace
-
-#endif // IVW_GEOMETRY_H
+}  // namespace

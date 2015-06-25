@@ -61,7 +61,7 @@ void testVolumeLoad(std::string filename) {
     const T* data = static_cast<const T*>(volumeRAM->getData());
     ASSERT_TRUE(data != nullptr);
 
-    uvec3 dim = volume->getDimensions();
+    size3_t dim = volume->getDimensions();
     long long ref0;
     double ref1;
     double ref2;
@@ -73,13 +73,13 @@ void testVolumeLoad(std::string filename) {
                  - static_cast<double>(std::numeric_limits<T>::min());
     double min = static_cast<double>(std::numeric_limits<T>::min());
 
-    for (long long z = 0; z < dim.z; z++) {
+    for (long long z = 0; z < static_cast<long long>(dim.z); z++) {
         tz = z*z*z*z*z*z*z*z;
 
-        for (long long y = 0; y < dim.y; y++) {
+        for (long long y = 0; y < static_cast<long long>(dim.y); y++) {
             ty = y*y*y*y;
 
-            for (long long x = 0; x < dim.x; x++) {
+            for (long long x = 0; x < static_cast<long long>(dim.x); x++) {
                 ref0 = x + x*ty + x*ty*tz;
                 ref1 = static_cast<double>(ref0);
                 ref2 = fmod(ref1, mod);
@@ -108,7 +108,7 @@ void testVolumeClone(std::string filename) {
     Volume* volume2 = volume->clone();
 
     const T* data = static_cast<const T*>(volumeRAM->getData());
-    uvec3 dim = volume->getDimensions();
+    size3_t dim = volume->getDimensions();
 
     const VolumeRAMPrecision<T>* volumeRAM1 =
         static_cast<const VolumeRAMPrecision<T>*>(volume1->getRepresentation<VolumeRAM>());
@@ -118,8 +118,8 @@ void testVolumeClone(std::string filename) {
     const T* data1 = static_cast<const T*>(volumeRAM1->getData());
     const T* data2 = static_cast<const T*>(volumeRAM2->getData());
 
-    uvec3 dim1 = volume1->getDimensions();
-    uvec3 dim2 = volume2->getDimensions();
+    size3_t dim1 = volume1->getDimensions();
+    size3_t dim2 = volume2->getDimensions();
 
     EXPECT_EQ(dim,dim1);
     EXPECT_EQ(dim,dim2);
@@ -149,13 +149,13 @@ void testVolumeClone(std::string filename) {
         - static_cast<double>(std::numeric_limits<T>::min());
     double min = static_cast<double>(std::numeric_limits<T>::min());
 
-    for (long long z = 0; z < dim.z; z++) {
+    for (long long z = 0; z < static_cast<long long>(dim.z); z++) {
         tz = z*z*z*z*z*z*z*z;
 
-        for (long long y = 0; y < dim.y; y++) {
+        for (long long y = 0; y < static_cast<long long>(dim.y); y++) {
             ty = y*y*y*y;
 
-            for (long long x = 0; x < dim.x; x++) {
+            for (long long x = 0; x < static_cast<long long>(dim.x); x++) {
                 ref0 = x + x*ty + x*ty*tz;
                 ref1 = static_cast<double>(ref0);
                 ref2 = fmod(ref1, mod);

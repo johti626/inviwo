@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2013-2015 Inviwo Foundation
+ * Copyright (c) 2012-2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,36 +24,18 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#ifndef IVW_VOLUMERAMOPERATIONEXECUTER_H
-#define IVW_VOLUMERAMOPERATIONEXECUTER_H
-
-#include <inviwo/core/datastructures/dataoperation.h>
 #include <inviwo/core/datastructures/volume/volumeramsubset.h>
-#include <inviwo/core/datastructures/volume/volumeramsubsample.h>
 
 namespace inviwo {
 
-//TODO: Make operation factory
-template<typename T>
-void executeOperationOnVolumeRAMPrecision(DataOperation* dop) {
-    VolumeRAMSubSet* volSubSetDop = dynamic_cast<VolumeRAMSubSet*>(dop);
+VolumeRAM* VolumeRAMSubSet::apply(const VolumeRepresentation* in, size3_t dim, size3_t offset,
+                                  const VolumeBorders& border /*= VolumeBorders()*/,
+                                  bool clampBorderOutsideVolume /*= true*/) {
+    detail::VolumeRAMSubSetDispatcher disp;
+    return in->getDataFormat()->dispatch(disp, in, dim, offset, border, clampBorderOutsideVolume);
+}
 
-    if (volSubSetDop) {
-        volSubSetDop->evaluate<T>();
-        return;
-    }
-
-    VolumeRAMSubSample* volSubSampleDop = dynamic_cast<VolumeRAMSubSample*>(dop);
-
-    if (volSubSampleDop) {
-        volSubSampleDop->evaluate<T>();
-        return;
-    }
-};
-
-} // namespace
-
-#endif // IVW_VOLUMERAMOPERATIONEXECUTER_H
+}  // namespace

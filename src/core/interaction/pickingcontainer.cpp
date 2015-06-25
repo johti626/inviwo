@@ -31,19 +31,68 @@
 #include <inviwo/core/interaction/pickingmanager.h>
 #include <inviwo/core/datastructures/image/image.h>
 #include <inviwo/core/datastructures/image/layerram.h>
+#include <inviwo/core/interaction/events/mouseevent.h>
+#include <inviwo/core/interaction/events/touchevent.h>
 
 namespace inviwo {
 
 PickingContainer::PickingContainer()
-    : src_(nullptr), currentPickObj_(nullptr), prevCoord_(uvec2(0, 0)), selected_(false){};
+    : src_(nullptr), mousePickObj_(nullptr), prevMouseCoord_(uvec2(0, 0)), mousePickingOngoing_(false){};
 
 PickingContainer::~PickingContainer() {};
 
-bool PickingContainer::isPickableSelected() { return selected_; }
+bool PickingContainer::performMousePick(MouseEvent* e) {
+    if (e->button() == MouseEvent::MOUSE_BUTTON_LEFT && e->state() == MouseEvent::MOUSE_STATE_PRESS){
+        uvec2 coord = mousePosToPixelCoordinates(e->pos(), e->canvasSize());
+        prevMouseCoord_ = coord;
 
-bool PickingContainer::performPick(const uvec2& coord) {
-    prevCoord_ = coord;
+        mousePickObj_ = findPickingObject(coord);
 
+        if (mousePickObj_) {
+            mousePickingOngoing_ = true;
+            mousePickObj_->setPickingPosition(normalizedCoordinates(coord));
+            mousePickObj_->setPickingDepth(e->depth());
+            mousePickObj_->setPickingMouseEvent(*e);
+
+            mousePickObj_->setPickingMove(vec2(0.f, 0.f));
+            mousePickObj_->picked();
+            return true;
+        }
+        else{
+            mousePickingOngoing_ = false;
+            return false;
+        }
+    }
+    else if (e->state() == MouseEvent::MOUSE_STATE_MOVE){
+        if (mousePickingOngoing_){
+            uvec2 coord = mousePosToPixelCoordinates(e->pos(), e->canvasSize());
+            mousePickObj_->setPickingMove(pixelMoveVector(prevMouseCoord_, coord));
+            mousePickObj_->setPickingMouseEvent(*e);
+            prevMouseCoord_ = coord;
+            mousePickObj_->picked();
+            return true;
+        }
+        else
+            return false;
+    }
+    else if (e->button() == MouseEvent::MOUSE_BUTTON_LEFT && e->state() == MouseEvent::MOUSE_STATE_RELEASE){
+        mousePickingOngoing_ = false;
+        return false;
+    }
+
+    return false;
+}
+
+bool PickingContainer::performTouchPick(TouchEvent*) {
+    //TODO: Implement
+    return false;
+}
+
+void PickingContainer::setPickingSource(const Image* src) {
+    src_ = src;
+}
+
+PickingObject* PickingContainer::findPickingObject(const uvec2& coord){
     if (PickingManager::getPtr()->pickingEnabled() && src_) {
         const Layer* pickingLayer = src_->getPickingLayer();
 
@@ -53,46 +102,11 @@ bool PickingContainer::performPick(const uvec2& coord) {
             dvec3 pickedColor = (value.a > 0.0 ? value.rgb() : dvec3(0.0));
             DataVec3UINT8::type pickedColorUINT8;
             DataVec3UINT8::get()->vec3DoubleToValue(pickedColor*255.0, &pickedColorUINT8);
-            currentPickObj_ = PickingManager::getPtr()->getPickingObjectFromColor(pickedColorUINT8);
-
-            if (currentPickObj_) {
-                setPickableSelected(true);
-                currentPickObj_->setPickingPosition(normalizedCoordinates(coord));
-
-                if (currentPickObj_->readDepth()) {
-                    const Layer* depthLayer = src_->getDepthLayer();
-                    if (depthLayer) {
-                        const LayerRAM* depthLayerRAM = depthLayer->getRepresentation<LayerRAM>();
-                        if (depthLayerRAM) {
-                            double depth = depthLayerRAM->getValueAsSingleDouble(coord);
-                            currentPickObj_->setPickingDepth(depth);
-                        }
-                    }
-                }
-
-                currentPickObj_->setPickingMove(vec2(0.f,0.f));
-                currentPickObj_->picked();
-                return true;
-            }
+            return PickingManager::getPtr()->getPickingObjectFromColor(pickedColorUINT8);
         }
     }
 
-    setPickableSelected(false);
-    return false;
-}
-
-void PickingContainer::movePicked(const uvec2& coord) {
-    currentPickObj_->setPickingMove(pixelMoveVector(prevCoord_, coord));
-    prevCoord_ = coord;
-    currentPickObj_->picked();
-}
-
-void PickingContainer::setPickableSelected(bool selected) {
-    selected_ = selected;
-}
-
-void PickingContainer::setPickingSource(const Image* src) {
-    src_ = src;
+    return nullptr;
 }
 
 vec2 PickingContainer::pixelMoveVector(const uvec2& previous, const uvec2& current) {
@@ -103,6 +117,17 @@ vec2 PickingContainer::pixelMoveVector(const uvec2& previous, const uvec2& curre
 vec2 PickingContainer::normalizedCoordinates(const uvec2& coord) {
     return vec2(static_cast<float>(coord.x)/static_cast<float>(src_->getDimensions().x),
                 static_cast<float>(coord.y)/static_cast<float>(src_->getDimensions().y));
+}
+
+uvec2 PickingContainer::mousePosToPixelCoordinates(ivec2 mpos, ivec2 dim) {
+    ivec2 pos = mpos;
+    pos.x = std::max(pos.x - 1, 0);
+    pos.x = std::min(pos.x, dim.x - 1);
+
+    pos.y = std::max(dim.y - pos.y - 1, 0);
+    pos.y = std::min(pos.y, dim.y - 1);
+
+    return uvec2(pos);
 }
 
 } // namespace

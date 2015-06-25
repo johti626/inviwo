@@ -82,6 +82,8 @@ protected:
     void mousePressEvent(MouseEvent* e);
     void mouseReleaseEvent(MouseEvent* e);
     void mouseMoveEvent(MouseEvent* e);
+
+    void mouseButtonEvent(MouseEvent* e);
     void mouseWheelEvent(MouseEvent* e);
 
     void keyPressEvent(KeyboardEvent* e);
@@ -89,8 +91,6 @@ protected:
 
     void gestureEvent(GestureEvent* e);
     void touchEvent(TouchEvent* e);
-
-    uvec2 mousePosToPixelCoordinates(ivec2 mpos);
 
     static Mesh* screenAlignedRect_;
 

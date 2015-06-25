@@ -61,8 +61,6 @@ public:
     virtual ~Mesh();
     virtual std::string getDataInfo() const;
 
-    virtual void performOperation(DataOperation*) const {};
-
     /**
      * Add a buffer with rendering data, such as positions/colors/normals.
      *
@@ -105,7 +103,7 @@ public:
     size_t getNumberOfIndicies() const;
 
     virtual const SpatialCameraCoordinateTransformer<3>& getCoordinateTransformer(
-        const CameraProperty* camera) const;
+        const Camera& camera) const;
     using SpatialEntity<3>::getCoordinateTransformer;
 
     static uvec3 COLOR_CODE;

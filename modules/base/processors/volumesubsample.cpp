@@ -75,15 +75,15 @@ void VolumeSubsample::process() {
         Volume* volume = nullptr;
 
         if(subSampleFactor_.get() == 2)
-            volume = new Volume(VolumeRAMSubSample::apply(vol, VolumeRAMSubSample::HALF));
+            volume = new Volume(VolumeRAMSubSample::apply(vol, VolumeRAMSubSample::FACTOR::HALF));
         
         if(!volume) {
             outport_.setConstData(inport_.getData());
             return;
         }
 
-        uvec3 dim = volume->getDimensions();
-        uvec3 offset = uvec3(0);
+        size3_t dim = volume->getDimensions();
+        size3_t offset = size3_t(0);
 
         // pass meta data on
         volume->copyMetaDataFrom(*inport_.getData());
