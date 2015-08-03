@@ -46,6 +46,9 @@
 
 namespace inviwo {
 
+
+
+
 InviwoApplicationQt::InviwoApplicationQt(std::string displayName, std::string basePath, int& argc,
                                          char** argv)
     : QApplication(argc, argv)
@@ -55,6 +58,11 @@ InviwoApplicationQt::InviwoApplicationQt(std::string displayName, std::string ba
     QCoreApplication::setOrganizationName("Inviwo Foundation");
     QCoreApplication::setOrganizationDomain("inviwo.org");
     QCoreApplication::setApplicationName(displayName.c_str());
+
+    setPostEnqueueFront([this](){
+        postEvent(this, new InviwoQtEvent());
+    });
+
     fileWatcher_ = new QFileSystemWatcher(this);
     connect(fileWatcher_, SIGNAL(fileChanged(QString)), this, SLOT(fileChanged(QString)));
 
@@ -109,17 +117,17 @@ void InviwoApplicationQt::fileChanged(QString fileName) {
 
 void InviwoApplicationQt::closeInviwoApplication() { QCoreApplication::quit(); }
 
-void InviwoApplicationQt::playSound(unsigned int soundID) {
+void InviwoApplicationQt::playSound(Message message) {
 // Qt currently does not support playing sounds from resources
 #if (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
     if ((dynamic_cast<BoolProperty*>(InviwoApplication::getPtr()
                                          ->getSettingsByType<SystemSettings>()
                                          ->getPropertyByIdentifier("enableSound"))->get())) {
-        if (soundID == IVW_OK)
+        if (message == Message::Ok)
             QSound::play(QString::fromStdString(
                 InviwoApplication::getPtr()->getPath(InviwoApplication::PATH_RESOURCES) +
                 "sounds/ok.wav"));
-        else if (soundID == IVW_ERROR)
+        else if (message == Message::Error)
             QSound::play(QString::fromStdString(
                 InviwoApplication::getPtr()->getPath(InviwoApplication::PATH_RESOURCES) +
                 "sounds/error.wav"));
@@ -250,5 +258,18 @@ QPoint InviwoApplicationQt::offsetWidget() {
     }
     return QPoint(pos.x, pos.y);
 }
+
+bool InviwoApplicationQt::event(QEvent* e) {
+ if (e->type() == InviwoQtEvent::type()) {
+        e->accept();
+        processFront();
+        return true;
+    } else {
+        return QApplication::event(e);
+    }
+}
+
+
+QEvent::Type InviwoQtEvent::INVIWO_QT_EVENT = QEvent::None;
 
 }  // namespace

@@ -33,11 +33,14 @@
 #include <modules/base/basemoduledefine.h>
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/processors/processor.h>
+#include <inviwo/core/processors/progressbarowner.h>
 #include <inviwo/core/ports/volumeport.h>
 #include <inviwo/core/ports/meshport.h>
 #include <inviwo/core/properties/ordinalproperty.h>
 #include <inviwo/core/properties/optionproperty.h>
 #include <inviwo/core/properties/compositeproperty.h>
+
+#include <future>
 
 namespace inviwo {
 /** \docpage{org.inviwo.SurfaceExtraction, Surface Extraction}
@@ -57,16 +60,34 @@ namespace inviwo {
  *   * __Triangle Color__ ...
  *
  */
-class IVW_MODULE_BASE_API SurfaceExtraction : public Processor {
+class IVW_MODULE_BASE_API SurfaceExtraction : public Processor, public ProgressBarOwner {
 public:
+    InviwoProcessorInfo();
+    
     SurfaceExtraction();
     virtual ~SurfaceExtraction();
 
-    InviwoProcessorInfo();
+    SurfaceExtraction(const SurfaceExtraction&) = delete;
+    SurfaceExtraction& operator=(const SurfaceExtraction&) = delete;
+
 
 protected:
     virtual void process();
     void setMinMax();
+    void updateColors();
+
+    struct task {
+        task() = default;
+        task(const task&) = delete;
+        task& operator=(const task&) = delete;
+        task(task&&);
+        task& operator=(task&&);
+
+        std::future<std::unique_ptr<Mesh>> result;
+        float iso = 0.0f;
+        vec4 color = vec4(0);
+        float status = 0.0f;
+    };
 
     DataInport<Volume, 0> volume_;
     DataOutport<std::vector<std::unique_ptr<Mesh>>> mesh_;
@@ -75,9 +96,7 @@ protected:
     OptionPropertyInt method_;
     CompositeProperty colors_;
 
-    void updateColors();
-
-private:
+    std::vector<task> result_;
 };
 
 }  // namespace
