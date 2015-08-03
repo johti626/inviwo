@@ -424,9 +424,7 @@ bool NetworkEditor::isModified() const { return modified_; }
 void NetworkEditor::setModified(const bool modified) {
     if (modified != modified_) {
         modified_ = modified;
-        for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
-            static_cast<NetworkEditorObserver*>(*it)->onModifiedStatusChanged(modified);
-        }
+        for (auto o : observers_) o->onModifiedStatusChanged(modified);
     }
 }
 
@@ -959,10 +957,10 @@ void NetworkEditor::dragMoveEvent(QGraphicsSceneDragDropEvent* e) {
             if (processorItem && !oldProcessorTarget_) {  //< New processor found
                 QString className;
                 ProcessorDragObject::decode(e->mimeData(), className);
-                processorItem->setSelected(true);
+                processorItem->setHighlight(true);
                 oldProcessorTarget_ = processorItem;
             } else if (!processorItem && oldProcessorTarget_) {  // processor no longer targeted
-                oldProcessorTarget_->setSelected(false);
+                oldProcessorTarget_->setHighlight(false);
                 oldProcessorTarget_ = nullptr;
             }
         }
@@ -1139,6 +1137,7 @@ void NetworkEditor::placeProcessorOnProcessor(Processor* newProcessor, Processor
 
     // remove old processor
     network->removeProcessor(oldProcessor);
+    delete oldProcessor;
 
     // create all new connections
     for (auto& newConnection : newConnections)
@@ -1205,9 +1204,7 @@ bool NetworkEditor::loadNetwork(std::string fileName) {
     bool loaded = loadNetwork(fileStream, fileName);
     fileStream.close();
     if (loaded) {
-        for (ObserverSet::reverse_iterator it = observers_->rbegin(); it != observers_->rend();
-             ++it)
-            static_cast<NetworkEditorObserver*>(*it)->onNetworkEditorFileChanged(fileName);
+        for (auto o : observers_) o->onNetworkEditorFileChanged(fileName);
     }
 
     return loaded;

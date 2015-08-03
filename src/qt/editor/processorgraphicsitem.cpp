@@ -40,6 +40,7 @@
 #include <inviwo/core/ports/outport.h>
 #include <inviwo/core/processors/processor.h>
 #include <inviwo/core/processors/progressbarowner.h>
+#include <inviwo/core/processors/activityindicator.h>
 #include <inviwo/core/metadata/processormetadata.h>
 #include <inviwo/core/util/stringconversion.h>
 #include <inviwo/core/util/clock.h>
@@ -54,6 +55,7 @@
 #include <inviwo/qt/editor/processorgraphicsitem.h>
 #include <inviwo/qt/widgets/propertylistwidget.h>
 #include <inviwo/qt/widgets/processors/processorwidgetqt.h>
+
 
 namespace inviwo {
 
@@ -75,6 +77,7 @@ ProcessorGraphicsItem::ProcessorGraphicsItem(Processor* processor)
     , progressItem_(nullptr)
     , statusItem_(nullptr)
     , linkItem_(nullptr)
+    , highlight_(false)
     #if IVW_PROFILING
     , processCount_(0)
     , countLabel_(nullptr)
@@ -135,13 +138,19 @@ ProcessorGraphicsItem::ProcessorGraphicsItem(Processor* processor)
     }
 
     statusItem_ = new ProcessorStatusGraphicsItem(this, processor_);
-
-    ProgressBarOwner* progressBarOwner = dynamic_cast<ProgressBarOwner*>(processor_);
-    if ((progressBarOwner != nullptr)) {
+    if (auto progressBarOwner = dynamic_cast<ProgressBarOwner*>(processor_)) {
         progressItem_ =
             new ProcessorProgressGraphicsItem(this, &(progressBarOwner->getProgressBar()));
+
+        progressBarOwner->getProgressBar().ActivityIndicator::addObserver(statusItem_);
     }
         
+    
+    
+    if (auto activityInd = dynamic_cast<ActivityIndicatorOwner*>(processor_)){
+        activityInd->getActivityIndicator().addObserver(statusItem_);
+    }
+
     #if IVW_PROFILING
     countLabel_ = new LabelGraphicsItem(this);
     countLabel_->setCrop(9,8);
@@ -269,10 +278,9 @@ void ProcessorGraphicsItem::setIdentifier(QString text) {
         nameLabel_->setText(updatedNewName.c_str());
     }
 
-    ProcessorWidgetQt* processorWidgetQt =
-        dynamic_cast<ProcessorWidgetQt*>(getProcessor()->getProcessorWidget());
-
-    if (processorWidgetQt) processorWidgetQt->setWindowTitle(updatedNewName.c_str());
+    if (auto* widget = dynamic_cast<ProcessorWidgetQt*>(getProcessor()->getProcessorWidget())) {
+        widget->setWindowTitle(updatedNewName.c_str());
+    }
 }
 
 void ProcessorGraphicsItem::snapToGrid() {
@@ -292,12 +300,12 @@ QVariant ProcessorGraphicsItem::itemChange(GraphicsItemChange change, const QVar
         case QGraphicsItem::ItemSelectedHasChanged:
             if (isSelected()) {
                 setZValue(SELECTED_PROCESSORGRAPHICSITEM_DEPTH);
-                NetworkEditor::getPtr()->addPropertyWidgets(getProcessor());
+                if (!highlight_) NetworkEditor::getPtr()->addPropertyWidgets(getProcessor());
             } else {
                 setZValue(PROCESSORGRAPHICSITEM_DEPTH);
                 NetworkEditor::getPtr()->removePropertyWidgets(getProcessor());
             }
-            if (processorMeta_) processorMeta_->setSelected(isSelected());
+            if (!highlight_ && processorMeta_) processorMeta_->setSelected(isSelected());
             break;
         case QGraphicsItem::ItemVisibleHasChanged:
             if (processorMeta_) processorMeta_->setVisibile(isVisible());
@@ -414,6 +422,11 @@ void ProcessorGraphicsItem::showToolTip(QGraphicsSceneHelpEvent* e) {
 #endif
 
     showToolTipHelper(e, str);
+}
+
+void ProcessorGraphicsItem::setHighlight(bool val) {
+    highlight_ = val;
+    setSelected(val);
 }
 
 }  // namespace

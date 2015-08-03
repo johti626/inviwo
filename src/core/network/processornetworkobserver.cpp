@@ -32,113 +32,75 @@
 namespace inviwo {
 
 void ProcessorNetworkObservable::notifyObserversProcessorNetworkChanged() const {
-    // Notify observers
-    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
-        // static_cast can be used since only template class objects can be added
-        static_cast<ProcessorNetworkObserver*>(*it)->onProcessorNetworkChange();
-    }
+    for (auto o : observers_) o->onProcessorNetworkChange();
 }
 
 void ProcessorNetworkObservable::notifyObserversProcessorNetworkEvaluateRequest() const {
-    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
-        static_cast<ProcessorNetworkObserver*>(*it)->onProcessorNetworkEvaluateRequest();
-    }
+    for (auto o : observers_) o->onProcessorNetworkEvaluateRequest();
 }
 
 void ProcessorNetworkObservable::notifyObserversProcessorNetworkUnlocked() const {
-    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
-        static_cast<ProcessorNetworkObserver*>(*it)->onProcessorNetworkUnlocked();
-    }
+    for (auto o : observers_) o->onProcessorNetworkUnlocked();
 }
 
 void ProcessorNetworkObservable::notifyObserversProcessorNetworkWillAddProcessor(
     Processor* processor) const {
-    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
-        static_cast<ProcessorNetworkObserver*>(*it)->onProcessorNetworkWillAddProcessor(processor);
-    }
+    for (auto o : observers_) o->onProcessorNetworkWillAddProcessor(processor);
 }
 
 void ProcessorNetworkObservable::notifyObserversProcessorNetworkDidAddProcessor(
     Processor* processor) const {
-    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
-        static_cast<ProcessorNetworkObserver*>(*it)->onProcessorNetworkDidAddProcessor(processor);
-    }
+    for (auto o : observers_) o->onProcessorNetworkDidAddProcessor(processor);
 }
 
 void ProcessorNetworkObservable::notifyObserversProcessorNetworkWillRemoveProcessor(
     Processor* processor) const {
-    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
-        static_cast<ProcessorNetworkObserver*>(*it)
-            ->onProcessorNetworkWillRemoveProcessor(processor);
-    }
+    for (auto o : observers_) o->onProcessorNetworkWillRemoveProcessor(processor);
 }
 
 void ProcessorNetworkObservable::notifyObserversProcessorNetworkDidRemoveProcessor(
     Processor* processor) const {
-    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
-        static_cast<ProcessorNetworkObserver*>(*it)
-            ->onProcessorNetworkDidRemoveProcessor(processor);
-    }
+    for (auto o : observers_) o->onProcessorNetworkDidRemoveProcessor(processor);
 }
 
 void ProcessorNetworkObservable::notifyObserversProcessorNetworkWillAddConnection(
     PortConnection* portConnection) const {
-    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
-        static_cast<ProcessorNetworkObserver*>(*it)
-            ->onProcessorNetworkWillAddConnection(portConnection);
-    }
+    for (auto o : observers_) o->onProcessorNetworkWillAddConnection(portConnection);
 }
 
 void ProcessorNetworkObservable::notifyObserversProcessorNetworkDidAddConnection(
     PortConnection* portConnection) const {
-    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
-        static_cast<ProcessorNetworkObserver*>(*it)
-            ->onProcessorNetworkDidAddConnection(portConnection);
-    }
+    for (auto o : observers_) o->onProcessorNetworkDidAddConnection(portConnection);
 }
 
 void ProcessorNetworkObservable::notifyObserversProcessorNetworkWillRemoveConnection(
     PortConnection* portConnection) const {
-    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
-        static_cast<ProcessorNetworkObserver*>(*it)
-            ->onProcessorNetworkWillRemoveConnection(portConnection);
-    }
+    for (auto o : observers_) o->onProcessorNetworkWillRemoveConnection(portConnection);
 }
 
 void ProcessorNetworkObservable::notifyObserversProcessorNetworkDidRemoveConnection(
     PortConnection* portConnection) const {
-    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
-        static_cast<ProcessorNetworkObserver*>(*it)
-            ->onProcessorNetworkDidRemoveConnection(portConnection);
-    }
+    for (auto o : observers_) o->onProcessorNetworkDidRemoveConnection(portConnection);
 }
 
 void ProcessorNetworkObservable::notifyObserversProcessorNetworkWillAddLink(
     PropertyLink* propertyLink) const {
-    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
-        static_cast<ProcessorNetworkObserver*>(*it)->onProcessorNetworkWillAddLink(propertyLink);
-    }
+    for (auto o : observers_) o->onProcessorNetworkWillAddLink(propertyLink);
 }
 
 void ProcessorNetworkObservable::notifyObserversProcessorNetworkDidAddLink(
     PropertyLink* propertyLink) const {
-    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
-        static_cast<ProcessorNetworkObserver*>(*it)->onProcessorNetworkDidAddLink(propertyLink);
-    }
+    for (auto o : observers_) o->onProcessorNetworkDidAddLink(propertyLink);
 }
 
 void ProcessorNetworkObservable::notifyObserversProcessorNetworkWillRemoveLink(
     PropertyLink* propertyLink) const {
-    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
-        static_cast<ProcessorNetworkObserver*>(*it)->onProcessorNetworkWillRemoveLink(propertyLink);
-    }
+    for (auto o : observers_) o->onProcessorNetworkWillRemoveLink(propertyLink);
 }
 
 void ProcessorNetworkObservable::notifyObserversProcessorNetworkDidRemoveLink(
     PropertyLink* propertyLink) const {
-    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
-        static_cast<ProcessorNetworkObserver*>(*it)->onProcessorNetworkDidRemoveLink(propertyLink);
-    }
+    for (auto o : observers_) o->onProcessorNetworkDidRemoveLink(propertyLink);
 }
 
 }  // namespace

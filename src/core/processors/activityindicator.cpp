@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,11 +27,27 @@
  *
  *********************************************************************************/
 
-#include <modules/python3/pythonexecutionoutputobservable.h>
+#include <inviwo/core/processors/activityindicator.h>
 
 namespace inviwo {
-void PythonExecutionOutputObservable::pythonExecutionOutputEvent(
-    const std::string &msg, const PythonExecutionOutputStream &outputType) {
-    for (auto o : observers_) o->onPyhonExecutionOutput(msg, outputType);
+
+void ActivityIndicator::setActive(bool active) { 
+    active_ = active;
+    notifyActivityIndicatorChanged(active_);
 }
+
+bool ActivityIndicator::isActive() const { return active_; }
+
+void ActivityIndicator::notifyActivityIndicatorChanged(bool active) const {
+    for (auto o : observers_) o->activityIndicatorChanged(active);
+}
+
+ActivityIndicator& ActivityIndicatorOwner::getActivityIndicator() {
+    return indicator_;
+}
+
+const ActivityIndicator& ActivityIndicatorOwner::getActivityIndicator() const {
+    return indicator_;
+}
+
 }  // namespace

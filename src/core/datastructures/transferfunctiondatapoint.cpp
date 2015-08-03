@@ -90,11 +90,7 @@ void TransferFunctionDataPoint::setPosA(const vec2& pos, float alpha) {
 
 void TransferFunctionDataPoint::notifyTransferFunctionPointObservers() const {
     if(notify_) {
-        // Notify observers
-        for (ObserverSet::reverse_iterator it = observers_->rbegin(); it != observers_->rend(); ++it) {
-            // static_cast can be used since only template class objects can be added
-            static_cast<TransferFunctionPointObserver*>(*it)->onTransferFunctionPointChange(this);
-        }
+        for (auto o : observers_) o->onTransferFunctionPointChange(this);
     }
 }
 

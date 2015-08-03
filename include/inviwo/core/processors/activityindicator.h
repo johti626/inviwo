@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2013-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,80 +24,48 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#ifndef IVW_TIMERQT_H
-#define IVW_TIMERQT_H
+#ifndef IVW_ACTIVITYINDICATOR_H
+#define IVW_ACTIVITYINDICATOR_H
 
-#include <inviwo/qt/widgets/inviwoqtwidgetsdefine.h>
-#include <inviwo/core/util/timer.h>
-#include <QBasicTimer>
-#include <QObject>
+#include <inviwo/core/common/inviwocoredefine.h>
+#include <inviwo/core/common/inviwo.h>
+#include <inviwo/core/util/observer.h>
 
 namespace inviwo {
 
-//class IVW_QTWIDGETS_API TimerQt: public QTimer, public Timer {
-//    Q_OBJECT
-//public:
-//    TimerQt(): QTimer(), Timer() {};
-//    virtual ~TimerQt() { stop();}
-//
-//    virtual void start(unsigned int intervalInMilliseconds, bool once = false) {
-//        if(isActive())
-//            return;
-//
-//        setSingleShot(once);
-//
-//        connect(this, SIGNAL(timeout()), this, SLOT(onIntervalEventSlot()));
-//
-//        QTimer::start(intervalInMilliseconds);
-//    };
-//
-//    virtual void stop() {
-//        QTimer::stop();
-//    };
-//
-//public slots:
-//    void onIntervalEventSlot() const {
-//        Timer::onIntervalEvent();
-//    }
-//protected:
-//
-//
-//};
-
-class IVW_QTWIDGETS_API TimerQt: public QObject, public Timer {
-    Q_OBJECT
+class IVW_CORE_API ActivityIndicatorObserver: public Observer {
 public:
-    TimerQt(): QObject(), Timer() {};
-    virtual ~TimerQt() { stop();}
-
-    virtual void start(unsigned int intervalInMilliseconds, bool once = false) {
-        if (timer_.isActive())
-            return;
-
-        once_ = once;
-        timer_.start(intervalInMilliseconds, this);
-    };
-
-    virtual void stop() {
-        timer_.stop();
-    };
-
-protected:
-    void timerEvent(QTimerEvent* event) {
-        onIntervalEvent();
-
-        if (once_)
-            stop();
-    }
-    QBasicTimer timer_;
-    bool once_;
-
-
+    virtual void activityIndicatorChanged(bool active) {};
 };
 
-} // namespace inviwo
+/**
+ * \class ActivityIndicator
+ * A class for indicating that a processor is working.
+ */
+class IVW_CORE_API ActivityIndicator : public Observable<ActivityIndicatorObserver> { 
+public:
+    void setActive(bool active);
+    bool isActive() const;
 
-#endif // IVW_TIMERQT_H
+private: 
+    void notifyActivityIndicatorChanged(bool active) const;
+    bool active_ = false;
+};
+
+class IVW_CORE_API ActivityIndicatorOwner {
+public:
+    ActivityIndicator& getActivityIndicator();
+    const ActivityIndicator&  getActivityIndicator() const;
+private:
+    ActivityIndicator indicator_;
+};
+
+
+
+} // namespace
+
+#endif // IVW_ACTIVITYINDICATOR_H
+

@@ -31,7 +31,6 @@
 #define IVW_INVIWOAPPLICATIONQT_H
 
 #include <inviwo/qt/widgets/inviwoqtwidgetsdefine.h>
-#include <inviwo/qt/widgets/timerqt.h>
 #include <QApplication>
 #include <QMainWindow>
 #include <QFileSystemWatcher>
@@ -70,7 +69,6 @@ public:
     virtual void stopFileObservation(std::string fileName) override;
     virtual void closeInviwoApplication() override;
     virtual void playSound(Message soundID) override;
-    virtual Timer* createTimer() const override;
 
     void setMainWindow(QMainWindow* mainWindow);
     QMainWindow* getMainWindow() { return mainWindow_; }
