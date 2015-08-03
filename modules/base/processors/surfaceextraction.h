@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #ifndef IVW_SURFACEEXTRACTION_H
@@ -37,19 +37,20 @@
 #include <inviwo/core/ports/meshport.h>
 #include <inviwo/core/properties/ordinalproperty.h>
 #include <inviwo/core/properties/optionproperty.h>
+#include <inviwo/core/properties/compositeproperty.h>
 
 namespace inviwo {
 /** \docpage{org.inviwo.SurfaceExtraction, Surface Extraction}
  * ![](org.inviwo.SurfaceExtraction.png?classIdentifier=org.inviwo.SurfaceExtraction)
  *
  * ...
- * 
+ *
  * ### Inports
  *   * __volume__ ...
- * 
+ *
  * ### Outports
  *   * __mesh__ ...
- * 
+ *
  * ### Properties
  *   * __ISO Value__ ...
  *   * __Method__ ...
@@ -67,12 +68,14 @@ protected:
     virtual void process();
     void setMinMax();
 
-    VolumeInport volume_;
-    MeshOutport mesh_;
+    DataInport<Volume, 0> volume_;
+    DataOutport<std::vector<std::unique_ptr<Mesh>>> mesh_;
 
     FloatProperty isoValue_;
     OptionPropertyInt method_;
-    FloatVec4Property color_;
+    CompositeProperty colors_;
+
+    void updateColors();
 
 private:
 };

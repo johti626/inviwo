@@ -34,6 +34,7 @@
 #include <inviwo/core/util/canvas.h>
 #include <inviwo/core/util/rendercontext.h>
 #include <inviwo/core/util/raiiutils.h>
+#include <inviwo/core/util/clock.h>
 
 namespace inviwo {
 
@@ -290,6 +291,7 @@ void ProcessorNetworkEvaluator::evaluate() {
                 #endif
 
                 try {
+                    IVW_CPU_PROFILING_IF(500, "Processed " << processor->getDisplayName());
                     // do the actual processing
                     processor->process();
                 } catch (Exception&) {

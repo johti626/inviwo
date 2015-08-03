@@ -60,11 +60,12 @@ ImageSourceSeries::ImageSourceSeries()
 
     validExtensions_ = DataReaderFactory::getPtr()->getExtensionsForType<Layer>();
 
-    imageFileDirectory_.registerFileIndexingHandle(&currentImageIndex_);
     imageFileDirectory_.onChange(this, &ImageSourceSeries::onFindFiles);
     findFilesButton_.onChange(this, &ImageSourceSeries::onFindFiles);
 
     imageFileName_.setReadOnly(true);
+
+    this->onFindFiles();
 }
 
 ImageSourceSeries::~ImageSourceSeries() {}
@@ -78,19 +79,20 @@ void ImageSourceSeries::deinitialize() {
 }
 
 void ImageSourceSeries::onFindFiles() {
-    std::vector<std::string> files = imageFileDirectory_.getFiles();
-        
-    fileList_.clear();
-    
-    for (std::size_t i=0; i<files.size(); i++) {
-        if (isValidImageFile(files[i])) {
-            std::string fileName = filesystem::getFileNameWithExtension(files[i]);
-            fileList_.push_back(fileName);
+    std::string path{ imageFileDirectory_.get() };
+    if (!path.empty()) {
+        std::vector<std::string> files = filesystem::getDirectoryContents(path);
+
+        fileList_.clear();
+        for (std::size_t i=0; i<files.size(); i++) {
+            if (isValidImageFile(files[i])) {
+                std::string fileName = filesystem::getFileNameWithExtension(files[i]);
+                fileList_.push_back(fileName);
+            }
         }
-    }
-    
-    if (fileList_.empty()) {
-        LogWarn("No images found in \"" << imageFileDirectory_.get() << "\"");
+        if (fileList_.empty()) {
+            LogWarn("No images found in \"" << imageFileDirectory_.get() << "\"");
+        }
     }
 
     updateProperties();
@@ -108,8 +110,8 @@ void ImageSourceSeries::process() {
 
     if (outImage) {
         std::string basePath{ imageFileDirectory_.get() };
-        int currentIndex = currentImageIndex_.get() - 1;
-        if ((currentIndex < 0) || (currentIndex >= fileList_.size())) {
+        long currentIndex = currentImageIndex_.get() - 1;
+        if ((currentIndex < 0) || (currentIndex >= static_cast<long>(fileList_.size()))) {
             LogError("Invalid image index. Exceeded number of files.");
             return;
         }

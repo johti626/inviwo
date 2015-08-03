@@ -34,14 +34,15 @@
 #include <inviwo/core/common/inviwo.h>
 #include <modules/opengl/inviwoopengl.h>
 #include "shaderobject.h"
-#include <map>
+#include <unordered_map>
 
 namespace inviwo {
 
 class IVW_MODULE_OPENGL_API Shader {
 public:
-    using ShaderObjectPtr = std::unique_ptr<ShaderObject, std::function<void(ShaderObject*)>>;
-    using ShaderObjectMap = std::map<GLenum, ShaderObjectPtr>;
+    using ShaderObjectPtr = std::unique_ptr<ShaderObject, std::function<void(ShaderObject *)>>;
+    using ShaderObjectMap = std::unordered_map<GLenum, ShaderObjectPtr>;
+    enum class UniformWarning { Ignore, Warn, Throw };
 
     Shader(std::string fragmentFilename, bool linkShader = true);
     Shader(std::string vertexFilename, std::string fragmentFilename, bool linkShader = true);
@@ -52,15 +53,15 @@ public:
     Shader(const char *vertexFilename, const char *geometryFilename, const char *fragmentFilename,
            bool linkShader = true);
 
-    Shader(const Shader& rhs, bool linkShader = true);
-    Shader& operator=(const Shader& that);
+    Shader(const Shader &rhs, bool linkShader = true);
+    Shader &operator=(const Shader &that);
 
     // Takes ownership of shader objects in vector
     Shader(std::vector<ShaderObject *> &shaderObjects, bool linkShader = true);
 
     virtual ~Shader();
 
-    Shader* clone(bool linkShader = true);
+    Shader *clone(bool linkShader = true);
 
     void link();
     void build();
@@ -89,11 +90,9 @@ public:
     void setUniform(const std::string &name, const mat3 &value) const;
     void setUniform(const std::string &name, const mat4 &value) const;
 
+    void setUniformWarningLevel(UniformWarning level);
+
 private:
-    unsigned int id_;
-
-    ShaderObjectMap shaderObjects_;
-
     void linkAndRegister(bool linkShader);
 
     void createAndAddShader(GLenum, std::string, bool);
@@ -103,6 +102,16 @@ private:
 
     void attachAllShaderObjects();
     void detachAllShaderObject();
+
+    std::string shaderNames() const;
+    GLint findUniformLocation(const std::string &name) const;
+
+    unsigned int id_;
+    ShaderObjectMap shaderObjects_;
+
+    UniformWarning warningLevel_;
+    // Uniform location cache. Clear after linking.
+    mutable std::unordered_map<std::string, GLint> uniformLookup_;
 };
 
 }  // namespace
