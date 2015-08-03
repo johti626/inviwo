@@ -29,31 +29,23 @@
 
 #include <inviwo/qt/widgets/properties/boolcompositepropertywidgetqt.h>
 #include <inviwo/core/properties/boolcompositeproperty.h>
-
+#include <inviwo/qt/widgets/editablelabelqt.h>
 #include <inviwo/core/properties/property.h>
 
 namespace inviwo {
 
 BoolCompositePropertyWidgetQt::BoolCompositePropertyWidgetQt(BoolCompositeProperty* property)
-    : CollapsibleGroupBoxWidgetQt(property->getDisplayName(), true)
-    , property_(property) {
+    : CollapsibleGroupBoxWidgetQt(property, true)
+    , boolCompProperty_(property) {
+   
     setPropertyOwner(property);
-    PropertyWidget::setProperty(property);
-    std::vector<Property*> subProperties = property_->getProperties();
-    for (auto& subPropertie : subProperties) {
-        addProperty(subPropertie);
-    }
-
-    property->addObserver(this);
-    updateFromProperty();
+    boolCompProperty_->PropertyOwnerObservable::addObserver(this);
+    boolCompProperty_->CompositePropertyObservable::addObserver(this);
 }          
 
 void BoolCompositePropertyWidgetQt::updateFromProperty() {
-    for (auto& elem : propertyWidgets_) elem->updateFromProperty();
-    this->setDisabled(property_->getReadOnly());
-    
-    setChecked(property_->isChecked());
-    setCollapsed(property_->isCollapsed());
+    for (auto& elem : propertyWidgets_) elem->updateFromProperty();    
+    setChecked(boolCompProperty_->isChecked());
 }
 
 void BoolCompositePropertyWidgetQt::labelDidChange() {
@@ -61,34 +53,40 @@ void BoolCompositePropertyWidgetQt::labelDidChange() {
     property_->setDisplayName(getDisplayName());
 }
 
-void BoolCompositePropertyWidgetQt::setDeveloperUsageMode(bool value) {
-    CollapsibleGroupBoxWidgetQt::setDeveloperUsageMode(value);
-    property_->setUsageMode(DEVELOPMENT);
+void BoolCompositePropertyWidgetQt::setCollapsed(bool value) {
+    boolCompProperty_->setCollapsed(value);
+}
+void BoolCompositePropertyWidgetQt::onSetCollapsed(bool value) {
+    CollapsibleGroupBoxWidgetQt::setCollapsed(value);
 }
 
-void BoolCompositePropertyWidgetQt::setApplicationUsageMode(bool value) {
-    CollapsibleGroupBoxWidgetQt::setApplicationUsageMode(value);
-    property_->setUsageMode(APPLICATION);
+void BoolCompositePropertyWidgetQt::initState() {
+    CollapsibleGroupBoxWidgetQt::initState();
+    CollapsibleGroupBoxWidgetQt::setCollapsed(boolCompProperty_->isCollapsed());
+
+    for (auto& prop : boolCompProperty_->getProperties()) {
+        addProperty(prop);
+    }
+    updateFromProperty();
+}
+
+void BoolCompositePropertyWidgetQt::onSetDisplayName(const std::string& displayName) {
+    displayName_ = displayName;
+    label_->setText(displayName);
 }
 
 bool BoolCompositePropertyWidgetQt::isChecked() const {
-    return property_->isChecked();
+    return boolCompProperty_->isChecked();
 }
 void BoolCompositePropertyWidgetQt::setChecked(bool checked) {
     CollapsibleGroupBoxWidgetQt::setChecked(checked);
-    if (property_->isChecked() != checked) {
-        property_->setChecked(checked);
+    if (boolCompProperty_->isChecked() != checked) {
+        boolCompProperty_->setChecked(checked);
     }
 }
 
 bool BoolCompositePropertyWidgetQt::isCollapsed() const {
-    return property_->isCollapsed();
-}
-void BoolCompositePropertyWidgetQt::setCollapsed(bool value) {
-    CollapsibleGroupBoxWidgetQt::setCollapsed(value);
-    if (property_->isCollapsed() != value) {
-        property_->setCollapsed(value);
-    }
+    return boolCompProperty_->isCollapsed();
 }
 
 } // namespace

@@ -33,8 +33,12 @@
 #include <modules/basegl/baseglmoduledefine.h>
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/properties/ordinalproperty.h>
-
-#include <modules/basegl/processors/volumeprocessing/volumeglprocessor.h>
+#include <inviwo/core/properties/stringproperty.h>
+#include <inviwo/core/properties/compositeproperty.h>
+#include <inviwo/core/processors/processor.h>
+#include <inviwo/core/ports/volumeport.h>
+#include <modules/opengl/glwrap/shader.h>
+#include <modules/opengl/glwrap/framebufferobject.h>
 
 namespace inviwo {
 
@@ -61,19 +65,29 @@ namespace inviwo {
 *
 * \brief Combines two volumes.
 */
-class IVW_MODULE_BASEGL_API VolumeCombiner : public VolumeGLProcessor { 
+class IVW_MODULE_BASEGL_API VolumeCombiner : public Processor { 
 public:
-    VolumeCombiner();
-    virtual ~VolumeCombiner();
-
     InviwoProcessorInfo();
+    
+    VolumeCombiner();
+    virtual ~VolumeCombiner() = default;
 
-protected:
-    VolumeInport vol2_;
-    virtual void preProcess();
 
-    FloatProperty scaleVol1_;
-    FloatProperty scaleVol2_;
+    virtual void process() override;
+    virtual void initialize() override;
+    virtual bool isReady() const override;
+
+private:
+    void buildEquation();
+
+    DataInport<Volume, 0> inport_;
+    VolumeOutport outport_;
+    StringProperty eqn_;
+    CompositeProperty scales_;
+
+    Shader shader_;
+    FrameBufferObject fbo_;
+    bool validEquation_;
 };
 
 } // namespace

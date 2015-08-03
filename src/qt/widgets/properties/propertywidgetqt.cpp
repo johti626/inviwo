@@ -35,7 +35,10 @@
 #include <inviwo/core/properties/propertyowner.h>
 #include <inviwo/qt/widgets/inviwoapplicationqt.h>
 #include <inviwo/qt/widgets/inviwoqtutils.h>
+#include <inviwo/qt/widgets/tooltiphelper.h>
 #include <inviwo/core/common/moduleaction.h>
+
+#include <inviwo/qt/widgets/propertylistwidget.h>
 #include <QDesktopWidget>
 
 #include <QStyleOption>
@@ -86,8 +89,19 @@ PropertyWidgetQt::PropertyWidgetQt()
     , copyPathAction_(nullptr)
     , semanicsMenuItem_(nullptr)
     , semanticsActionGroup_(nullptr)
-    , contextMenu_(nullptr) {
-    this->setObjectName("PropertyWidget");
+    , parent_(nullptr)
+    , baseContainer_(nullptr)
+    , applicationUsageMode_(nullptr)
+    , appModeCallback_(nullptr)
+    , contextMenu_(nullptr)
+    , maxNumNestedShades_(4)
+    , nestedDepth_(0) {
+
+    applicationUsageMode_ = &(InviwoApplication::getPtr()
+                                  ->getSettingsByType<SystemSettings>()
+                                  ->applicationUsageModeProperty_);
+    setNestedDepth(nestedDepth_);
+    setObjectName("PropertyWidget");
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, SIGNAL(customContextMenuRequested(const QPoint&)), this,
             SLOT(showContextMenu(const QPoint&)));
@@ -102,97 +116,95 @@ PropertyWidgetQt::PropertyWidgetQt(Property* property)
     , applicationUsageModeAction_(nullptr)
     , semanicsMenuItem_(nullptr)
     , semanticsActionGroup_(nullptr)
-    , contextMenu_(nullptr) {
-    this->setObjectName("PropertyWidget");
+    , parent_(nullptr)
+    , baseContainer_(nullptr)
+    , applicationUsageMode_(nullptr)
+    , appModeCallback_(nullptr)
+    , contextMenu_(nullptr) 
+    , maxNumNestedShades_(4)
+    , nestedDepth_(0) {
+    property_->addObserver(this);
+    applicationUsageMode_ = &(InviwoApplication::getPtr()
+                                  ->getSettingsByType<SystemSettings>()
+                                  ->applicationUsageModeProperty_);
+ 
+
+    appModeCallback_ = applicationUsageMode_->onChange([this](){
+        onSetUsageMode(property_->getUsageMode());    
+    });
+
+    setNestedDepth(nestedDepth_);
+    setObjectName("PropertyWidget");
+      
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, SIGNAL(customContextMenuRequested(const QPoint&)), this,
             SLOT(showContextMenu(const QPoint&)));
 }
 
-PropertyWidgetQt::~PropertyWidgetQt() {}
+PropertyWidgetQt::~PropertyWidgetQt() {
+    applicationUsageMode_->removeOnChange(appModeCallback_);
+}
+
+void PropertyWidgetQt::initState() {
+    if (property_) {
+        setDisabled(property_->getReadOnly());
+        setVisible(property_->getVisible());
+    }
+}
 
 void PropertyWidgetQt::setVisible(bool visible) {
-    if (visible) {
-        QWidget::setVisible(true);
-    } else {
-        QWidget::setVisible(false);
+    bool wasVisible = QWidget::isVisible();
+    UsageMode appMode = getApplicationUsageMode();
+    if (visible && property_ && property_->getUsageMode() == DEVELOPMENT && appMode == APPLICATION)
+        visible = false;
+
+    QWidget::setVisible(visible);
+
+    if (visible != wasVisible && visible) updateContextMenu();
+    if (visible != wasVisible && parent_) parent_->onChildVisibilityChange(this);
+}
+
+void PropertyWidgetQt::onSetVisible(bool visible) {
+    setVisible(visible);
+}
+
+void PropertyWidgetQt::onChildVisibilityChange(PropertyWidgetQt* child) {
+    if (property_) {
+        setVisible(property_->getVisible());
     }
 }
 
-void PropertyWidgetQt::showWidget() {
-    if (isHidden() && getVisible()) {
-        updateContextMenu();
-        this->show();
-    }
+void PropertyWidgetQt::onSetUsageMode(UsageMode usageMode) {
+    setVisible(property_->getVisible());
 }
 
-void PropertyWidgetQt::hideWidget() {
-    if (isVisible()) {
-        this->hide();
-    }
+void PropertyWidgetQt::onSetReadOnly(bool readonly) {
+    setDisabled(readonly);
 }
 
-void PropertyWidgetQt::initializeEditorWidgetsMetaData() {
-    if (hasEditorWidget()) {
-        // Validates editor widget position
-        PropertyEditorWidgetQt* propertyEditorWidget =
-            dynamic_cast<PropertyEditorWidgetQt*>(getEditorWidget());
-        InviwoApplicationQt* app = dynamic_cast<InviwoApplicationQt*>(InviwoApplication::getPtr());
-        if (!propertyEditorWidget) return;
-
-        // set widget meta data stuff
-
-        PropertyEditorWidgetDockStatus docStatus = propertyEditorWidget->getEditorDockStatus();
-
-        if (app) {
-            if (docStatus == PropertyEditorWidgetDockStatus::DockedLeft) {
-                app->getMainWindow()->addDockWidget(Qt::LeftDockWidgetArea, propertyEditorWidget);
-                propertyEditorWidget->setFloating(false);
-            }
-            else if (docStatus == PropertyEditorWidgetDockStatus::DockedRight) {
-                app->getMainWindow()->addDockWidget(Qt::RightDockWidgetArea, propertyEditorWidget);
-                propertyEditorWidget->setFloating(false);
-            }
-            else {
-                app->getMainWindow()->addDockWidget(Qt::RightDockWidgetArea, propertyEditorWidget);
-                propertyEditorWidget->setFloating(true);
-            }
-        }
-
-        propertyEditorWidget->hide();
-
-        ivec2 widgetDimension = getEditorWidget()->getEditorDimensionMetaData();
-        propertyEditorWidget->resize(QSize(widgetDimension.x, widgetDimension.y));
-
-        ivec2 pos = getEditorWidget()->getEditorPositionMetaData();
-
-        if (app) {
-            QPoint newPos = app->movePointOntoDesktop(QPoint(pos.x, pos.y), QSize(widgetDimension.x, widgetDimension.y), false);
-
-            if (!(newPos.x() == 0 && newPos.y() == 0)) {
-                propertyEditorWidget->move(newPos);
-            }
-            else { // We guess that this is a new widget and give a new position
-                newPos = app->getMainWindow()->pos();
-                newPos += app->offsetWidget();
-                propertyEditorWidget->move(newPos);
-            }
-        }
-
-        bool visible = getEditorWidget()->getEditorVisibilityMetaData();
-        if (!visible)
-            propertyEditorWidget->hide();
-        else
-            propertyEditorWidget->show();
+void PropertyWidgetQt::onSetSemantics(const PropertySemantics& semantics) {
+    emit updateSemantics(this);
+}
+// connected to the semanticsActionGroup_
+void PropertyWidgetQt::changeSemantics(QAction* action) {
+    PropertySemantics semantics(action->data().toString().toUtf8().constData());
+    if (property_) property_->setSemantics(semantics);
+}
+    
+void PropertyWidgetQt::showContextMenu(const QPoint& pos) {
+    if (!contextMenu_) {
+        generateContextMenu();
     }
+    updateContextMenu();
+    contextMenu_->exec(this->mapToGlobal(pos));
 }
 
-void PropertyWidgetQt::paintEvent(QPaintEvent* pe) {
-    QStyleOption o;
-    o.initFrom(this);
-    QPainter p(this);
-    style()->drawPrimitive(QStyle::PE_Widget, &o, &p, this);
-};
+QMenu* PropertyWidgetQt::getContextMenu() {
+    if (!contextMenu_) {
+        generateContextMenu();
+    }
+    return contextMenu_;
+}
 
 void PropertyWidgetQt::generateContextMenu() {
     if (!contextMenu_) {
@@ -279,29 +291,6 @@ void PropertyWidgetQt::generateContextMenu() {
     }
 }
 
-void PropertyWidgetQt::changeSemantics(QAction* action) {
-    PropertySemantics semantics(action->data().toString().toUtf8().constData());
-    if (property_) {
-        property_->setSemantics(semantics);
-        emit updateSemantics(this);
-    }
-}
-    
-void PropertyWidgetQt::showContextMenu(const QPoint& pos) {
-    if (!contextMenu_) {
-        generateContextMenu();
-    }
-    updateContextMenu();
-    contextMenu_->exec(this->mapToGlobal(pos));
-}
-
-QMenu* PropertyWidgetQt::getContextMenu() {
-    if (!contextMenu_) {
-        generateContextMenu();
-    }
-    return contextMenu_;
-}
-
 void PropertyWidgetQt::generateModuleMenuActions() {
     moduleSubMenus_.clear();
     InviwoApplication* app = InviwoApplication::getPtr();
@@ -361,29 +350,17 @@ void PropertyWidgetQt::updateModuleMenuActions() {
     }
 }
 
-UsageMode PropertyWidgetQt::getUsageMode() const {
-    return property_->getUsageMode();
-};
-
-bool PropertyWidgetQt::getVisible() const {
-    return property_->getVisible();
-}
-
+// connected to developerUsageModeAction_
 void PropertyWidgetQt::setDeveloperUsageMode(bool value) {
     property_->setUsageMode(DEVELOPMENT);
-    updateContextMenu();
-    emit usageModeChanged();
 }
-
+// connected to applicationUsageModeAction_
 void PropertyWidgetQt::setApplicationUsageMode(bool value) {
     property_->setUsageMode(APPLICATION);
-    updateContextMenu();
-    emit usageModeChanged();
 }
 
 UsageMode PropertyWidgetQt::getApplicationUsageMode() {
-    return InviwoApplication::getPtr()->getSettingsByType<SystemSettings>()
-                                      ->getApplicationUsageMode();
+    return static_cast<UsageMode>(applicationUsageMode_->get());
 }
 
 void PropertyWidgetQt::moduleAction() {
@@ -407,9 +384,9 @@ void PropertyWidgetQt::moduleAction() {
 void PropertyWidgetQt::updateContextMenu() {
     if (usageModeItem_) {
         // Update the current selection.
-        if (getUsageMode() == DEVELOPMENT)
+        if (property_->getUsageMode() == DEVELOPMENT)
             developerUsageModeAction_->setChecked(true);
-        else if (getUsageMode() == APPLICATION)
+        else if (property_->getUsageMode() == APPLICATION)
             applicationUsageModeAction_->setChecked(true);
 
         // Disable the view mode buttons in Application mode
@@ -434,73 +411,21 @@ bool PropertyWidgetQt::event(QEvent* event) {
     return QWidget::event(event);
 }
 
-std::string PropertyWidgetQt::makeToolTipTop(std::string item) const {
-    return "<html><head>\
-            <style>\
-            table { border-color:white;white-space:pre;margin-top:5px;margin-bottom:5px; }\
-            table > tr > td { padding-left:5px; padding-right:5px; }\
-            </style><head/><body>\
-            <b style='color:white;'>" + item + "</b>";
-}
-
-std::string PropertyWidgetQt::makeToolTipTableTop() const {
-    return "<table border='0' cellspacing='0' cellpadding='0'\
-            style='border-color:white;white-space:pre;margin: 5px 0;'>";
-}
-
-std::string PropertyWidgetQt::makeToolTipRow(std::string item, std::string val, bool tablehead) const {
-    std::stringstream ss;
-    std::string td = (tablehead ? "th" : "td");
-    ss << "<tr><" << td << " style='color:#bbb;padding-right:8px;'>" << item << "</" << td << ">";
-    ss << "<" << td << "><nobr>" + val + "</nobr></" << td << ">";
-    ss << "</tr>" << std::endl;
-    
-    return ss.str();
-}
-
-std::string PropertyWidgetQt::makeToolTipRow(std::string item, std::vector<std::string> vals, bool tablehead) const {
-    std::stringstream ss;
-    std::string td = (tablehead ? "th" : "td");
-    ss << "<tr><" << td << " style='color:#bbb;padding-right:8px;'>" << item << "</" << td << ">";
-
-    for (auto& val : vals) {
-        ss << "<" << td << " align=center><nobr>" + val + "</nobr></" << td << ">";
-    }
-    ss << "</tr>" << std::endl;
-    
-    return ss.str();
-}
-
-std::string PropertyWidgetQt::makeToolTipTableBottom() const {
-    return "</table>";
-}
-
-std::string PropertyWidgetQt::makeToolTipBottom() const {
-    return "</body></html>";
-}
-
 std::string PropertyWidgetQt::getToolTipText() {
     if (property_) {
-        std::stringstream ss;
-        utilqt::localizeStream(ss);
-
-        ss << makeToolTipTop(property_->getDisplayName());
-        ss << makeToolTipTableTop();
-        ss << makeToolTipRow("Identifier", property_->getIdentifier());
-        ss << makeToolTipRow("Path", joinString(property_->getPath(),"."));
-        ss << makeToolTipRow("Semantics", property_->getSemantics().getString());
-        ss << makeToolTipRow("Validation Level", PropertyOwner::invalidationLevelToString(
-                                                     property_->getInvalidationLevel()));
-        ss << makeToolTipTableBottom();
-        ss << makeToolTipBottom();
-
-        return ss.str();
+        ToolTipHelper t(property_->getDisplayName());
+        t.tableTop();
+        t.row("Identifier", property_->getIdentifier());
+        t.row("Path", joinString(property_->getPath(), "."));
+        t.row("Semantics", property_->getSemantics().getString());
+        t.row("Validation Level",
+              PropertyOwner::invalidationLevelToString(property_->getInvalidationLevel()));
+        t.tableBottom();
+        return t;
     } else {
         return "";
     }
 }
-
-void PropertyWidgetQt::setProperty(Property* property) { PropertyWidget::setProperty(property); }
 
 void PropertyWidgetQt::resetPropertyToDefaultState() { property_->resetToDefaultState(); }
 
@@ -509,31 +434,116 @@ void PropertyWidgetQt::setSpacingAndMargins(QLayout* layout) {
     layout->setSpacing(SPACING);
 }
 
-QSize PropertyWidgetQt::sizeHint() const {
-    return layout()->sizeHint();
-}
 
 QSize PropertyWidgetQt::minimumSizeHint() const {
-    return layout()->sizeHint();
+    return PropertyWidgetQt::sizeHint();
 }
 
-void PropertyWidgetQt::copy() {
-    copySource = property_;
+QSize PropertyWidgetQt::sizeHint() const { return layout()->sizeHint(); }
+
+void PropertyWidgetQt::setNestedDepth(int depth) {
+    nestedDepth_ = depth;
+    if (nestedDepth_ == 0) {
+        // special case for depth zero
+        QObject::setProperty("bgType", "toplevel");
+    } else {
+        QObject::setProperty("bgType", nestedDepth_ % maxNumNestedShades_);
+    }
 }
 
+int PropertyWidgetQt::getNestedDepth() const {
+    return nestedDepth_;
+}
+
+PropertyWidgetQt* PropertyWidgetQt::getParentPropertyWidget() const {
+    return parent_;
+}
+
+InviwoDockWidget* PropertyWidgetQt::getBaseContainer() const {
+    return baseContainer_;
+}
+
+void PropertyWidgetQt::setParentPropertyWidget(PropertyWidgetQt* parent, InviwoDockWidget* widget) {
+    parent_ = parent;
+    baseContainer_ = widget;
+}
+
+void PropertyWidgetQt::copy() { copySource = property_; }
 void PropertyWidgetQt::paste() {
-    if(copySource) {
+    if (copySource) {
         property_->set(copySource);
     }
 }
 
 void PropertyWidgetQt::copyPath() {
-    if (property_ == nullptr) {
-        return;
-    }
-    std::string path = joinString(property_->getPath(),".");
+    if (!property_) return;
+ 
+    std::string path = joinString(property_->getPath(), ".");
     QApplication::clipboard()->setText(path.c_str());
 }
+
+
+void PropertyWidgetQt::initializeEditorWidgetsMetaData() {
+    if (hasEditorWidget()) {
+        // Validates editor widget position
+        PropertyEditorWidgetQt* propertyEditorWidget =
+            dynamic_cast<PropertyEditorWidgetQt*>(getEditorWidget());
+        InviwoApplicationQt* app = dynamic_cast<InviwoApplicationQt*>(InviwoApplication::getPtr());
+        if (!propertyEditorWidget) return;
+
+        // set widget meta data stuff
+
+        PropertyEditorWidgetDockStatus docStatus = propertyEditorWidget->getEditorDockStatus();
+
+        if (app) {
+            if (docStatus == PropertyEditorWidgetDockStatus::DockedLeft) {
+                app->getMainWindow()->addDockWidget(Qt::LeftDockWidgetArea, propertyEditorWidget);
+                propertyEditorWidget->setFloating(false);
+            }
+            else if (docStatus == PropertyEditorWidgetDockStatus::DockedRight) {
+                app->getMainWindow()->addDockWidget(Qt::RightDockWidgetArea, propertyEditorWidget);
+                propertyEditorWidget->setFloating(false);
+            }
+            else {
+                app->getMainWindow()->addDockWidget(Qt::RightDockWidgetArea, propertyEditorWidget);
+                propertyEditorWidget->setFloating(true);
+            }
+        }
+
+        propertyEditorWidget->hide();
+
+        ivec2 widgetDimension = getEditorWidget()->getEditorDimensionMetaData();
+        propertyEditorWidget->resize(QSize(widgetDimension.x, widgetDimension.y));
+
+        ivec2 pos = getEditorWidget()->getEditorPositionMetaData();
+
+        if (app) {
+            QPoint newPos = app->movePointOntoDesktop(QPoint(pos.x, pos.y), QSize(widgetDimension.x, widgetDimension.y), false);
+
+            if (!(newPos.x() == 0 && newPos.y() == 0)) {
+                propertyEditorWidget->move(newPos);
+            }
+            else { // We guess that this is a new widget and give a new position
+                newPos = app->getMainWindow()->pos();
+                newPos += app->offsetWidget();
+                propertyEditorWidget->move(newPos);
+            }
+        }
+
+        bool visible = getEditorWidget()->getEditorVisibilityMetaData();
+        if (!visible)
+            propertyEditorWidget->hide();
+        else
+            propertyEditorWidget->show();
+    }
+}
+
+void PropertyWidgetQt::paintEvent(QPaintEvent* pe) {
+    QStyleOption o;
+    o.initFrom(this);
+    QPainter p(this);
+    style()->drawPrimitive(QStyle::PE_Widget, &o, &p, this);
+};
 
 const Property* PropertyWidgetQt::copySource = nullptr;
 

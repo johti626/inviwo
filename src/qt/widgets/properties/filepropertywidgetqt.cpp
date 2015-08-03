@@ -57,7 +57,7 @@ void FilePropertyWidgetQt::generateWidget() {
     setSpacingAndMargins(hLayout);
     setLayout(hLayout);
 
-    label_ = new EditableLabelQt(this, property_->getDisplayName());
+    label_ = new EditableLabelQt(this, property_);
     hLayout->addWidget(label_);
 
     QHBoxLayout* hWidgetLayout = new QHBoxLayout();
@@ -82,9 +82,6 @@ void FilePropertyWidgetQt::generateWidget() {
     widget->setSizePolicy(sp);
     
     hLayout->addWidget(widget);
-
-
-    connect(label_, SIGNAL(textChanged()), this, SLOT(setPropertyDisplayName()));
     connect(openButton_, SIGNAL(pressed()), this, SLOT(setPropertyValue()));
 }
 
@@ -163,11 +160,6 @@ void FilePropertyWidgetQt::setPropertyValue() {
 
 void FilePropertyWidgetQt::updateFromProperty() {
     lineEdit_->setText(QFileInfo(QString::fromStdString(property_->get())).fileName());
-    lineEdit_->setDisabled(property_->getReadOnly());
-}
-
-void FilePropertyWidgetQt::setPropertyDisplayName() {
-    property_->setDisplayName(label_->getText());
 }
 
 }  // namespace

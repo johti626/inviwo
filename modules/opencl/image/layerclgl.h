@@ -38,6 +38,10 @@
 #include <modules/opencl/image/layerclbase.h>
 
 namespace inviwo {
+
+typedef std::pair< std::shared_ptr<Texture>, std::shared_ptr<cl::Image2DGL> > TextureCLImageSharingPair;
+typedef std::map<std::shared_ptr<Texture>, std::shared_ptr<cl::Image2DGL> > CLTextureSharingMap;
+
 /** \class LayerCLGL
  *
  * LayerCLGL handles shared texture2D between OpenCL and OpenGL.
@@ -52,8 +56,8 @@ class IVW_MODULE_OPENCL_API LayerCLGL : public LayerCLBase,
                                         public LayerRepresentation,
                                         public TextureObserver {
 public:
-    LayerCLGL(size2_t dimensions = size2_t(64), LayerType type = COLOR_LAYER,
-              const DataFormatBase* format = DataFormatBase::get(), Texture2D* data = nullptr);
+    LayerCLGL(size2_t dimensions, LayerType type,
+        const DataFormatBase* format, std::shared_ptr<Texture2D> data);
     virtual ~LayerCLGL();
     LayerCLGL(const LayerCLGL& rhs);
     virtual LayerCLGL* clone() const;
@@ -64,12 +68,10 @@ public:
     virtual void setDimensions(size2_t dimensions) override;
     virtual bool copyRepresentationsTo(DataRepresentation* target) const override;
 
-    virtual cl::Image2D& getEditable() { return *static_cast<cl::Image2D*>(clImage_); }
-    virtual const cl::Image2D& get() const {
-        return *const_cast<const cl::Image2D*>(static_cast<const cl::Image2D*>(clImage_));
-    }
-    const Texture2D* getTexture() const { return texture_; }
+    virtual cl::Image2DGL& getEditable() { return *clImage_; }
+    virtual const cl::Image2DGL& get() const { return *clImage_; }
 
+    std::shared_ptr<Texture2D> getTexture() const { return texture_; }
     /**
     * This method will be called before the texture is initialized.
     * Override it to add behavior.
@@ -92,8 +94,11 @@ public:
         OpenCL::getPtr()->getQueue().enqueueReleaseGLObjects(&syncLayers, syncEvents, event);
     }
 
+
 protected:
-    Texture2D* texture_;
+    static CLTextureSharingMap clImageSharingMap_;
+    std::shared_ptr<Texture2D> texture_; ///< Shared with LayerGL
+    std::shared_ptr<cl::Image2DGL> clImage_; ///< Potentially shared with other LayerCLGL
 };
 
 }  // namespace

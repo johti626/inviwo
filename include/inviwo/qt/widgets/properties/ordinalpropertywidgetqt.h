@@ -41,6 +41,7 @@
 #include <inviwo/qt/widgets/properties/propertywidgetqt.h>
 #include <inviwo/core/properties/ordinalproperty.h>
 #include <inviwo/core/util/stringconversion.h>
+#include <inviwo/qt/widgets/tooltiphelper.h>
 #include <math.h>
 
 namespace inviwo {
@@ -59,7 +60,7 @@ public:
     virtual void updateFromProperty() = 0;
     virtual QMenu* getContextMenu();
 
-    typedef std::vector<QWidget*> SliderVector;
+    using SliderVector = std::vector<QWidget*>;
 
 public slots:
     virtual void setPropertyValue(int sliderId) = 0;
@@ -68,7 +69,6 @@ public slots:
     virtual void showSettings() = 0;
     virtual void showContextMenu(const QPoint& pos);
 
-    void setPropertyDisplayName();
     void showContextMenuSlider(int sliderId);
 
 protected:
@@ -100,7 +100,6 @@ public:
     virtual ~TemplateOrdinalPropertyWidgetQt() {};
 
     virtual void updateFromProperty() = 0;
-
 protected:
 
     virtual SliderVector makeSliders(QWidget* widget) {
@@ -265,6 +264,8 @@ private:
 template <typename BT, typename T>
 class OrdinalPropertyWidgetQt : public TemplateOrdinalPropertyWidgetQt<BT, T> {
 public:
+    using SliderVectorTyped = std::vector<OrdinalBaseWidget<BT>*>;
+
     OrdinalPropertyWidgetQt(OrdinalProperty<T>* property)
         : TemplateOrdinalPropertyWidgetQt<BT, T>(property) {
         if (property->getSemantics() == PropertySemantics("Spherical")) {
@@ -273,6 +274,14 @@ public:
             transformer_ = new IdentityPropertyTransformer<T>(property);
         }
         BaseOrdinalPropertyWidgetQt::generateWidget();
+
+        const size_t nelem =
+            this->ordinalproperty_->getDim().x * this->ordinalproperty_->getDim().y;
+        for (size_t i = 0; i < nelem; i++) {
+            auto widget = dynamic_cast<OrdinalBaseWidget<BT>*>(this->sliderWidgets_[i]);
+            sliders_.push_back(widget);
+        }
+
         updateFromProperty();
     }
     virtual ~OrdinalPropertyWidgetQt() { delete transformer_; }
@@ -287,68 +296,51 @@ protected:
     void setAsMax();
 
     PropertyTransformer<T>* transformer_;
+    SliderVectorTyped sliders_;
 };
 
 template <typename BT, typename T>
 std::string OrdinalPropertyWidgetQt<BT, T>::getToolTipText() {
-    std::stringstream ss;
-    utilqt::localizeStream(ss);
+    ToolTipHelper t(this->ordinalproperty_->getDisplayName());
+    t.tableTop();
 
-    ss << this->makeToolTipTop(this->ordinalproperty_->getDisplayName());
-    ss << this->makeToolTipTableTop();
-    ss << this->makeToolTipRow("Identifier", this->ordinalproperty_->getIdentifier());
-    ss << this->makeToolTipRow("Path", joinString(this->ordinalproperty_->getPath(),"."));
-    ss << this->makeToolTipRow("Semantics", this->ordinalproperty_->getSemantics().getString());
-    ss << this->makeToolTipRow("Validation Level", PropertyOwner::invalidationLevelToString(
+    t.row("Identifier", this->ordinalproperty_->getIdentifier());
+    t.row("Path", joinString(this->ordinalproperty_->getPath(),"."));
+    t.row("Semantics", this->ordinalproperty_->getSemantics().getString());
+    t.row("Validation Level", PropertyOwner::invalidationLevelToString(
                                              this->ordinalproperty_->getInvalidationLevel()));
-    ss << this->makeToolTipTableBottom();
+    t.tableBottom();
     
     T min = transformer_->min(this->ordinalproperty_->getMinValue());
     T max = transformer_->max(this->ordinalproperty_->getMaxValue());
     T inc = transformer_->inc(this->ordinalproperty_->getIncrement());
     T val = transformer_->value(this->ordinalproperty_->get());
 
-    ss << this->makeToolTipTableTop();
-    
-    std::vector<std::string> cols;
-    cols.push_back("Value ");
-    cols.push_back(" Min ");
-    cols.push_back(" Max ");
-    cols.push_back(" Inc ");
-    
-    ss << this->makeToolTipRow("#", cols, true);
-    
+    t.tableTop();  
+    auto header = {"Value ", " Min ", " Max ", " Inc "};
+    t.row("#", header, true);    
     size_t size = this->ordinalproperty_->getDim().x * this->ordinalproperty_->getDim().y;
     for (size_t i = 0; i < size; i++) {
-       
-        cols[0] = toLocalizedString(util::glmcomp(val,i));
-        cols[1] = toLocalizedString(util::glmcomp(min, i));
-        cols[2] = toLocalizedString(util::glmcomp(max, i));
-        cols[3] = toLocalizedString(util::glmcomp(inc, i));
-        
-        ss << this->makeToolTipRow(toString(i), cols);
+        auto row = {util::glmcomp(val,i), util::glmcomp(min, i), util::glmcomp(max, i), util::glmcomp(inc, i)};
+        t.row(i, row);       
     }
-    ss << this->makeToolTipTableBottom();
-    ss << this->makeToolTipBottom();
-    return ss.str();
+    t.tableBottom();
+
+    return t;
 }
 
 template <typename BT, typename T>
 void OrdinalPropertyWidgetQt<BT, T>::updateFromProperty() {
-    this->setDisabled(this->ordinalproperty_->getReadOnly());
-
     T min = transformer_->min(this->ordinalproperty_->getMinValue());
     T max = transformer_->max(this->ordinalproperty_->getMaxValue());
     T inc = transformer_->inc(this->ordinalproperty_->getIncrement());
     T val = transformer_->value(this->ordinalproperty_->get());
 
-    for (size_t i = 0; i < this->ordinalproperty_->getDim().x * this->ordinalproperty_->getDim().y;
-         i++) {
-        OrdinalBaseWidget<BT>* widget =
-            dynamic_cast<OrdinalBaseWidget<BT>*>(this->sliderWidgets_[i]);
-        widget->setRange(util::glmcomp(min, i), util::glmcomp(max, i));
-        widget->setIncrement(util::glmcomp(inc, i));
-        widget->initValue(util::glmcomp(val, i));
+    const size_t nelem = this->ordinalproperty_->getDim().x * this->ordinalproperty_->getDim().y;
+    for (size_t i = 0; i < nelem; i++) {
+        sliders_[i]->setRange(util::glmcomp(min, i), util::glmcomp(max, i));
+        sliders_[i]->setIncrement(util::glmcomp(inc, i));
+        sliders_[i]->initValue(util::glmcomp(val, i));
     }
 }
 
@@ -356,8 +348,7 @@ template <typename BT, typename T>
 void OrdinalPropertyWidgetQt<BT, T>::setPropertyValue(int sliderId) {
     T propValue = transformer_->value(this->ordinalproperty_->get());
 
-    util::glmcomp(propValue, sliderId) =
-        dynamic_cast<OrdinalBaseWidget<BT>*>(this->sliderWidgets_[sliderId])->getValue();
+    util::glmcomp(propValue, sliderId) = sliders_[sliderId]->getValue();
 
     this->ordinalproperty_->setInitiatingWidget(this);
     this->ordinalproperty_->set(transformer_->invValue(propValue));
@@ -367,34 +358,30 @@ void OrdinalPropertyWidgetQt<BT, T>::setPropertyValue(int sliderId) {
 template <typename BT, typename T>
 void OrdinalPropertyWidgetQt<BT, T>::setAsMin() {
     if (this->sliderId_ >= 0 && this->sliderId_ < this->sliderWidgets_.size()) {
-        OrdinalBaseWidget<BT>* slider =
-            dynamic_cast<OrdinalBaseWidget<BT>*>(this->sliderWidgets_[this->sliderId_]);
-        T propValue = transformer_->min(this->ordinalproperty_->getMinValue());
-        
-        util::glmcomp(propValue, this->sliderId_) =  slider->getValue();
+
+        T propValue = transformer_->min(this->ordinalproperty_->getMinValue());        
+        util::glmcomp(propValue, this->sliderId_) =  sliders_[this->sliderId_]->getValue();
 
         this->ordinalproperty_->setInitiatingWidget(this);
         this->ordinalproperty_->setMinValue(transformer_->invMin(propValue));
         this->ordinalproperty_->clearInitiatingWidget();
 
-        slider->setMinValue(util::glmcomp(propValue, this->sliderId_));
+        sliders_[this->sliderId_]->setMinValue(util::glmcomp(propValue, this->sliderId_));
     }
 }
 
 template <typename BT, typename T>
 void OrdinalPropertyWidgetQt<BT, T>::setAsMax() {
     if (this->sliderId_ >= 0 && this->sliderId_ < this->sliderWidgets_.size()) {
-        OrdinalBaseWidget<BT>* slider =
-            dynamic_cast<OrdinalBaseWidget<BT>*>(this->sliderWidgets_[this->sliderId_]);
-        T propValue = transformer_->max(this->ordinalproperty_->getMaxValue());
 
-        util::glmcomp(propValue, this->sliderId_) =  slider->getValue();
+        T propValue = transformer_->max(this->ordinalproperty_->getMaxValue());
+        util::glmcomp(propValue, this->sliderId_) =  sliders_[this->sliderId_]->getValue();
 
         this->ordinalproperty_->setInitiatingWidget(this);
         this->ordinalproperty_->setMaxValue(transformer_->invMax(propValue));
         this->ordinalproperty_->clearInitiatingWidget();
 
-        slider->setMaxValue(util::glmcomp(propValue, this->sliderId_));
+        sliders_[this->sliderId_]->setMaxValue(util::glmcomp(propValue, this->sliderId_));
     }
 }
 

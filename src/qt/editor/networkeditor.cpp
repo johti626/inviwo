@@ -359,7 +359,7 @@ std::vector<unsigned char>* NetworkEditor::renderPortInspectorImage(Port* port, 
         PortInspectorFactory::getPtr()->getPortInspectorForPortClass(port->getClassIdentifier());
 
     ProcessorNetwork* network = InviwoApplication::getPtr()->getProcessorNetwork();
-    std::vector<unsigned char>* data = nullptr;
+    std::unique_ptr<std::vector<unsigned char>> data;
 
     if (portInspector && !portInspector->isActive()) {
         portInspector->setActive(true);
@@ -409,7 +409,7 @@ std::vector<unsigned char>* NetworkEditor::renderPortInspectorImage(Port* port, 
             canvasProcessor->setCanvasSize(ivec2(size, size));
         } // Network will unlock and evaluate here.
 
-        data = canvasProcessor->getVisibleLayerAsCodedBuffer(type);
+        data.reset(canvasProcessor->getVisibleLayerAsCodedBuffer(type));
 
         // remove the network...
         NetworkLock lock;
@@ -417,16 +417,16 @@ std::vector<unsigned char>* NetworkEditor::renderPortInspectorImage(Port* port, 
         wm->setVisibile(true);
         portInspector->setActive(false);
     }
-    return data;
+    return data.release();
 }
 
 bool NetworkEditor::isModified() const { return modified_; }
 void NetworkEditor::setModified(const bool modified) {
     if (modified != modified_) {
         modified_ = modified;
-        for (ObserverSet::reverse_iterator it = observers_->rbegin(); it != observers_->rend();
-             ++it)
+        for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
             static_cast<NetworkEditorObserver*>(*it)->onModifiedStatusChanged(modified);
+        }
     }
 }
 
@@ -1235,10 +1235,6 @@ bool NetworkEditor::loadNetwork(std::istream& stream, const std::string& path) {
                       "Incomplete network loading " + path + " due to " + exception.getMessage(),
                       LogLevel::Error);
         }
-
-        propertyListWidget_->setUsageMode(InviwoApplication::getPtr()
-                                              ->getSettingsByType<SystemSettings>()
-                                              ->getApplicationUsageMode());
 
         InviwoApplication::getPtr()->getProcessorNetwork()->setModified(true);
     }

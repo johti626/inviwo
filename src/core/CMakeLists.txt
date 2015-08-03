@@ -157,6 +157,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/buttonproperty.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/cameraproperty.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/compositeproperty.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/properties/compositepropertyobserver.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/directoryproperty.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/eventproperty.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/fileproperty.h
@@ -171,6 +172,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/propertyconvertermanager.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/propertyfactory.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/propertyfactoryobject.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/properties/propertyobserver.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/propertyowner.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/propertyownerobserver.h
     ${IVW_INCLUDE_DIR}/inviwo/core/properties/propertysemantics.h
@@ -220,11 +222,11 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/util/logcentral.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/observer.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/raiiutils.h
-    ${IVW_INCLUDE_DIR}/inviwo/core/util/referencecounter.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/rendercontext.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/settings/linksettings.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/settings/settings.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/settings/systemsettings.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/util/shuntingyard.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/singleton.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/stacktrace.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/stdextensions.h
@@ -362,6 +364,7 @@ set(SOURCE_FILES
     properties/buttonproperty.cpp
     properties/cameraproperty.cpp
     properties/compositeproperty.cpp
+    properties/compositepropertyobserver.cpp
     properties/directoryproperty.cpp    
     properties/eventproperty.cpp
     properties/fileproperty.cpp
@@ -373,6 +376,7 @@ set(SOURCE_FILES
     properties/propertyconvertermanager.cpp
     properties/propertyfactory.cpp
     properties/propertyfactoryobject.cpp
+    properties/propertyobserver.cpp
     properties/propertyowner.cpp
     properties/propertyownerobserver.cpp
     properties/propertysemantics.cpp
@@ -406,11 +410,11 @@ set(SOURCE_FILES
     util/logcentral.cpp
     util/observer.cpp    
     util/raiiutils.cpp
-    util/referencecounter.cpp
     util/rendercontext.cpp
     util/settings/linksettings.cpp    
     util/settings/settings.cpp    
     util/settings/systemsettings.cpp    
+    util/shuntingyard.cpp
     util/singleton.cpp
     util/stacktrace.cpp
     util/stdextensions.cpp

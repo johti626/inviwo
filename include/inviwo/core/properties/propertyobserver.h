@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2012-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,44 +24,45 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#ifndef IVW_FILEPROPERTYWIDGETQT_H
-#define IVW_FILEPROPERTYWIDGETQT_H
+#ifndef IVW_PROPERTYOBSERVER_H
+#define IVW_PROPERTYOBSERVER_H
 
-#include <inviwo/qt/widgets/inviwoqtwidgetsdefine.h>
-#include <inviwo/qt/widgets/editablelabelqt.h>
-#include <QLineEdit>
-#include <QToolButton>
-
-#include <inviwo/qt/widgets/properties/propertywidgetqt.h>
-
-#include <inviwo/core/properties/fileproperty.h>
+#include <inviwo/core/common/inviwocoredefine.h>
+#include <inviwo/core/common/inviwo.h>
+#include <inviwo/core/util/observer.h>
+#include <inviwo/core/properties/propertysemantics.h>
+#include <inviwo/core/properties/propertyvisibility.h>
 
 namespace inviwo {
 
-class IVW_QTWIDGETS_API FilePropertyWidgetQt : public PropertyWidgetQt {
-
-    Q_OBJECT
-
+class IVW_CORE_API PropertyObserver : public Observer {
 public:
-    FilePropertyWidgetQt(FileProperty* property);
+    PropertyObserver() = default;
+    virtual ~PropertyObserver() = default;
 
-    void updateFromProperty();
-
-private:
-    FileProperty* property_;
-    QLineEdit* lineEdit_;
-    QToolButton* openButton_;
-    EditableLabelQt* label_;
-
-    void generateWidget();
-
-public slots:
-    void setPropertyValue();
+    virtual void onSetIdentifier(const std::string& identifier) {}
+    virtual void onSetDisplayName(const std::string& displayName) {}
+    virtual void onSetSemantics(const PropertySemantics& semantics) {}
+    virtual void onSetReadOnly(bool readonly) {}
+    virtual void onSetVisible(bool visible) {}
+    virtual void onSetUsageMode(UsageMode usageMode) {}
 };
 
-} // namespace
+class IVW_CORE_API PropertyObservable : public Observable<PropertyObserver> {
+protected:
+    PropertyObservable() = default;
 
-#endif // IVW_FILEPROPERTYWIDGETQT_H
+    void notifyObserversOnSetIdentifier(const std::string& identifier) const;
+    void notifyObserversOnSetDisplayName(const std::string& displayName) const;
+    void notifyObserversOnSetSemantics(const PropertySemantics& semantics) const;
+    void notifyObserversOnSetReadOnly(bool readonly) const;
+    void notifyObserversOnSetVisible(bool visible) const;
+    void notifyObserversOnSetUsageMode(UsageMode usageMode) const;
+};
+
+}  // namespace
+
+#endif  // IVW_PROPERTYOBSERVER_H

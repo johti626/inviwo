@@ -59,7 +59,6 @@ public:
 private:
     void keyPressEvent(QKeyEvent* keyEvent) override;
 
-    void logMessage(LogLevel level, QString message);
 
     QTextEdit* textField_;
     /// Log level colors
@@ -75,7 +74,13 @@ private:
     unsigned int numInfos_;
 
 public slots:
+    void logMessage(LogLevel level, QString message);
     void showContextMenu(const QPoint& pos);
+    void clear();
+
+signals:
+    void logMessageSignal(LogLevel logLevel, QString message);
+    void clearSignal();
 };
 
 }  // namespace

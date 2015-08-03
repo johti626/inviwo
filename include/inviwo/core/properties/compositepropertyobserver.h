@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,48 +27,29 @@
  *
  *********************************************************************************/
 
-#ifndef IVW_REFERENCE_COUNTER_H
-#define IVW_REFERENCE_COUNTER_H
+#ifndef IVW_COMPOSITEPROPERTYOBSERVER_H
+#define IVW_COMPOSITEPROPERTYOBSERVER_H
 
 #include <inviwo/core/common/inviwocoredefine.h>
-#include <inviwo/core/util/assertion.h>
+#include <inviwo/core/common/inviwo.h>
+#include <inviwo/core/util/observer.h>
 
 namespace inviwo {
 
-/** \class ReferenceCounter
- *
- * Reference counter for an object. Object should be removed when reference count equals zero.
- */
-class IVW_CORE_API ReferenceCounter {
+class IVW_CORE_API CompositePropertyObserver : public Observer {
 public:
-    ReferenceCounter();
-    virtual ~ReferenceCounter();
-    /**
-     * Increase reference count of this object.
-     * Object should not be removed unless reference count is zero.
-     *
-     * @return New reference count after increasing it.
-     */
-    int increaseRefCount();
+    CompositePropertyObserver() = default;
+    virtual ~CompositePropertyObserver() = default;
 
-    /**
-     * Decrease reference count of this object.
-     * Object should not be removed unless reference count is zero.
-     *
-     * @return New reference count after decreasing it.
-     */
-    int decreaseRefCount();
-    /**
-     * Get reference count of this object.
-     * Object should not be removed unless reference count is zero.
-     *
-     */
-    int getRefCount() const;
-
-private:
-    int referenceCount_;
+    virtual void onSetCollapsed(bool value) {}
 };
 
-};  // namespace inviwo
+class IVW_CORE_API CompositePropertyObservable : public Observable<CompositePropertyObserver> {
+protected:
+    CompositePropertyObservable() = default;
+    void notifyObserversOnSetCollapsed(bool collapsed) const;
+};
 
-#endif  // IVW_REFERENCE_COUNTER_H
+}  // namespace
+
+#endif  // IVW_COMPOSITEPROPERTYOBSERVER_H

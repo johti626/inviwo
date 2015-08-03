@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2013-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,44 +27,44 @@
  *
  *********************************************************************************/
 
-#ifndef IVW_COLORPROPERTYWDIGETQT_H
-#define IVW_COLORPROPERTYWDIGETQT_H
-
-#include <QColorDialog>
-#include <QLabel>
-#include <QPushButton>
-#include <inviwo/qt/widgets/inviwoqtwidgetsdefine.h>
-#include <inviwo/qt/widgets/editablelabelqt.h>
-#include <inviwo/qt/widgets/properties/propertywidgetqt.h>
-#include <inviwo/qt/widgets/properties/buttonpropertywidgetqt.h>
-#include <inviwo/core/properties/buttonproperty.h>
+#include <inviwo/core/properties/propertyobserver.h>
 
 namespace inviwo {
 
-class IVW_QTWIDGETS_API ColorPropertyWidgetQt : public PropertyWidgetQt {
-    Q_OBJECT
+void PropertyObservable::notifyObserversOnSetIdentifier(const std::string& identifier) const {
+    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
+        static_cast<PropertyObserver*>(*it)->onSetIdentifier(identifier);
+    }
+}
 
-public:
-    ColorPropertyWidgetQt(Property* property);
-    virtual ~ColorPropertyWidgetQt();
+void PropertyObservable::notifyObserversOnSetDisplayName(const std::string& displayName) const {
+    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
+        static_cast<PropertyObserver*>(*it)->onSetDisplayName(displayName);
+    }
+}
 
-    void updateFromProperty();
-    QColor getCurrentColor();
+void PropertyObservable::notifyObserversOnSetSemantics(const PropertySemantics& semantics) const {
+    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
+        static_cast<PropertyObserver*>(*it)->onSetSemantics(semantics);
+    }
+}
 
-private:
-    Property* property_;
-    QPushButton* btnColor_;
-    QColorDialog* colorDialog_;
-    QColor* currentColor_;
-    EditableLabelQt* label_;
+void PropertyObservable::notifyObserversOnSetReadOnly(bool readonly) const {
+    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
+        static_cast<PropertyObserver*>(*it)->onSetReadOnly(readonly);
+    }
+}
 
-    void generateWidget();
+void PropertyObservable::notifyObserversOnSetVisible(bool visible) const {
+    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
+        static_cast<PropertyObserver*>(*it)->onSetVisible(visible);
+    }
+}
 
-public slots:
-    void setPropertyValue();
-    void openColorDialog();
-};
+void PropertyObservable::notifyObserversOnSetUsageMode(UsageMode usageMode) const {
+    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
+        static_cast<PropertyObserver*>(*it)->onSetUsageMode(usageMode);
+    }
+}
 
 }  // namespace
-
-#endif  // IVW_COLORPROPERTYWIDGETQT_H

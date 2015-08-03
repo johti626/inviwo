@@ -53,11 +53,22 @@ public:
      */
     Observer();
     /**
-     * Copy constructor. Copies observervables from other  
+     * Copy constructor. Copies observerables from other  
      */
     Observer(const Observer& other);
+
     /**
-     * Copies observervables from other and returns this.
+    * Move constructor. Steals resources from other
+    */
+    Observer(Observer&& other); 
+
+    /**
+    * Move assignment. Steals resources from other
+    */
+    Observer& operator=(Observer&& other);
+
+    /**
+     * Copies observerables from other and returns this.
      */
     Observer& operator=(const Observer& other);
 
@@ -113,6 +124,16 @@ public:
      * Copy constructor. Copies observers from other  
      */
     ObservableInterface(const ObservableInterface& other);
+
+    /** 
+     * Move constructor. Steals resources from other
+     */
+    ObservableInterface(ObservableInterface&& other); 
+
+    /**
+    * Move assignment. Steals resources from other
+    */
+    ObservableInterface& operator=(ObservableInterface&& other);
     /**
      * Copies observers from other and returns this.
      */

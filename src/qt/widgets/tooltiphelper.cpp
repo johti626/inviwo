@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,58 +24,42 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#ifndef IVW_OPENCL_SHARING_H
-#define IVW_OPENCL_SHARING_H
-
-
-#include <modules/opencl/openclmoduledefine.h>
-#include <modules/opencl/inviwoopencl.h>
-#include <modules/opengl/glwrap/texture.h>
-#include <modules/opengl/glwrap/bufferobject.h>
-#include <inviwo/core/datastructures/buffer/buffer.h>
-#include <inviwo/core/util/referencecounter.h>
-#include <map>
+#include <inviwo/qt/widgets/tooltiphelper.h>
+#include <inviwo/qt/widgets/inviwoqtutils.h>
 
 namespace inviwo {
-class OpenCLImageSharing;
-class LayerCLGL;
-class VolumeCLGL;
 
-typedef std::pair<Texture*, OpenCLImageSharing*> TextureCLImageSharingPair;
-typedef std::map<Texture*, OpenCLImageSharing*> CLTextureSharingMap;
+ToolTipHelper::ToolTipHelper(std::string item /*= ""*/) : ss() {
+    utilqt::localizeStream(ss);
 
+    ss << "<html><head>"
+       << "<style>"
+       << "table { border-color:white;white-space:pre;margin-top:5px;margin-bottom:5px; }"
+       << "table > tr > td { padding-left:5px; padding-right:5px; }"
+       << "</style><head/><body>";
 
-class IVW_MODULE_OPENCL_API OpenCLImageSharing: public ReferenceCounter {
-    friend class LayerCLGL;
-    friend class VolumeCLGL;
-public:
-    OpenCLImageSharing(cl::Image* sharedMemory = nullptr): ReferenceCounter(), sharedMemory_(sharedMemory) {}
-
-    cl::Image* sharedMemory_;
-private:
-    static CLTextureSharingMap clImageSharingMap_;
-};
-
-class OpenCLBufferSharing;
-
-typedef std::pair<BufferObject*, OpenCLBufferSharing*> BufferSharingPair;
-typedef std::map<BufferObject*, OpenCLBufferSharing*> CLBufferSharingMap;
-
-class IVW_MODULE_OPENCL_API OpenCLBufferSharing: public ReferenceCounter {
-    friend class BufferCLGL;
-public:
-    OpenCLBufferSharing(cl::Buffer* sharedMemory = nullptr): ReferenceCounter(), sharedMemory_(sharedMemory) {}
-
-    cl::Buffer* sharedMemory_;
-private:
-
-    static CLBufferSharingMap clBufferSharingMap_;
-};
-
-
+    if (!item.empty()) ss << "<b style='color:white;'>" << item << "</b>";
 }
 
-#endif // IVW_OPENCL_SHARING_H
+ToolTipHelper::~ToolTipHelper() {}
+
+
+ToolTipHelper& ToolTipHelper::tableTop() {
+    ss << "<table border='0' cellspacing='0' cellpadding='0'"
+       << "style='border-color:white;white-space:pre;margin: 5px 0;'>";
+    return *this;
+}
+
+ToolTipHelper& ToolTipHelper::tableBottom() {
+    ss << "</table>";
+    return *this;
+}
+
+ToolTipHelper::operator std::string() {
+    return ss.str() + "</body></html>";
+}
+
+}  // namespace

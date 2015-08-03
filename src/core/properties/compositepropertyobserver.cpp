@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,15 +24,17 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#include <modules/opencl/openclsharing.h>
-
+#include <inviwo/core/properties/compositepropertyobserver.h>
 
 namespace inviwo {
-CLTextureSharingMap OpenCLImageSharing::clImageSharingMap_;
 
-CLBufferSharingMap OpenCLBufferSharing::clBufferSharingMap_;
+void CompositePropertyObservable::notifyObserversOnSetCollapsed(bool collapsed) const {
+    for (auto it = observers_->rbegin(); it != observers_->rend(); ++it) {
+        static_cast<CompositePropertyObserver*>(*it)->onSetCollapsed(collapsed);
+    }
+}
 
-} // end namespace
+}  // namespace

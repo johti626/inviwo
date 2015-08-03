@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #ifndef IVW_BOOLCOMPOSITEPROPERTY_H
@@ -33,7 +33,7 @@
 #include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/properties/compositeproperty.h>
- #include <inviwo/core/properties/boolproperty.h>
+#include <inviwo/core/properties/boolproperty.h>
 
 namespace inviwo {
 
@@ -41,21 +41,21 @@ class IVW_CORE_API BoolCompositeProperty : public CompositeProperty {
 public:
     InviwoPropertyInfo();
 
-    BoolCompositeProperty(std::string identifier, std::string displayName, bool checked=false,
-                      InvalidationLevel invalidationLevel = INVALID_RESOURCES,
-                      PropertySemantics semantics = PropertySemantics::Default);
-    
+    BoolCompositeProperty(std::string identifier, std::string displayName, bool checked = false,
+                          InvalidationLevel invalidationLevel = INVALID_RESOURCES,
+                          PropertySemantics semantics = PropertySemantics::Default);
+
     virtual BoolCompositeProperty* clone() const;
     virtual ~BoolCompositeProperty();
     virtual std::string getClassIdentifierForWidget() const;
 
     virtual bool isChecked() const;
     virtual void setChecked(bool checked);
-    
+
 private:
     BoolProperty checked_;
 };
 
-} // namespace
+}  // namespace
 
-#endif // IVW_BOOLCOMPOSITEPROPERTY_H
+#endif  // IVW_BOOLCOMPOSITEPROPERTY_H

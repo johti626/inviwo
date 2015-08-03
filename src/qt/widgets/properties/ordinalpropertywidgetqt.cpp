@@ -50,9 +50,8 @@ void BaseOrdinalPropertyWidgetQt::generateWidget() {
     hLayout->setContentsMargins(0,0,0,0);
     hLayout->setSpacing(7);
 
-    label_ = new EditableLabelQt(this, property_->getDisplayName());
+    label_ = new EditableLabelQt(this, property_);
     hLayout->addWidget(label_);
-    connect(label_, SIGNAL(textChanged()),this, SLOT(setPropertyDisplayName()));
  
     QWidget* sliderWidget = new QWidget();
 
@@ -91,7 +90,6 @@ void BaseOrdinalPropertyWidgetQt::generateWidget() {
             this,
             SLOT(setPropertyValue(int)));
 
-    this->setEnabled(!property_->getReadOnly());
     setLayout(hLayout);
 
     setFixedHeight(sizeHint().height());
@@ -149,12 +147,6 @@ QMenu* BaseOrdinalPropertyWidgetQt::getContextMenu() {
 
 void BaseOrdinalPropertyWidgetQt::showContextMenu(const QPoint& pos) {
     showContextMenuSlider(-1);
-}
-
-
-// Connected to label_ textChanged
-void BaseOrdinalPropertyWidgetQt::setPropertyDisplayName() {
-    property_->setDisplayName(label_->getText());
 }
 
 // connected to sliderWidget_ customContextMenuRequested

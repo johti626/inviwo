@@ -39,26 +39,39 @@
 
 namespace inviwo {
 
+typedef std::pair< std::shared_ptr<Texture>, std::shared_ptr<cl::Image3DGL> > Texture3DCLImageSharingPair;
+typedef std::map<std::shared_ptr<Texture>, std::shared_ptr<cl::Image3DGL> > CLTexture3DSharingMap;
+
+/** \class VolumeCLGL
+*
+* VolumeCLGL handles shared texture3D between OpenCL and OpenGL.
+* It will make sure that the texture
+* is not released while a shared representation exist
+* and also release and reattach the shared representation
+* when the texture is resized (handled through the TexturObserver)
+*
+* @see Observable
+*/
 class IVW_MODULE_OPENCL_API VolumeCLGL : public VolumeCLBase,
                                          public VolumeRepresentation,
                                          public TextureObserver {
 public:
     VolumeCLGL(const DataFormatBase* format = DataFormatBase::get(), Texture3D* data = nullptr);
-    VolumeCLGL(const size3_t& dimensions, const DataFormatBase* format, Texture3D* data);
+    VolumeCLGL(const size3_t& dimensions, const DataFormatBase* format, std::shared_ptr<Texture3D> data);
     VolumeCLGL(const VolumeCLGL& rhs);
 
     virtual VolumeCLGL* clone() const;
     virtual ~VolumeCLGL();
-    virtual void initialize(){};
-    virtual void deinitialize();
 
-    void initialize(Texture3D* texture);
+
+
+
     virtual const size3_t& getDimensions() const override;
     virtual void setDimensions(size3_t dimensions) override;
 
-    virtual cl::Image3D& getEditable();
-    virtual const cl::Image3D& get() const;
-    const Texture3D* getTexture() const;
+    virtual cl::Image3DGL& getEditable();
+    virtual const cl::Image3DGL& get() const;
+    std::shared_ptr<Texture3D> getTexture() const;
 
     /**
     * This method will be called before the texture is initialized.
@@ -78,8 +91,13 @@ public:
                          const cl::CommandQueue& queue = OpenCL::getPtr()->getQueue()) const;
 
 protected:
+    static CLTexture3DSharingMap clVolumeSharingMap_;
+    void initialize();
+    void deinitialize();
     size3_t dimensions_;
-    Texture3D* texture_;
+    std::shared_ptr<Texture3D> texture_;
+    std::shared_ptr<cl::Image3DGL> clImage_; ///< Potentially shared with other LayerCLGL
+
 };
 
 }  // namespace
