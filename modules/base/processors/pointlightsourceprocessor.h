@@ -41,6 +41,7 @@
 #include <inviwo/core/properties/cameraproperty.h>
 #include <inviwo/core/properties/ordinalproperty.h>
 #include <inviwo/core/properties/optionproperty.h>
+#include <inviwo/core/properties/positionproperty.h>
 #include <modules/base/basemoduledefine.h>
 
 namespace inviwo {
@@ -123,19 +124,17 @@ private:
 /** \docpage{org.inviwo.Pointlightsource, Point light source}
  * ![](org.inviwo.Pointlightsource.png?classIdentifier=org.inviwo.Pointlightsource)
  *
- * ...
- * 
+ * Produces a point light source, spreading light in all directions the given position.
  * 
  * 
  * ### Properties
- *   * __Light power (%)__ ...
- *   * __Light radius__ ...
- *   * __Interaction Events__ ...
- *   * __Camera__ ...
- *   * __Light Parameters__ ...
- *   * __Color__ ...
- *   * __Light Source Position__ ...
- *   * __Enabled__ ...
+ *   * __Light power (%)__ Increases/decreases light strength
+ *   * __Light radius__ Radius of the sphere used to determine the size of the point light
+ *   * __Interaction Events__ Allow light source to be moved using interaction events
+ *   * __Camera__  Link camera in order to specify position in view space and perform interaction
+ *   * __Color__ RGB color
+ *   * __Light Source Position__ Center point of light source
+ *   * __Enabled__ Turn light on or off
  *
  */
 class IVW_MODULE_BASE_API PointLightSourceProcessor : public Processor {
@@ -163,15 +162,16 @@ protected:
 private:
     DataOutport<LightSource> outport_;
 
+    CameraProperty camera_;
+    PositionProperty lightPosition_;
     CompositeProperty lighting_;
     FloatProperty lightPowerProp_;
     FloatProperty lightSize_;
     FloatVec4Property lightDiffuse_;
-    FloatVec3Property lightPosition_;
     BoolProperty lightEnabled_;
     BoolProperty lightScreenPosEnabled_;
     FloatVec2Property lightScreenPos_;
-    CameraProperty camera_;
+
     OptionPropertyInt interactionEvents_;
     PointLightInteractionHandler* lightInteractionHandler_;
     PointLight* lightSource_;

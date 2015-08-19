@@ -30,6 +30,7 @@
 #ifndef IVW_GEOMETRYRENDERPROCESSORGL_H
 #define IVW_GEOMETRYRENDERPROCESSORGL_H
 
+#include <modules/basegl/baseglmoduledefine.h>
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/processors/processor.h>
 #include <inviwo/core/interaction/cameratrackball.h>
@@ -42,8 +43,7 @@
 #include <inviwo/core/properties/compositeproperty.h>
 #include <inviwo/core/properties/simplelightingproperty.h>
 #include <inviwo/core/rendering/meshdrawer.h>
-#include <modules/opengl/openglmoduledefine.h>
-#include <modules/opengl/glwrap/shader.h>
+#include <modules/opengl/shader/shader.h>
 #include <vector>
 
 namespace inviwo {
@@ -77,7 +77,7 @@ namespace inviwo {
  *   * __Normals (World Space)__ ...
  *
  */
-class IVW_MODULE_OPENGL_API MeshRenderProcessorGL : public Processor {
+class IVW_MODULE_BASEGL_API MeshRenderProcessorGL : public Processor {
 public:
     MeshRenderProcessorGL();
 
@@ -107,6 +107,9 @@ protected:
     ButtonProperty resetViewParams_;
     CameraTrackball trackball_;
     
+    BoolProperty overrideColorBuffer_;
+    FloatVec4Property overrideColor_;
+
     CompositeProperty geomProperties_;
     OptionPropertyInt cullFace_;
     OptionPropertyInt polygonMode_;

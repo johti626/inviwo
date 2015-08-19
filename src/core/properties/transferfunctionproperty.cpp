@@ -28,6 +28,7 @@
  *********************************************************************************/
 
 #include <inviwo/core/properties/transferfunctionproperty.h>
+#include <inviwo/core/network/processornetwork.h>
 
 namespace inviwo {
 
@@ -94,6 +95,7 @@ VolumeInport* TransferFunctionProperty::getVolumeInport() {
 }
 
 void TransferFunctionProperty::resetToDefaultState() {
+    NetworkLock lock;
     zoomH_.reset();
     zoomV_.reset();
     showHistogram_.reset();

@@ -28,7 +28,7 @@
  *********************************************************************************/
 
 #include <modules/basegl/baseglmodule.h>
-#include <modules/opengl/glwrap/shadermanager.h>
+#include <modules/opengl/shader/shadermanager.h>
 #include <modules/basegl/processors/background.h>
 #include <modules/basegl/processors/drawlines.h>
 #include <modules/basegl/processors/drawpoints.h>
@@ -41,8 +41,9 @@
 #include <modules/basegl/processors/imageoverlaygl.h>
 #include <modules/basegl/processors/lightingraycaster.h>
 #include <modules/basegl/processors/lightvolumegl.h>
-#include <modules/basegl/processors/multichannelraycaster.h>
 #include <modules/basegl/processors/meshpicking.h>
+#include <modules/basegl/processors/meshrenderprocessorgl.h>
+#include <modules/basegl/processors/multichannelraycaster.h>
 #include <modules/basegl/processors/redgreenprocessor.h>
 #include <modules/basegl/processors/volumeraycaster.h>
 #include <modules/basegl/processors/isoraycaster.h>
@@ -91,6 +92,7 @@ BaseGLModule::BaseGLModule() : InviwoModule() {
     registerProcessor(ImageOverlayGL);
     registerProcessor(LightingRaycaster);
     registerProcessor(LightVolumeGL);
+    registerProcessor(MeshRenderProcessorGL);
     registerProcessor(MultichannelRaycaster);
     registerProcessor(RedGreenProcessor);
     registerProcessor(VolumeRaycaster);

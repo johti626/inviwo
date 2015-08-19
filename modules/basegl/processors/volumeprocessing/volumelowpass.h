@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #ifndef IVW_VOLUMELOWPASS_H
@@ -37,6 +37,7 @@
 #include <modules/basegl/processors/volumeprocessing/volumeglprocessor.h>
 #include <inviwo/core/properties/ordinalproperty.h>
 #include <inviwo/core/properties/optionproperty.h>
+#include <inviwo/core/properties/boolcompositeproperty.h>
 
 namespace inviwo {
 
@@ -44,27 +45,32 @@ namespace inviwo {
  * ![](org.inviwo.VolumeLowPass.png?classIdentifier=org.inviwo.VolumeLowPass)
  *
  * ...
- * 
- * 
- * 
+ *
+ *
+ *
  * ### Properties
  *   * __Kernel size__ ...
  *
  */
-class IVW_MODULE_BASEGL_API VolumeLowPass : public VolumeGLProcessor { 
+class IVW_MODULE_BASEGL_API VolumeLowPass : public VolumeGLProcessor {
 public:
     VolumeLowPass();
     virtual ~VolumeLowPass();
 
     InviwoProcessorInfo();
+
 protected:
     virtual void preProcess();
 
+    virtual void initializeResources() override;
+
 private:
     IntProperty kernelSize_;
+
+    BoolCompositeProperty useGaussianWeights_;
+    FloatProperty sigma_;
 };
 
-} // namespace
+}  // namespace
 
-#endif // IVW_VOLUMELOWPASS_H
-
+#endif  // IVW_VOLUMELOWPASS_H

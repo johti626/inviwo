@@ -32,8 +32,8 @@
 #include <inviwo/core/datastructures/volume/volumeram.h>
 #include <inviwo/core/datastructures/volume/volumeramprecision.h>
 #include <modules/opengl/volume/volumegl.h>
-#include <modules/opengl/glwrap/shader.h>
-#include <modules/opengl/shaderutils.h>
+#include <modules/opengl/shader/shader.h>
+#include <modules/opengl/shader/shaderutils.h>
 
 namespace inviwo {
 
@@ -44,12 +44,35 @@ ProcessorCategory(VolumeLowPass, "Volume Operation");
 ProcessorCodeState(VolumeLowPass, CODE_STATE_EXPERIMENTAL);
 
 VolumeLowPass::VolumeLowPass()
-    : VolumeGLProcessor("volume_lowpass.frag"), kernelSize_("kernelSize", "Kernel size", 3, 2, 27) {
+    : VolumeGLProcessor("volume_lowpass.frag")
+    , kernelSize_("kernelSize", "Kernel size", 3, 2, 27)
+    , useGaussianWeights_("useGaussianWeights", "Use Gaussian Weights")
+    , sigma_("sigma", "Sigma", 1.f, 0.001f, 2.f, 0.001f) {
     addProperty(kernelSize_);
+    addProperty(useGaussianWeights_);
+    useGaussianWeights_.addProperty(sigma_);
+    useGaussianWeights_.getBoolProperty()->setInvalidationLevel(INVALID_RESOURCES);
+
+    setAllPropertiesCurrentStateAsDefault();
 }
 
 VolumeLowPass::~VolumeLowPass() {}
 
-void VolumeLowPass::preProcess() { utilgl::setUniforms(&shader_, kernelSize_); }
+void VolumeLowPass::preProcess() { 
+    utilgl::setUniforms(&shader_, kernelSize_); 
+    shader_.setUniform("inv2Sigma", 1.0f / (sigma_.get() * 2.0f));
+}
+
+void VolumeLowPass::initializeResources() {
+    VolumeGLProcessor::initializeResources();
+
+    if (useGaussianWeights_.isChecked()) {
+        shader_.getFragmentShaderObject()->addShaderDefine("GAUSSIAN");
+    } else {
+        shader_.getFragmentShaderObject()->removeShaderDefine("GAUSSIAN");
+    }
+
+    shader_.build();
+}
 
 }  // namespace
