@@ -24,42 +24,15 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #include <inviwo/core/common/inviwoapplication.h>
 #include <inviwo/core/common/inviwomodule.h>
 #include <inviwo/core/metadata/metadatafactory.h>
 #include <inviwo/core/io/serialization/ivwserializable.h>
-
+#include <inviwo/core/util/stdextensions.h>
 
 namespace inviwo {
 
-MetaDataFactory::MetaDataFactory() {}
-
-MetaDataFactory::~MetaDataFactory() {}
-
-void MetaDataFactory::registerObject(MetaData* meta) {
-    if (metaDataClassMap_.find(meta->getClassIdentifier()) == metaDataClassMap_.end())
-        metaDataClassMap_.insert(std::make_pair(meta->getClassIdentifier(), meta));
-}
-
-IvwSerializable* MetaDataFactory::create(const std::string &className) const {
-    std::map<std::string, MetaData*>::iterator it = metaDataClassMap_.find(className);
-
-    if (it != metaDataClassMap_.end())
-        return it->second->clone();
-    else
-        return nullptr;
-}
-
-bool MetaDataFactory::isValidType(const std::string &className) const {
-    std::map<std::string, MetaData*>::iterator it = metaDataClassMap_.find(className);
-
-    if (it != metaDataClassMap_.end())
-        return true;
-    else
-        return false;
-}
-
-} // namespace
+}  // namespace

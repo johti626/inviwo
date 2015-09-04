@@ -52,6 +52,7 @@ ProcessorCodeState(MeshRenderProcessorGL, CODE_STATE_STABLE);
 MeshRenderProcessorGL::MeshRenderProcessorGL()
     : Processor()
     , inport_("geometry.inport")
+    , imageInport_("imageInport")
     , outport_("image.outport")
     , camera_("camera", "Camera")
     , centerViewOnGeometry_("centerView", "Center view on geometry")
@@ -74,6 +75,7 @@ MeshRenderProcessorGL::MeshRenderProcessorGL()
     , shader_("geometryrendering.vert", "geometryrendering.frag", false) {
 
     addPort(inport_);
+    addPort(imageInport_);
     addPort(outport_);
     addProperty(camera_);
     centerViewOnGeometry_.onChange(this, &MeshRenderProcessorGL::centerViewOnGeometry);
@@ -208,7 +210,14 @@ void MeshRenderProcessorGL::changeRenderMode() {
 }
 
 void MeshRenderProcessorGL::process() {
-    utilgl::activateAndClearTarget(outport_, COLOR_DEPTH);
+
+    if (imageInport_.isConnected()){
+        utilgl::activateTargetAndCopySource(outport_, imageInport_);
+    }
+    else{
+        utilgl::activateAndClearTarget(outport_, COLOR_DEPTH);
+    }
+    
     shader_.activate();
 
     utilgl::setShaderUniforms(&shader_, camera_, "camera_");
@@ -226,6 +235,14 @@ void MeshRenderProcessorGL::process() {
 
     shader_.deactivate();
     utilgl::deactivateCurrentTarget();
+}
+
+bool MeshRenderProcessorGL::isReady() const {
+    if (imageInport_.isConnected()) {
+        return Processor::isReady();
+    } else {
+        return inport_.isReady();
+    }
 }
 
 void MeshRenderProcessorGL::centerViewOnGeometry() {
@@ -320,11 +337,9 @@ void MeshRenderProcessorGL::updateDrawers() {
             static_cast<long>(elem.second.size()) != std::distance(ibegin, iend)) {  // data is changed or new.
 
             for (auto geo : elem.second) {
-                MeshDrawer* renderer = MeshDrawerFactory::getPtr()->create(geo);
-                if (renderer) {
-                    drawers_.emplace(
-                        std::make_pair(elem.first, std::unique_ptr<MeshDrawer>(renderer)));
-                }
+                if (auto renderer = MeshDrawerFactory::getPtr()->create(geo)) {
+                    drawers_.emplace(std::make_pair(elem.first, std::move(renderer)));
+                } 
             }
         } else {  // reuse the old data.
             drawers_.insert(std::make_move_iterator(ibegin), std::make_move_iterator(iend));

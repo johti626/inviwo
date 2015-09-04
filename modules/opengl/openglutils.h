@@ -35,6 +35,7 @@
 #include <modules/opengl/texture/textureunit.h>
 
 #include <functional>
+#include <array>
 
 namespace inviwo {
 
@@ -140,8 +141,26 @@ protected:
     GLint olddMode_;
 };
 
-template <typename T1, typename T2, GLenum Entity, void (*Getter)(GLenum, T1*),
-          void (*Setter)(T2)>
+struct IVW_MODULE_OPENGL_API ViewportState {
+    ViewportState() = delete;
+    ViewportState(ViewportState const&) = delete;
+    ViewportState& operator=(ViewportState const& that) = delete;
+
+    ViewportState(GLint x, GLint y, GLsizei width, GLsizei height);
+    ViewportState(const ivec4 &coords);
+
+    ViewportState(ViewportState&& rhs);
+    ViewportState& operator=(ViewportState&& that);
+
+    ~ViewportState();
+
+private:
+    std::array<GLint, 4> coords_;
+    std::array<GLint, 4> oldCoords_;
+};
+
+template <typename T1, typename T2, GLenum Entity, void (GLAPIENTRY *Getter)(GLenum, T1*),
+    void (GLAPIENTRY *Setter)(T2)>
 struct SimpleState {
     SimpleState() = delete;
     SimpleState(SimpleState<T1, T2, Entity, Getter, Setter> const&) = delete;
@@ -161,7 +180,7 @@ protected:
     T1 state_;
 };
 
-template <typename T1, typename T2, GLenum Entity, void (*Getter)(GLenum, T1*), void (*Setter)(T2)>
+template <typename T1, typename T2, GLenum Entity, void (GLAPIENTRY *Getter)(GLenum, T1*), void (GLAPIENTRY *Setter)(T2)>
 SimpleState<T1, T2, Entity, Getter, Setter>::SimpleState(T1 value)
     : state_(value) {
     Getter(Entity, &oldState_);
@@ -170,19 +189,19 @@ SimpleState<T1, T2, Entity, Getter, Setter>::SimpleState(T1 value)
     }
 }
 
-template <typename T1, typename T2, GLenum Entity, void (*Getter)(GLenum, T1*), void (*Setter)(T2)>
+template <typename T1, typename T2, GLenum Entity, void (GLAPIENTRY *Getter)(GLenum, T1*), void (GLAPIENTRY *Setter)(T2)>
 SimpleState<T1, T2, Entity, Getter, Setter>::~SimpleState() {
     if (state_ != oldState_) {
         Setter(static_cast<T2>(oldState_));
     }
 }
 
-template <typename T1, typename T2, GLenum Entity, void (*Getter)(GLenum, T1*), void (*Setter)(T2)>
+template <typename T1, typename T2, GLenum Entity, void (GLAPIENTRY *Getter)(GLenum, T1*), void (GLAPIENTRY *Setter)(T2)>
 SimpleState<T1, T2, Entity, Getter, Setter>::operator T1() {
     return state_;
 }
 
-template <typename T1, typename T2, GLenum Entity, void (*Getter)(GLenum, T1*), void (*Setter)(T2)>
+template <typename T1, typename T2, GLenum Entity, void (GLAPIENTRY *Getter)(GLenum, T1*), void (GLAPIENTRY *Setter)(T2)>
 SimpleState<T1, T2, Entity, Getter, Setter>& SimpleState<T1, T2, Entity, Getter, Setter>::operator=(
     SimpleState<T1, T2, Entity, Getter, Setter>&& that) {
     if (this != &that) {
@@ -192,7 +211,7 @@ SimpleState<T1, T2, Entity, Getter, Setter>& SimpleState<T1, T2, Entity, Getter,
     }
     return *this;
 }
-template <typename T1, typename T2, GLenum Entity, void (*Getter)(GLenum, T1*), void (*Setter)(T2)>
+template <typename T1, typename T2, GLenum Entity, void (GLAPIENTRY *Getter)(GLenum, T1*), void (GLAPIENTRY *Setter)(T2)>
 SimpleState<T1, T2, Entity, Getter, Setter>::SimpleState(
     SimpleState<T1, T2, Entity, Getter, Setter>&& rhs)
     : oldState_(rhs.oldState_), state_(rhs.state_) {

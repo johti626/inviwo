@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #ifndef IVW_PORTINSPECTORFACTORY_H
@@ -39,31 +39,18 @@
 namespace inviwo {
 
 class IVW_CORE_API PortInspectorFactory
-    : public Factory
-    , public Singleton<PortInspectorFactory> {
-
+    : public StandardFactory<PortInspector, PortInspectorFactoryObject>,
+      public Singleton<PortInspectorFactory> {
 public:
-    PortInspectorFactory();
-    virtual ~PortInspectorFactory();
+    PortInspectorFactory() = default;
+    virtual ~PortInspectorFactory() = default;
+    virtual PortInspector* createAndCache(const std::string& className) const;
+    using PortInsectorCache = std::map<std::string, std::vector<std::unique_ptr<PortInspector>>>;
 
-    void registerObject(PortInspectorFactoryObject* portInspector);
-
-    virtual PortInspector* getPortInspectorForPortClass(const std::string &className);
-
-    virtual IvwSerializable* create(const std::string &className) const { return 0; }
-    virtual bool isValidType(const std::string &className) const;
-
-    typedef std::map<std::string, PortInspectorFactoryObject*> PortInspectorMap;
-    typedef std::map<std::string, std::vector<PortInspector*> > PortInsectorCache;
-    
 private:
-    PortInspectorMap portInspectors_;
-    PortInsectorCache cache_;
-    
-
+    mutable PortInsectorCache cache_;
 };
 
-} // namespace
+}  // namespace
 
-#endif // IVW_PORTINSPECTORFACTORY_H
-
+#endif  // IVW_PORTINSPECTORFACTORY_H

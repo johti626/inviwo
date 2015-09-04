@@ -31,52 +31,25 @@
 
 namespace inviwo {
 
-PackedLightSource baseLightToPackedLight(const LightSource* lightsource, float radianceScale) {
-    PackedLightSource light;
-    light.tm = lightsource->getCoordinateTransformer().getModelToWorldMatrix();
-    light.radiance = vec4(radianceScale * lightsource->getIntensity(), 1.f);
-    light.type = lightsource->getLightSourceType();
-    light.area = lightsource->getArea();
-    light.cosFOV = std::cos(glm::radians(lightsource->getFieldOfView() / 2.f));
-    light.size = lightsource->getSize();
-    return light;
-}
-
-PackedLightSource baseLightToPackedLight(const LightSource* lightsource, float radianceScale,
-                                         const mat4& transformLightMat) {
-    PackedLightSource light;
-    light.tm = transformLightMat * lightsource->getCoordinateTransformer().getModelToWorldMatrix();
-    light.radiance = vec4(radianceScale * lightsource->getIntensity(), 1.f);
-    light.type = lightsource->getLightSourceType();
-    light.area = lightsource->getArea();
-    light.cosFOV = std::cos(glm::radians(lightsource->getFieldOfView() / 2.f));
-    light.size = lightsource->getSize();
-    return light;
-}
-
-uvec2 getSamplesPerLight(uvec2 nSamples, int nLightSources) {
-    uvec2 samplesPerLight;
-    // samplesPerLight.y = nPhotons.y / nLightSources;
-    // samplesPerLight.x = (int)sqrt((float)nPhotons.x*samplesPerLight.y);
-    unsigned int nPhotons = nSamples.x * nSamples.y;
-    samplesPerLight.y = nPhotons / nLightSources;
-    samplesPerLight.x = (unsigned int)sqrt((float)samplesPerLight.y);
-    samplesPerLight.y = samplesPerLight.x * samplesPerLight.x;
-    return samplesPerLight;
-}
-
 mat4 getLightTransformationMatrix(vec3 pos, vec3 dir) {
     vec3 A = vec3(0, 0, 1);
-    vec3 B = dir;  // B(0,1,0);
-    float angle = std::acos(glm::dot(A, B));
-    if (glm::all(glm::equal(A, B))) {
-        A = vec3(0, 1, 0);
-    }
-    vec3 rotationAxis = glm::normalize(glm::cross(A, B));
+    vec3 B = dir;  
+    mat4 transformationMatrix;
+    // Check if the direction is parallel to the z-axis
+    // to avoid division by zero in glm::normalize(glm::cross(A, B)). 
+    if (glm::all(glm::lessThan(glm::abs(glm::cross(A, B)), vec3(glm::epsilon<float>())))) {
+        // Direction is parallel to z-axis. 
+        // Apply rotation by 180 degrees if the direction is along negative z-axis
+        float angle = dir.z < 0 ? -static_cast<float>(M_PI) : 0;
+        transformationMatrix = glm::translate(pos) * glm::rotate(angle, vec3(0.f, 1.f, 0.f));
+    } else {
+        float angle = std::acos(glm::dot(A, B));
+        vec3 rotationAxis = glm::normalize(glm::cross(A, B));
 #ifndef GLM_FORCE_RADIANS
-    angle = glm::degrees(angle);
+        angle = glm::degrees(angle);
 #endif  // GLM_FORCE_RADIANS
-    mat4 transformationMatrix = glm::translate(pos) * glm::rotate(angle, rotationAxis);
+        transformationMatrix = glm::translate(pos) * glm::rotate(angle, rotationAxis);
+    }
     return transformationMatrix;
 }
 

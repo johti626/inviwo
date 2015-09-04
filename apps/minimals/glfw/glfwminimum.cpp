@@ -57,6 +57,7 @@ int main(int argc, char** argv) {
     LogCentral::getPtr()->registerLogger(new ConsoleLogger());
 
     InviwoApplication inviwoApp(argc, argv, "Inviwo v"+IVW_VERSION + " - GLFWApp", inviwo::filesystem::findBasePath());
+    inviwoApp.setPostEnqueueFront([](){glfwPostEmptyEvent();});
 
     CanvasGLFW::setAlwaysOnTopByDefault(false);
 
@@ -89,8 +90,7 @@ int main(int argc, char** argv) {
         Processor* processor = *it;
         processor->invalidate(INVALID_RESOURCES);
 
-        ProcessorWidget* processorWidget = ProcessorWidgetFactory::getPtr()->create(processor);
-        if (processorWidget) {
+        if (auto processorWidget = ProcessorWidgetFactory::getPtr()->create(processor).release()) {
             widgets.emplace_back(processorWidget, widgetDeleter);
             processorWidget->setProcessor(processor);
             processorWidget->initialize();
@@ -116,9 +116,11 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    while (CanvasGLFW::getWindowCount()>0)
-    {
+
+    while (CanvasGLFW::getWindowCount()>0) {
         glfwWaitEvents();
+        //glfwPollEvents();
+        inviwoApp.processFront();
     }
 
     inviwoApp.deinitialize();

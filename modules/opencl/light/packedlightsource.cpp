@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,34 +27,39 @@
  *
  *********************************************************************************/
 
-#ifndef IVW_PORTFACTORY_H
-#define IVW_PORTFACTORY_H
-
-#include <inviwo/core/common/inviwocoredefine.h>
-#include <inviwo/core/common/inviwo.h>
-#include <inviwo/core/ports/portfactoryobject.h>
-#include <inviwo/core/util/singleton.h>
+#include "packedlightsource.h"
 
 namespace inviwo {
 
-class IVW_CORE_API PortFactory : public Factory<Port>, public Singleton<PortFactory> {
-public:
-    using Map = std::unordered_map<std::string, PortFactoryObject*>;
-    PortFactory() = default;
-    virtual ~PortFactory() = default;
+PackedLightSource baseLightToPackedLight(const LightSource* lightsource, float radianceScale) {
+    PackedLightSource light;
+    light.tm = lightsource->getCoordinateTransformer().getModelToWorldMatrix();
+    light.radiance = vec4(radianceScale * lightsource->getIntensity(), 1.f);
+    light.type = lightsource->getLightSourceType();
+    light.area = lightsource->getArea();
+    light.cosFOV = std::cos(glm::radians(lightsource->getFieldOfView() / 2.f));
+    light.size = lightsource->getSize();
+    return light;
+}
 
-    virtual bool registerObject(PortFactoryObject* property);
 
-    virtual std::unique_ptr<Port> create(const std::string& className) const override;
-    virtual std::unique_ptr<Port> create(const std::string& className,
-                                         const std::string& identifier) const;
-    virtual bool hasKey(const std::string& className) const override;
-    virtual std::vector<std::string> getKeys() const;
+PackedLightSource baseLightToPackedLight(const LightSource* lightsource, float radianceScale,
+    const mat4& transformLightMat) {
+    PackedLightSource light;
+    light.tm = transformLightMat * lightsource->getCoordinateTransformer().getModelToWorldMatrix();
+    light.radiance = vec4(radianceScale * lightsource->getIntensity(), 1.f);
+    light.type = lightsource->getLightSourceType();
+    light.area = lightsource->getArea();
+    light.cosFOV = std::cos(glm::radians(lightsource->getFieldOfView() / 2.f));
+    // Transform width and height.
+    mat4 invTransform = glm::inverse(light.tm);
+    vec4 transformedWidth = invTransform*vec4(lightsource->getSize().x, 0.f, 0.f, 0.f);
+    vec4 transformedHeight = invTransform*vec4(0.f, lightsource->getSize().y, 0.f, 0.f);
+    light.size.x = glm::length((transformedWidth).xyz());
+    light.size.y = glm::length((transformedHeight).xyz());
 
-protected:
-    Map map_;
-};
+    return light;
+}
 
-}  // namespace
+} // namespace
 
-#endif  // IVW_PORTFACTORY_H

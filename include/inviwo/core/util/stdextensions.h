@@ -37,6 +37,7 @@
 #include <algorithm>
 #include <functional>
 #include <vector>
+#include <type_traits>
 
 namespace inviwo {
 
@@ -52,6 +53,21 @@ typename std::enable_if<std::is_array<T>::value, std::unique_ptr<T> >::type make
     std::size_t n) {
     typedef typename std::remove_extent<T>::type RT;
     return std::unique_ptr<T>(new RT[n]());
+}
+
+template <typename Derived, typename Base, typename Del>
+std::unique_ptr<Derived, Del> static_unique_ptr_cast(std::unique_ptr<Base, Del>&& p) {
+    auto d = static_cast<Derived*>(p.release());
+    return std::unique_ptr<Derived, Del>(d, std::move(p.get_deleter()));
+}
+
+template <typename Derived, typename Base, typename Del>
+std::unique_ptr<Derived, Del> dynamic_unique_ptr_cast(std::unique_ptr<Base, Del>&& p) {
+    if (Derived* result = dynamic_cast<Derived*>(p.get())) {
+        p.release();
+        return std::unique_ptr<Derived, Del>(result, std::move(p.get_deleter()));
+    }
+    return std::unique_ptr<Derived, Del>(nullptr, p.get_deleter());
 }
 
 // type trait to check if T is derived from std::basic_string
@@ -102,6 +118,58 @@ bool contains(T& cont, const V& elem) {
     using std::begin;
     using std::end;
     return std::find(begin(cont), end(cont), elem) != end(cont);
+}
+
+template <typename T, typename V>
+auto find_or_null(T& cont, const V& elem) -> typename T::value_type {
+    using std::begin;
+    using std::end;
+
+    auto it = std::find(begin(cont), end(cont), elem);
+    if (it != end(cont)) {
+        return *it;
+    } else {
+        return nullptr;
+    }
+}
+
+template <typename T, typename V, typename Callable>
+auto find_or_null(T& cont, const V& elem, Callable f) ->  typename T::value_type {
+    using std::begin;
+    using std::end;
+
+    auto it = std::find(begin(cont), end(cont), elem);
+    if (it != end(cont)) {
+        return f(*it);
+    } else {
+        return nullptr;
+    }
+}
+
+template <typename T>
+bool has_key(T& map, const typename T::key_type& key) {
+    return map.find(key) != map.end();
+}
+template <typename T>
+bool insert_unique(T& map, const typename T::key_type& key, typename T::mapped_type& value) {
+    auto it = map.find(key);
+    if (it == map.end()) {
+        map.insert(it, std::make_pair(key, value));
+        return true;
+    } else {
+        return false;
+    };
+}
+
+template <typename T, typename V, typename Callable>
+auto map_find_or_null(T& cont, const V& elem, Callable f)
+    -> typename std::result_of<Callable(typename T::mapped_type)>::type {
+    auto it = cont.find(elem);
+    if (it != end(cont)) {
+        return f(it->second);
+    } else {
+        return nullptr;
+    }
 }
 
 template <typename T, typename UnaryPredicate>

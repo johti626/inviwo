@@ -32,9 +32,8 @@
 namespace inviwo {
 
 Timer::Timer(duration_t interval, std::function<void()> callback)
-    : callback_{std::make_shared<std::function<void()>>(std::move(callback))}
-    , interval_{interval}
-    , enabled_{false} {}
+    : callback_{std::make_shared<Callback>(std::move(callback))}
+    , interval_{interval} {}
 
 Timer::Timer(size_t interval, std::function<void()> callback)
     : Timer(std::chrono::milliseconds(interval), std::move(callback)) {}
@@ -52,40 +51,54 @@ void Timer::start(duration_t interval) {
 }
 
 void Timer::start() {
-    if (!enabled_) {
-        enabled_ = true;
+    if (!callback_->enabled) {
+        callback_->enabled = true;
         thread_ = std::thread(&Timer::timer, this);
     }
 }
 
+void Timer::setInterval(size_t interval) {
+    setInterval(std::chrono::milliseconds(interval));
+}
+
+void Timer::setInterval(duration_t interval) {
+    std::lock_guard<std::mutex> lock{callback_->mutex};
+    interval_ = interval;
+}
+
+Timer::duration_t Timer::getInterval() const {
+    std::lock_guard<std::mutex> lock{callback_->mutex};
+    return interval_;
+}
+
 void Timer::stop() {
-    if (enabled_) {
+    if (callback_->enabled) {
         {
-            std::lock_guard<std::mutex> _{mutex_};
-            enabled_ = false;
+            std::unique_lock<std::mutex> l(callback_->mutex);
+            callback_->enabled = false;
         }
-        cvar_.notify_one();
+        callback_->cvar.notify_one();
         thread_.join();
-        // FIXME: Temporary solution for ticket #927
-        // Flush the cue so that callbacks in the cue are not called after stop() has been called.
-        // A better solution would be to remove cued callbacks.
-        InviwoApplication::getPtr()->processFront();
     }
 }
 
 void Timer::timer() {
     auto deadline = std::chrono::steady_clock::now() + interval_;
-    std::unique_lock<std::mutex> lock{mutex_};
-    while (enabled_) {
-        if (cvar_.wait_until(lock, deadline) == std::cv_status::timeout) {
+    std::unique_lock<std::mutex> lock{callback_->mutex};
+    
+    while (callback_->enabled) {
+        if (callback_->cvar.wait_until(lock, deadline) == std::cv_status::timeout) {
             lock.unlock();
-
             // skip if previous not done.
             if (!result_.valid() ||
                 result_.wait_for(std::chrono::duration<int, std::milli>(0)) ==
                     std::future_status::ready) {
                 auto tmp = callback_;
-                result_ = dispatchFront([tmp]() { (*tmp)(); });
+                result_ = dispatchFront([tmp]() { 
+                    std::unique_lock<std::mutex> l(tmp->mutex, std::try_to_lock);
+                    if (l && tmp->enabled) (tmp->callback)();                     
+                }
+                );
             }
             deadline += interval_;
             lock.lock();
