@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,34 +24,30 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#include <modules/python3/pythonincluder.h>
+#ifndef IVW_OPENCLFORMATEXCEPTION_H
+#define IVW_OPENCLFORMATEXCEPTION_H
 
-#include <modules/python3/python3module.h>
-#include <modules/python3/pyinviwo.h>
-#include <modules/python3/pythonexecutionoutputobservable.h>
+#include <modules/opencl/openclmoduledefine.h>
+#include <inviwo/core/util/exception.h>
 
 namespace inviwo {
 
-Python3Module::Python3Module() : InviwoModule() , pyInviwo_(nullptr){
-    setIdentifier("Python3");
-    PythonExecutionOutputObservable::init();
-}
-
-Python3Module::~Python3Module() {
-    pyInviwo_ = nullptr; //issue destruction before PythonExecutionOutputObservable
-    PythonExecutionOutputObservable::deleteInstance();
-}
-
-void Python3Module::initialize() {
-    InviwoModule::initialize();
-    pyInviwo_ = util::make_unique<PyInviwo>();
-}
-
-void Python3Module::deinitialize() {
-    InviwoModule::deinitialize();
-}
+/**
+ * \class OpenCLFormatException
+ *
+ * \brief Exception thrown when a data format is not supported by OpenCL
+ *
+ */
+class IVW_MODULE_OPENCL_API OpenCLFormatException : public Exception {
+public:
+    OpenCLFormatException(const std::string& message = "", ExceptionContext context = ExceptionContext());
+    virtual ~OpenCLFormatException() throw() {};
+};
 
 } // namespace
+
+#endif // IVW_OPENCLFORMATEXCEPTION_H
+

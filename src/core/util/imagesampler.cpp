@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,34 +24,36 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#include <modules/python3/pythonincluder.h>
+#include <inviwo/core/util/imagesampler.h>
 
-#include <modules/python3/python3module.h>
-#include <modules/python3/pyinviwo.h>
-#include <modules/python3/pythonexecutionoutputobservable.h>
+#include <inviwo/core/util/interpolation.h>
 
 namespace inviwo {
 
-Python3Module::Python3Module() : InviwoModule() , pyInviwo_(nullptr){
-    setIdentifier("Python3");
-    PythonExecutionOutputObservable::init();
+ImageSampler::ImageSampler(const LayerRAM *ram) : layer_(ram), dims_(layer_->getDimensions()) {}
+
+ImageSampler::ImageSampler(const Layer *layer)
+    : ImageSampler(layer->getRepresentation<LayerRAM>()) {}
+
+ImageSampler::ImageSampler(const Image *img) : ImageSampler(img->getColorLayer()) {}
+
+ImageSampler::~ImageSampler() {}
+
+inviwo::dvec4 ImageSampler::sample(const dvec2 &pos) const {
+    dvec2 samplePos = pos * dvec2(dims_-size2_t(1));
+    size2_t indexPos = size2_t(samplePos);
+    dvec2 interpolants = samplePos - dvec2(indexPos);
+
+    dvec4 samples[4];
+    samples[0] = layer_->getValueAsVec4Double(indexPos);
+    samples[1] = layer_->getValueAsVec4Double(indexPos + size2_t(1, 0));
+    samples[2] = layer_->getValueAsVec4Double(indexPos + size2_t(0, 1));
+    samples[3] = layer_->getValueAsVec4Double(indexPos + size2_t(1, 1));
+
+    return Interpolation::bilinear(samples, interpolants);
 }
 
-Python3Module::~Python3Module() {
-    pyInviwo_ = nullptr; //issue destruction before PythonExecutionOutputObservable
-    PythonExecutionOutputObservable::deleteInstance();
-}
-
-void Python3Module::initialize() {
-    InviwoModule::initialize();
-    pyInviwo_ = util::make_unique<PyInviwo>();
-}
-
-void Python3Module::deinitialize() {
-    InviwoModule::deinitialize();
-}
-
-} // namespace
+}  // namespace

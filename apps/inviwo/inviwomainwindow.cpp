@@ -128,13 +128,13 @@ void InviwoMainWindow::initialize() {
 
     auto app = InviwoApplication::getPtr();
 
-    QString firstWorkspace = app->getPath(InviwoApplication::PATH_WORKSPACES, "boron.inv").c_str();
+    QString firstWorkspace = app->getPath(InviwoApplication::PATH_WORKSPACES, "/boron.inv").c_str();
     workspaceOnLastSuccessfulExit_ = settings.value("workspaceOnLastSuccessfulExit",
                                                     QVariant::fromValue(firstWorkspace)).toString();
     settings.setValue("workspaceOnLastSuccessfulExit", "");
     settings.endGroup();
     rootDir_ = QString::fromStdString(app->getPath(InviwoApplication::PATH_DATA));
-    workspaceFileDir_ = rootDir_ + "workspaces/";
+    workspaceFileDir_ = rootDir_ + "/workspaces";
     settingsWidget_->updateSettingsWidget();
 
     // initialize menus
@@ -470,7 +470,7 @@ void InviwoMainWindow::fillExampleWorkspaceMenu() {
         if (filesystem::getFileExtension(item) == "inv") {
             QString filename(QString::fromStdString(item));
             QAction *action = exampleWorkspaceMenu_->addAction(filename);
-            QString path(QString("%1%2").arg(QString::fromStdString(workspacePath)).arg(filename));
+            QString path(QString("%1/%2").arg(QString::fromStdString(workspacePath)).arg(filename));
             action->setData(path);
 
             QObject::connect(action, SIGNAL(triggered()), this, SLOT(openExampleWorkspace()));
@@ -484,7 +484,7 @@ void InviwoMainWindow::fillTestWorkspaceMenu() {
 
     // add default workspace path
     auto app = InviwoApplication::getPtr();
-    std::string coreWorkspacePath = app->getPath(InviwoApplication::PATH_WORKSPACES) + "tests";
+    std::string coreWorkspacePath = app->getPath(InviwoApplication::PATH_WORKSPACES) + "/tests";
     if (filesystem::directoryExists(coreWorkspacePath)) {
         // check whether path contains at least one workspace
         bool workspaceExists = false;

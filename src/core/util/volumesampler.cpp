@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,34 +24,37 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#include <modules/python3/pythonincluder.h>
-
-#include <modules/python3/python3module.h>
-#include <modules/python3/pyinviwo.h>
-#include <modules/python3/pythonexecutionoutputobservable.h>
+#include <inviwo/core/util/volumesampler.h>
 
 namespace inviwo {
 
-Python3Module::Python3Module() : InviwoModule() , pyInviwo_(nullptr){
-    setIdentifier("Python3");
-    PythonExecutionOutputObservable::init();
+VolumeSampler::VolumeSampler(const VolumeRAM *ram) : vol_(ram), dims_(ram->getDimensions()) {}
+
+VolumeSampler::VolumeSampler(const Volume *vol)
+    : VolumeSampler(vol->getRepresentation<VolumeRAM>()) {}
+
+VolumeSampler::~VolumeSampler() {}
+
+inviwo::dvec4 VolumeSampler::sample(const dvec3 &pos) const {
+    dvec3 samplePos = pos * dvec3(dims_-size3_t(1));
+    size3_t indexPos = size3_t(samplePos);
+    dvec3 interpolants = samplePos - dvec3(indexPos);
+
+    dvec4 samples[8];
+    samples[0] = vol_->getValueAsVec4Double(indexPos);
+    samples[1] = vol_->getValueAsVec4Double(indexPos + size3_t(1, 0, 0));
+    samples[2] = vol_->getValueAsVec4Double(indexPos + size3_t(0, 1, 0));
+    samples[3] = vol_->getValueAsVec4Double(indexPos + size3_t(1, 1, 0));
+
+    samples[4] = vol_->getValueAsVec4Double(indexPos + size3_t(0, 0, 1));
+    samples[5] = vol_->getValueAsVec4Double(indexPos + size3_t(1, 0, 1));
+    samples[6] = vol_->getValueAsVec4Double(indexPos + size3_t(0, 1, 1));
+    samples[7] = vol_->getValueAsVec4Double(indexPos + size3_t(1, 1, 1));
+
+    return Interpolation::trilinear(samples, interpolants);
 }
 
-Python3Module::~Python3Module() {
-    pyInviwo_ = nullptr; //issue destruction before PythonExecutionOutputObservable
-    PythonExecutionOutputObservable::deleteInstance();
-}
-
-void Python3Module::initialize() {
-    InviwoModule::initialize();
-    pyInviwo_ = util::make_unique<PyInviwo>();
-}
-
-void Python3Module::deinitialize() {
-    InviwoModule::deinitialize();
-}
-
-} // namespace
+}  // namespace

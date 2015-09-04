@@ -30,6 +30,7 @@ set(HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/kernelowner.h
     ${CMAKE_CURRENT_SOURCE_DIR}/light/packedlightsource.h
     ${CMAKE_CURRENT_SOURCE_DIR}/openclcapabilities.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/openclformatexception.h
     ${CMAKE_CURRENT_SOURCE_DIR}/openclmodule.h
     ${CMAKE_CURRENT_SOURCE_DIR}/settings/openclsettings.h
     ${CMAKE_CURRENT_SOURCE_DIR}/syncclgl.h
@@ -70,6 +71,7 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/kernelowner.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/light/packedlightsource.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/openclcapabilities.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/openclformatexception.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/openclmodule.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/settings/openclsettings.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/syncclgl.cpp
@@ -101,6 +103,7 @@ set(SHADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/cl/shading/shadingmath.cl
     ${CMAKE_CURRENT_SOURCE_DIR}/cl/shading/wardbrdf.cl
     ${CMAKE_CURRENT_SOURCE_DIR}/cl/gradients.cl
+	${CMAKE_CURRENT_SOURCE_DIR}/cl/image3d_write.cl
     ${CMAKE_CURRENT_SOURCE_DIR}/cl/img_resize.cl
     ${CMAKE_CURRENT_SOURCE_DIR}/cl/samplers.cl
     ${CMAKE_CURRENT_SOURCE_DIR}/cl/transformations.cl

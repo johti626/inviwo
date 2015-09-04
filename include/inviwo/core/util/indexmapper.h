@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,34 +24,40 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#include <modules/python3/pythonincluder.h>
+#ifndef IVW_INDEXMAPPER_H
+#define IVW_INDEXMAPPER_H
 
-#include <modules/python3/python3module.h>
-#include <modules/python3/pyinviwo.h>
-#include <modules/python3/pythonexecutionoutputobservable.h>
+#include <inviwo/core/common/inviwocoredefine.h>
+#include <inviwo/core/common/inviwo.h>
+#include <inviwo/core/util/glm.h>
 
 namespace inviwo {
+    namespace util {
+        /**
+         * \class IndexMapper
+         *
+         * \brief VERY_BRIEFLY_DESCRIBE_THE_CLASS
+         *
+         * DESCRIBE_THE_CLASS
+         */
+        struct IndexMapper {
+            inline IndexMapper(const size3_t &dim) : dimx(dim.x), dimxy(dim.x * dim.y) {};
+            inline size_t operator() (size_t x, size_t y, size_t z) {
+                return x + y * dimx + z * dimxy;
+            }
+            inline size_t operator() (long long x, long long y, long long z) {
+                return static_cast<size_t>(x + y * dimx + z * dimxy);
+            }
+            inline size_t operator() (const size3_t &pos) { return pos.x + pos.y * dimx + pos.z * dimxy; }
 
-Python3Module::Python3Module() : InviwoModule() , pyInviwo_(nullptr){
-    setIdentifier("Python3");
-    PythonExecutionOutputObservable::init();
-}
+        private:
+            const size_t dimx;
+            const size_t dimxy;
+        };
+    } //namespace util
+}  // namespace
 
-Python3Module::~Python3Module() {
-    pyInviwo_ = nullptr; //issue destruction before PythonExecutionOutputObservable
-    PythonExecutionOutputObservable::deleteInstance();
-}
-
-void Python3Module::initialize() {
-    InviwoModule::initialize();
-    pyInviwo_ = util::make_unique<PyInviwo>();
-}
-
-void Python3Module::deinitialize() {
-    InviwoModule::deinitialize();
-}
-
-} // namespace
+#endif  // IVW_INDEXMAPPER_H

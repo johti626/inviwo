@@ -29,33 +29,44 @@
 
 #pragma warning(disable: 4251)
 #include <inviwo/core/io/serialization/ivwdeserializer.h>
-#include <inviwo/core/util/factory.h>
-#include <inviwo/core/processors/processorfactory.h>
 #include <inviwo/core/io/serialization/ivwserializable.h>
-#include <inviwo/core/util/exception.h>
 #include <inviwo/core/io/serialization/versionconverter.h>
+#include <inviwo/core/util/exception.h>
 
 namespace inviwo {
 
 IvwDeserializer::IvwDeserializer(IvwDeserializer& s, bool allowReference)
     : IvwSerializeBase(s.getFileName(), allowReference) {
-    doc_.LoadFile();
-    rootElement_ = doc_.FirstChildElement();
-    storeReferences(rootElement_);
+    try {
+        doc_.LoadFile();
+        rootElement_ = doc_.FirstChildElement();
+        storeReferences(rootElement_);
+    } catch (TxException& e) {
+        throw AbortException(e.what(), IvwContext);
+    }
 }
 
 IvwDeserializer::IvwDeserializer(std::string fileName, bool allowReference)
     : IvwSerializeBase(fileName, allowReference) {
-    doc_.LoadFile();
-    rootElement_ = doc_.FirstChildElement();
-    storeReferences(rootElement_);
+    try {
+        doc_.LoadFile();
+        rootElement_ = doc_.FirstChildElement();
+        storeReferences(rootElement_);
+    } catch (TxException& e) {
+        throw AbortException(e.what(), IvwContext);
+    }
 }
 
 IvwDeserializer::IvwDeserializer(std::istream& stream, const std::string& path, bool allowReference)
     : IvwSerializeBase(stream, path, allowReference) {
-    // Base streamed in the xml data. Get the first node.
-    rootElement_ = doc_.FirstChildElement();
-    storeReferences(rootElement_);
+    try {
+        // Base streamed in the xml data. Get the first node.
+        rootElement_ = doc_.FirstChildElement();
+        storeReferences(rootElement_);
+
+    } catch (TxException& e) {
+        throw AbortException(e.what(), IvwContext);
+    }
 }
 
 IvwDeserializer::~IvwDeserializer() {}
