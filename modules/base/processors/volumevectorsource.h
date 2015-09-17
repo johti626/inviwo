@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,70 +27,66 @@
  * 
  *********************************************************************************/
 
-#ifndef IVW_VOLUMECOMBINER_H
-#define IVW_VOLUMECOMBINER_H
+#ifndef IVW_VOLUMEVECTORSOURCE_H
+#define IVW_VOLUMEVECTORSOURCE_H
 
-#include <modules/basegl/baseglmoduledefine.h>
+#include <modules/base/basemoduledefine.h>
+#include <modules/base/properties/basisproperty.h>
+#include <modules/base/properties/volumeinformationproperty.h>
 #include <inviwo/core/common/inviwo.h>
-#include <inviwo/core/properties/ordinalproperty.h>
-#include <inviwo/core/properties/stringproperty.h>
-#include <inviwo/core/properties/compositeproperty.h>
 #include <inviwo/core/processors/processor.h>
+#include <inviwo/core/properties/fileproperty.h>
+#include <inviwo/core/properties/buttonproperty.h>
 #include <inviwo/core/ports/volumeport.h>
-#include <modules/opengl/shader/shader.h>
-#include <modules/opengl/buffer/framebufferobject.h>
 
 namespace inviwo {
 
-/** \docpage{org.inviwo.VolumeCombiner, Volume Combiner}
-* Combines two volumes into a single volume. Resolution and data type of the 
-* result match the one of input volume A. The input volumes can be scaled individually.
-* ![](org.inviwo.VolumeCombiner.png?classIdentifier=org.inviwo.VolumeCombiner)
-*
-* ### Inports
-*   * __VolumeInport__ Input volume A.
-*   * __VolumeInport__ Input volume B.
-*
-* ### Outports
-*   * __VolumeOutport__ The output volume. Dimension and data type match input volume A. 
-*                       <tt>combine(a,b) = a * volScale1 + b * volScale2</tt>
-* 
-*
-* ### Properties
-*   * __Volume 1 Scaling__ Scaling factor for volume 1.
-*   * __Volume 2 Scaling__ Scaling factor for volume 2.
-*/
+/** \docpage{org.inviwo.VolumeVectorSource, Volume Vector Source}
+ * ![](org.inviwo.VolumeVectorSource.png?classIdentifier=org.inviwo.VolumeVectorSource)
+ * Explanation of how to use the processor.
+ *
+ * Loads a vector of volumes
+ *
+ * ### Outports
+ *   * __Outport__ The loaded volumes
+ *
+ * ### Properties
+ *   * __File name__ File to load.
+ */
 
-/*! \class VolumeCombiner
-*
-* \brief Combines two volumes.
-*/
-class IVW_MODULE_BASEGL_API VolumeCombiner : public Processor { 
+
+/**
+ * \class VolumeVectorSource
+ * \brief Loads a vector of volumes
+ */
+class IVW_MODULE_BASE_API VolumeVectorSource : public Processor { 
 public:
+    using VolumeVector = std::vector<std::shared_ptr<Volume>>;
+
     InviwoProcessorInfo();
-    
-    VolumeCombiner();
-    virtual ~VolumeCombiner() = default;
-
-
+    VolumeVectorSource();
+    virtual ~VolumeVectorSource() = default;
+     
+    virtual void deserialize(IvwDeserializer& d) override;
     virtual void process() override;
-    virtual void initialize() override;
-    virtual bool isReady() const override;
 
 private:
-    void buildEquation();
+    void load(bool deserialize = false);
+    void addFileNameFilters();
 
-    DataInport<Volume, 0> inport_;
-    VolumeOutport outport_;
-    std::shared_ptr<Volume> volume_;
-    StringProperty eqn_;
-    CompositeProperty scales_;
+    std::shared_ptr<VolumeVector> volumes_;
 
-    Shader shader_;
-    FrameBufferObject fbo_;
-    bool validEquation_;
+    DataOutport<VolumeVector> outport_;
+    FileProperty file_;
+    ButtonProperty reload_;
+
+    BasisProperty basis_;
+    VolumeInformationProperty information_;
+
+    bool isDeserializing_;
 };
 
 } // namespace
 
-#endif // IVW_VOLUMECOMBINER_H
+#endif // IVW_VOLUMEVECTORSOURCE_H
+

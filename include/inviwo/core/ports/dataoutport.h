@@ -33,7 +33,6 @@
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/datastructures/data.h>
-#include <inviwo/core/datastructures/datasequence.h>
 #include <inviwo/core/ports/outport.h>
 #include <inviwo/core/ports/outportiterable.h>
 #include <inviwo/core/util/introspection.h>
@@ -49,72 +48,33 @@ public:
     virtual uvec3 getColorCode() const override;
     virtual std::string getClassIdentifier() const override;
 
-    virtual T* getData();
-    virtual DataSequence<T>* getDataSequence();
+    virtual std::shared_ptr<const T> getData() const;
+    // Return data and release ownership. Data in the port will be nullptr after call.
+    virtual std::shared_ptr<const T> detachData();
 
-    virtual const T* getConstData() const;
-    virtual const DataSequence<T>* getConstDataSequence() const;
-
-    virtual void setData(T* data, bool ownsData = true);
-    virtual void setConstData(const T* data);
-
-    /**
-     * Return data and release ownership. Data in the port will be nullptr after call.
-     */
-    virtual T* detachData();
+    virtual void setData(std::shared_ptr<const T> data);
+    virtual void setData(const T* data); // will assume ownership of data.
 
     /**
      * An outport is ready if it has data and is valid.
      */
     virtual bool isReady() const override;
     bool hasData() const;
-    bool hasDataSequence() const;
 
-    bool isDataOwner() const;
     virtual std::string getContentInfo() const;
 
 protected:
-    T* data_;
-    bool ownsData_;
-    bool isSequence_;
+    std::shared_ptr<const T> data_;
 };
-
-
-namespace detail {
-
-template <typename T, typename std::enable_if<!std::is_polymorphic<T>::value, int>::type = 0>
-bool isDataSequence(T* data) {
-    return false;
-};
-template <typename T, typename std::enable_if<std::is_polymorphic<T>::value, int>::type = 0>
-bool isDataSequence(T* data) {
-    return dynamic_cast<DataSequence<T>*>(data) != nullptr;
-};
-
-template <typename T, typename std::enable_if<!std::is_polymorphic<T>::value, int>::type = 0>
-DataSequence<T>* getDataSequence(T* data) {
-    return nullptr;
-};
-template <typename T, typename std::enable_if<std::is_polymorphic<T>::value, int>::type = 0>
-DataSequence<T>* getDataSequence(T* data) {
-    return dynamic_cast<DataSequence<T>*>(data);
-};
-
-}
-
 
 template <typename T>
 DataOutport<T>::DataOutport(std::string identifier)
     : Outport(identifier)
     , OutportIterableImpl<T>(this)
-    , data_(nullptr)
-    , ownsData_(true)
-    , isSequence_(false) {}
+    , data_() {}
 
 template <typename T>
-DataOutport<T>::~DataOutport() {
-    if (ownsData_ && data_) delete data_;
-}
+DataOutport<T>::~DataOutport() {}
 
 template <typename T>
 std::string inviwo::DataOutport<T>::getClassIdentifier() const {
@@ -127,76 +87,30 @@ uvec3 inviwo::DataOutport<T>::getColorCode() const {
 }
 
 template <typename T>
-T* DataOutport<T>::getData() {
-    ivwAssert(ownsData_, "Port does not own data, so can not return writable data.");
-
-    if (isSequence_)
-        return detail::getDataSequence<T>(data_)->getCurrent();
-    else
-        return data_;
+std::shared_ptr<const T> DataOutport<T>::getData() const {
+    return data_;
 }
 
 template <typename T>
-DataSequence<T>* DataOutport<T>::getDataSequence() {
-    ivwAssert(ownsData_, "Port does not own data, so can not return writable data.");
-
-    if (isSequence_)
-        return detail::getDataSequence<T>(data_);
-    else
-        return nullptr;
+void DataOutport<T>::setData(std::shared_ptr<const T> data) {
+    data_ = data;
 }
 
 template <typename T>
-const T* DataOutport<T>::getConstData() const {
-    if (isSequence_)
-        return const_cast<const T*>(detail::getDataSequence<T>(data_)->getCurrent());
-    else
-        return const_cast<const T*>(data_);
+void DataOutport<T>::setData(const T* data) {
+    data_.reset(data);
 }
 
 template <typename T>
-const DataSequence<T>* DataOutport<T>::getConstDataSequence() const {
-    if (isSequence_)
-        return const_cast<const DataSequence<T>*>(detail::getDataSequence<T>(data_));
-    else
-        return nullptr;
-}
-
-template <typename T>
-void DataOutport<T>::setData(T* data, bool ownsData) {
-    if (ownsData_ && data_ && data_ != data) {
-        delete data_;  // Delete old data
-    }
-    
-    isSequence_ = detail::isDataSequence<T>(data);
-    ownsData_ = ownsData;
-    data_ = data;  // Add reference to new data
-}
-
-template <typename T>
-void DataOutport<T>::setConstData(const T* data) {
-    setData(const_cast<T*>(data), false);
-}
-
-template <typename T>
-T* DataOutport<T>::detachData() {
-    if (ownsData_) {
-        ownsData_ = false;
-        T* data = nullptr;
-        std::swap(data, data_);
-        return data;
-    }
-    return nullptr;
+std::shared_ptr<const T> DataOutport<T>::detachData() {
+    std::shared_ptr<const T> data(data_);
+    data_.reset();
+    return data;
 }
 
 template <typename T>
 bool DataOutport<T>::hasData() const {
-    return (data_ != nullptr);
-}
-
-template <typename T>
-bool DataOutport<T>::hasDataSequence() const {
-    return (hasData() && isSequence_);
+    return data_.get() != nullptr;
 }
 
 template <typename T>
@@ -205,24 +119,16 @@ bool DataOutport<T>::isReady() const {
 }
 
 template <typename T>
-bool DataOutport<T>::isDataOwner() const {
-    return ownsData_;
-}
-
-template <typename T>
 std::string DataOutport<T>::getContentInfo() const {
-    if (hasDataSequence()) {
-        auto seq = static_cast<const DataSequence<T>*>(detail::getDataSequence<T>(data_));
-        return seq->getDataInfo();
-    } else if (hasData()) {
-        std::string info = port_traits<T>::data_info(data_);
+    if (hasData()) {
+        std::string info = port_traits<T>::data_info(data_.get());
         if (!info.empty()) {
             return info;
         } else {
             return "No information available for: " + util::class_identifier<T>();
         }
     } else {
-        return "Port has no data";
+        return port_traits<T>::class_identifier() + "Outport has no data";
     }
 }
 

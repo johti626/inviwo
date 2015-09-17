@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,27 +24,46 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#include "vectormagnitudeprocessor.h"
+#ifndef IVW_VOLUMEINFORMATIONPROPERTY_H
+#define IVW_VOLUMEINFORMATIONPROPERTY_H
+
+#include <modules/base/basemoduledefine.h>
+#include <inviwo/core/common/inviwo.h>
+#include <inviwo/core/properties/compositeproperty.h>
+#include <inviwo/core/properties/ordinalproperty.h>
+#include <inviwo/core/datastructures/volume/volume.h>
+#include <inviwo/core/properties/stringproperty.h>
+#include <inviwo/core/properties/minmaxproperty.h>
 
 namespace inviwo {
-ProcessorClassIdentifier(VectorMagnitudeProcessor, "org.inviwo.VectorMagnitude");
-ProcessorDisplayName(VectorMagnitudeProcessor, "Vector Magnitude");
-ProcessorTags(VectorMagnitudeProcessor, Tags::GL);
-ProcessorCategory(VectorMagnitudeProcessor, "Volume Operation");
-ProcessorCodeState(VectorMagnitudeProcessor, CODE_STATE_STABLE);
 
-VectorMagnitudeProcessor::VectorMagnitudeProcessor()
-    : VolumeGLProcessor("vectormagnitudeprocessor.frag") {
-    this->dataFormat_ = DataFLOAT32::get();
-}
+class IVW_MODULE_BASE_API VolumeInformationProperty : public CompositeProperty {
+public:
+    InviwoPropertyInfo();
+    VolumeInformationProperty(std::string identifier, std::string displayName,
+                              InvalidationLevel invalidationLevel = INVALID_RESOURCES,
+                              PropertySemantics semantics = PropertySemantics::Default);
+    VolumeInformationProperty(const VolumeInformationProperty& rhs);
+    VolumeInformationProperty& operator=(const VolumeInformationProperty& that);
+    virtual VolumeInformationProperty* clone() const override;
+    virtual ~VolumeInformationProperty() = default;
 
-VectorMagnitudeProcessor::~VectorMagnitudeProcessor() {}
+    void updateForNewVolume(const Volume& volume, bool deserialize = false);
+    void updateVolume(Volume& volume);
 
-void VectorMagnitudeProcessor::postProcess() {
-    volume_->dataMap_.dataRange = dvec2(0, 1);
-}
+    // Read only used to show information
+    StringProperty dimensions_;
+    StringProperty format_;
+
+    // read / write
+    DoubleMinMaxProperty dataRange_;
+    DoubleMinMaxProperty valueRange_;
+    StringProperty valueUnit_;
+};
 
 }  // namespace
+
+#endif  // IVW_VOLUMEINFORMATIONPROPERTY_H

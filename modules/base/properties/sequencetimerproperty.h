@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,27 +24,45 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#include "vectormagnitudeprocessor.h"
+#ifndef IVW_SEQUENCETIMERPROPERTY_H
+#define IVW_SEQUENCETIMERPROPERTY_H
+
+#include <modules/base/basemoduledefine.h>
+#include <inviwo/core/common/inviwo.h>
+#include <inviwo/core/util/timer.h>
+#include <inviwo/core/properties/boolproperty.h>
+#include <inviwo/core/properties/compositeproperty.h>
+#include <inviwo/core/properties/ordinalproperty.h>
 
 namespace inviwo {
-ProcessorClassIdentifier(VectorMagnitudeProcessor, "org.inviwo.VectorMagnitude");
-ProcessorDisplayName(VectorMagnitudeProcessor, "Vector Magnitude");
-ProcessorTags(VectorMagnitudeProcessor, Tags::GL);
-ProcessorCategory(VectorMagnitudeProcessor, "Volume Operation");
-ProcessorCodeState(VectorMagnitudeProcessor, CODE_STATE_STABLE);
 
-VectorMagnitudeProcessor::VectorMagnitudeProcessor()
-    : VolumeGLProcessor("vectormagnitudeprocessor.frag") {
-    this->dataFormat_ = DataFLOAT32::get();
-}
+class IVW_MODULE_BASE_API SequenceTimerProperty : public CompositeProperty {
+public:
+    InviwoPropertyInfo();
 
-VectorMagnitudeProcessor::~VectorMagnitudeProcessor() {}
+    SequenceTimerProperty(std::string identifier, std::string displayName,
+                          InvalidationLevel invalidationLevel = INVALID_RESOURCES,
+                          PropertySemantics semantics = PropertySemantics::Default);
+    SequenceTimerProperty(const SequenceTimerProperty& rhs);
+    SequenceTimerProperty& operator=(const SequenceTimerProperty& that);
+    virtual SequenceTimerProperty* clone() const override;
+    virtual ~SequenceTimerProperty() = default;
 
-void VectorMagnitudeProcessor::postProcess() {
-    volume_->dataMap_.dataRange = dvec2(0, 1);
-}
+    void updateMax(size_t max);
+
+    IntProperty index_;
+    BoolProperty play_;
+    IntProperty framesPerSecond_;
+    Timer timer_;
+
+private:
+    void onTimerEvent();
+    void onPlaySequenceToggled();
+};
 
 }  // namespace
+
+#endif  // IVW_SEQUENCETIMERPROPERTY_H
