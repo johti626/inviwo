@@ -144,10 +144,9 @@ void MeshRenderProcessorGL::addCommonShaderDefines(Shader& shader) {
     utilgl::addShaderDefines(shader, lightingProperty_);
     int layerID = 0;
 
-    if (overrideColorBuffer_.get()){
+    if (overrideColorBuffer_.get()) {
         shader.getFragmentShaderObject()->addShaderDefine("OVERRIDE_COLOR_BUFFER");
-    }
-    else{
+    } else {
         shader.getFragmentShaderObject()->removeShaderDefine("OVERRIDE_COLOR_BUFFER");
     }
 
@@ -182,8 +181,10 @@ void MeshRenderProcessorGL::addCommonShaderDefines(Shader& shader) {
         shader.getFragmentShaderObject()->removeShaderDefine("VIEW_NORMALS_LAYER");
     }
 
-    for (std::size_t i = outport_.getData()->getNumberOfColorLayers(); i < static_cast<std::size_t>(layerID); i++) {
-        outport_.getEditableData()->addColorLayer(outport_.getData()->getColorLayer(0)->clone());
+    for (std::size_t i = outport_.getData()->getNumberOfColorLayers();
+         i < static_cast<std::size_t>(layerID); i++) {
+        outport_.getEditableData()->addColorLayer(
+            std::shared_ptr<Layer>(outport_.getData()->getColorLayer(0)->clone()));
     }
 
     shader.build();
@@ -255,9 +256,9 @@ void MeshRenderProcessorGL::centerViewOnGeometry() {
         vec3 minPos(std::numeric_limits<float>::max());
         vec3 maxPos(std::numeric_limits<float>::lowest());
         for (auto buff : mesh->getBuffers()) {
-            if (buff->getBufferType() == POSITION_ATTRIB) {
-                const Position3dBufferRAM* posbuff =
-                    dynamic_cast<const Position3dBufferRAM*>(buff->getRepresentation<BufferRAM>());
+            if (buff.first == BufferType::POSITION_ATTRIB) {
+                const Vec3BufferRAM* posbuff =
+                    dynamic_cast<const Vec3BufferRAM*>(buff.second->getRepresentation<BufferRAM>());
 
                 if (posbuff) {
                     const std::vector<vec3>* pos = posbuff->getDataContainer();
@@ -282,25 +283,22 @@ void MeshRenderProcessorGL::setNearFarPlane() {
 
     auto geom = inport_.getData();
 
-    const Position3dBufferRAM* posBuffer = dynamic_cast<const Position3dBufferRAM*>(
-        geom->getAttributes(0)->getRepresentation<BufferRAM>());
+    auto posBuffer =
+        dynamic_cast<const Vec3BufferRAM*>(geom->getBuffer(0)->getRepresentation<BufferRAM>());
 
-    if (posBuffer == nullptr) {
-        return;
-    }
+    if (posBuffer == nullptr) return;
 
-    const std::vector<vec3>* pos = posBuffer->getDataContainer();
+    auto pos = posBuffer->getDataContainer();
 
-    if (pos->empty()) {
-        return;
-    }
+    if (pos->empty()) return;
 
     float nearDist, farDist;
     nearDist = std::numeric_limits<float>::infinity();
     farDist = 0;
     vec3 nearPos, farPos;
     vec3 camPos = (geom->getCoordinateTransformer().getWorldToModelMatrix() *
-                   vec4(camera_.getLookFrom(), 1.0)).xyz();
+                   vec4(camera_.getLookFrom(), 1.0))
+                      .xyz();
     for (auto& po : *pos) {
         auto d = glm::distance2(po, camPos);
         if (d < nearDist) {

@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #include <inviwo/core/datastructures/buffer/bufferrepresentation.h>
@@ -36,47 +36,28 @@
 
 namespace inviwo {
 
-ElementBufferRAM2CLGLConverter::ElementBufferRAM2CLGLConverter()
-    : RepresentationConverterPackage<ElementBufferCLGL>()
-{
-    addConverter(new ElementBufferRAM2GLConverter());
-    addConverter(new ElementBufferGL2CLGLConverter());
+std::shared_ptr<ElementBufferGL> ElementBufferCLGL2GLConverter::createFrom(
+    std::shared_ptr<const ElementBufferCLGL> src) const {
+    return std::make_shared<ElementBufferGL>(src->getSize(), src->getDataFormat(),
+                                             src->getBufferUsage(), src->getElementBufferObject());
 }
 
-DataRepresentation* ElementBufferCLGL2GLConverter::createFrom(const DataRepresentation* source) {
-    DataRepresentation* destination = 0;
-    const ElementBufferCLGL* src = static_cast<const ElementBufferCLGL*>(source);
-    destination = new ElementBufferGL(src->getSize(), src->getDataFormat(), src->getBufferType(), src->getBufferUsage(), src->getElementBufferObject());
-    return destination;
-}
-
-void ElementBufferCLGL2GLConverter::update(const DataRepresentation* source, DataRepresentation* destination) {
+void ElementBufferCLGL2GLConverter::update(std::shared_ptr<const ElementBufferCLGL> source,
+                                           std::shared_ptr<ElementBufferGL> destination) const {
     // Do nothing since they share data
 }
 
-DataRepresentation* ElementBufferGL2CLGLConverter::createFrom(const DataRepresentation* source)
-{
-    DataRepresentation* destination = 0;
-    const ElementBufferGL* src = static_cast<const ElementBufferGL*>(source);
-    destination = new ElementBufferCLGL(src->getSize(), src->getDataFormat(), src->getBufferType(), src->getBufferUsage(),
-        src->getElementBufferObject());
-    return destination;
+std::shared_ptr<ElementBufferCLGL> ElementBufferGL2CLGLConverter::createFrom(
+    std::shared_ptr<const ElementBufferGL> src) const {
+    return std::make_shared<ElementBufferCLGL>(
+        src->getSize(), src->getDataFormat(), src->getBufferUsage(), src->getElementBufferObject());
 }
 
-void ElementBufferGL2CLGLConverter::update(const DataRepresentation* source, DataRepresentation* destination) {
-    const ElementBufferGL* src = static_cast<const ElementBufferGL*>(source);
-    ElementBufferCLGL* dst = static_cast<ElementBufferCLGL*>(destination);
-
+void ElementBufferGL2CLGLConverter::update(std::shared_ptr<const ElementBufferGL> src,
+                                           std::shared_ptr<ElementBufferCLGL> dst) const {
     if (src->getSize() != dst->getSize()) {
         dst->setSize(src->getSize());
     }
 }
 
-ElementBufferCL2CLGLConverter::ElementBufferCL2CLGLConverter() : RepresentationConverterPackage<ElementBufferCLGL>()
-{
-    addConverter(new BufferCL2RAMConverter());
-    addConverter(new ElementBufferRAM2GLConverter());
-    addConverter(new ElementBufferGL2CLGLConverter());
-}
-
-} // namespace
+}  // namespace

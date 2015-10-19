@@ -35,38 +35,34 @@
 namespace inviwo {
 
 Layer::Layer(size2_t dimensions, const DataFormatBase* format, LayerType type)
-    : Data(format), StructuredGridEntity<2>(dimensions), layerType_(type) {}
+    : Data<LayerRepresentation>(format), StructuredGridEntity<2>(dimensions), layerType_(type) {}
 
-Layer::Layer(LayerRepresentation* in)
-    : Data(in->getDataFormat())
+Layer::Layer(std::shared_ptr<LayerRepresentation> in)
+    : Data<LayerRepresentation>(in->getDataFormat())
     , StructuredGridEntity<2>(in->getDimensions())
     , layerType_(in->getLayerType()) {
-    clearRepresentations();
     addRepresentation(in);
 }
 
 Layer::Layer(const Layer& rhs)
-    : Data(rhs), StructuredGridEntity<2>(rhs), layerType_(rhs.layerType_) {}
+    : Data<LayerRepresentation>(rhs), StructuredGridEntity<2>(rhs), layerType_(rhs.layerType_) {}
 
 Layer& Layer::operator=(const Layer& that) {
     if (this != &that) {
-        Data::operator=(that);
+        Data<LayerRepresentation>::operator=(that);
         StructuredGridEntity<2>::operator=(that);
         layerType_ = that.layerType_;
     }
-
     return *this;
 }
 
 Layer* Layer::clone() const { return new Layer(*this); }
 
-Layer::~Layer() {
-    // Representations are deleted by Data destructor.
-}
+Layer::~Layer() {}
 
 size2_t Layer::getDimensions() const {
     if (hasRepresentations() && lastValidRepresentation_) {
-        size2_t dim = static_cast<LayerRepresentation*>(lastValidRepresentation_)->getDimensions();
+        size2_t dim = lastValidRepresentation_->getDimensions();
         if (dim != size2_t(0)) return dim;
     }
     return StructuredGridEntity<2>::getDimensions();
@@ -77,22 +73,8 @@ void Layer::setDimensions(const size2_t& dim) {
 
     if (lastValidRepresentation_) {
         // Resize last valid representation
-        static_cast<LayerRepresentation*>(lastValidRepresentation_)->setDimensions(dim);
-
-        // and remove the other ones
-        util::erase_remove_if(representations_, [this](DataRepresentation* repr) {
-            if (repr != lastValidRepresentation_) {
-                delete repr;
-                return true;
-            } else {
-                return false;
-            }
-        });
-        setAllRepresentationsAsInvalid();
-        // Set the remaining representation as valid.
-        // Solves issue where the layer will try to update 
-        // the remaining representation with itself when getRepresentation of the same type is called
-        setRepresentationAsValid(0);
+        lastValidRepresentation_->setDimensions(dim);
+        removeOtherRepresentations(lastValidRepresentation_.get());
     }
 }
 
@@ -103,17 +85,15 @@ void Layer::copyRepresentationsTo(Layer* targetLayer) {
     auto& targets = targetLayer->representations_;
     bool copyDone = false;
 
-    for (int i = 0; i < static_cast<int>(representations_.size()); i++) {
-        if (isRepresentationValid(i)) {
-            auto sourceRepr = static_cast<LayerRepresentation*>(representations_[i]);
-
-            for (int j = 0; j < static_cast<int>(targets.size()); j++) {
-                auto targetRepr = static_cast<LayerRepresentation*>(targets[j]);
-
+    for (auto& sourceElem : representations_) {
+        auto sourceRepr = sourceElem.second;
+        if (sourceRepr->isValid()) {
+            for (auto& targetElem : targets) {
+                auto targetRepr = targetElem.second;
                 if (typeid(*sourceRepr) == typeid(*targetRepr)) {
-                    if (sourceRepr->copyRepresentationsTo(targetRepr)) {
-                        targetLayer->setRepresentationAsValid(j);
-                        targetLayer->lastValidRepresentation_ = targets[j];
+                    if (sourceRepr->copyRepresentationsTo(targetRepr.get())) {
+                        targetRepr->setValid(true);
+                        targetLayer->lastValidRepresentation_ = targetElem.second;
                         copyDone = true;
                     }
                 }
@@ -122,19 +102,16 @@ void Layer::copyRepresentationsTo(Layer* targetLayer) {
     }
 
     if (!copyDone) {  // Fallback
-        ivwAssert(lastValidRepresentation_ != nullptr, "Last valid representation is expected.");
-        targetLayer->setAllRepresentationsAsInvalid();
+        ivwAssert(lastValidRepresentation_, "Last valid representation is expected.");
+        for (auto& targetElem : targets) targetElem.second->setValid(false);
         targetLayer->createDefaultRepresentation();
 
-        auto lastValidRepresentation = dynamic_cast<LayerRepresentation*>(lastValidRepresentation_);
-        auto clone = dynamic_cast<LayerRepresentation*>(lastValidRepresentation_->clone());
-
+        auto clone = std::shared_ptr<LayerRepresentation>(lastValidRepresentation_->clone());
         targetLayer->addRepresentation(clone);
         targetLayer->setDimensions(targetLayer->getDimensions());
 
-        if (lastValidRepresentation->copyRepresentationsTo(clone)) {
-            targetLayer->setRepresentationAsValid(
-                static_cast<int>(targetLayer->representations_.size()) - 1);
+        if (lastValidRepresentation_->copyRepresentationsTo(clone.get())) {
+            clone->setValid(true);
             targetLayer->lastValidRepresentation_ = clone;
         }
     }
@@ -142,7 +119,7 @@ void Layer::copyRepresentationsTo(Layer* targetLayer) {
 
 LayerType Layer::getLayerType() const { return layerType_; }
 
-DataRepresentation* Layer::createDefaultRepresentation() {
+std::shared_ptr<LayerRepresentation> Layer::createDefaultRepresentation() const {
     return createLayerRAM(getDimensions(), getLayerType(), getDataFormat());
 }
 

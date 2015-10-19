@@ -51,11 +51,11 @@ class IVW_CORE_API ModuleCallbackAction {
 public:
     ModuleCallbackAction(std::string actionName, InviwoModule* module,
                          ModuleCallBackActionState::Status state=ModuleCallBackActionState::Disabled);
-    std::string getActionName();
-    InviwoModule* getModule();
+    std::string getActionName() const;
+    InviwoModule* getModule() const;
     ModuleCallback* getCallBack();
     void setActionState(ModuleCallBackActionState::Status state);
-    ModuleCallBackActionState::Status getActionState();
+    ModuleCallBackActionState::Status getActionState() const;
 private:
     InviwoModule* module_;
     std::string actionName_;

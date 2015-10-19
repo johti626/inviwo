@@ -60,7 +60,7 @@ public:
     VolumeCLGL(const size3_t& dimensions, const DataFormatBase* format, std::shared_ptr<Texture3D> data);
     VolumeCLGL(const VolumeCLGL& rhs);
 
-    virtual VolumeCLGL* clone() const;
+    virtual VolumeCLGL* clone() const override;
     virtual ~VolumeCLGL();
 
 
@@ -69,27 +69,28 @@ public:
     virtual const size3_t& getDimensions() const override;
     virtual void setDimensions(size3_t dimensions) override;
 
-    virtual cl::Image3DGL& getEditable();
-    virtual const cl::Image3DGL& get() const;
+    virtual cl::Image3DGL& getEditable() override;
+    virtual const cl::Image3DGL& get() const override;
     std::shared_ptr<Texture3D> getTexture() const;
 
     /**
     * This method will be called before the texture is initialized.
     * Override it to add behavior.
     */
-    virtual void notifyBeforeTextureInitialization();
+    virtual void notifyBeforeTextureInitialization() override;
 
     /**
     * This method will be called after the texture has been initialized.
     * Override it to add behavior.
     */
-    virtual void notifyAfterTextureInitialization();
+    virtual void notifyAfterTextureInitialization() override;
 
     void aquireGLObject(std::vector<cl::Event>* syncEvents = nullptr,
                         const cl::CommandQueue& queue = OpenCL::getPtr()->getQueue()) const;
     void releaseGLObject(std::vector<cl::Event>* syncEvents = nullptr, cl::Event* event = nullptr,
                          const cl::CommandQueue& queue = OpenCL::getPtr()->getQueue()) const;
 
+    virtual std::type_index getTypeIndex() const override final;
 protected:
     static CLTexture3DSharingMap clVolumeSharingMap_;
     void initialize();

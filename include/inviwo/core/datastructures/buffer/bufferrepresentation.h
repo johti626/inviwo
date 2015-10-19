@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #ifndef IVW_BUFFER_REPRESENTATION_H
@@ -33,45 +33,35 @@
 #include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/datastructures/datarepresentation.h>
 #include <inviwo/core/common/inviwo.h>
-#include <inviwo/core/datastructures/buffer/buffer.h>
+#include <inviwo/core/datastructures/geometry/geometrytype.h>
 
 namespace inviwo {
 
 class IVW_CORE_API BufferRepresentation : public DataRepresentation {
-
 public:
     BufferRepresentation(const DataFormatBase* format = DataFormatBase::get(),
-                         BufferType type = POSITION_ATTRIB,
-                         BufferUsage usage = STATIC);
-    
-    BufferRepresentation(const BufferRepresentation& rhs);
-    BufferRepresentation& operator=(const BufferRepresentation& that);
-    virtual BufferRepresentation* clone() const = 0;
-    virtual ~BufferRepresentation() {};
+                         BufferUsage usage = BufferUsage::STATIC);
+
+    BufferRepresentation(const BufferRepresentation& rhs) = default;
+    BufferRepresentation& operator=(const BufferRepresentation& that) = default;
+    virtual BufferRepresentation* clone() const override = 0;
+    virtual ~BufferRepresentation() = default;
     virtual void setSize(size_t size) = 0;
 
     /**
      * Return the number of elements in the buffer.
-     *
-     * @return Number of elements in the buffer
      */
     virtual size_t getSize() const = 0;
-
     /**
      * Return size of buffer element in bytes.
-     *
-     * @return Size of element in bytes.
      */
-    virtual size_t getSizeOfElement() const { return getDataFormat()->getSize(); };
-
-    BufferType getBufferType() const { return type_; }
-    BufferUsage getBufferUsage() const { return usage_; }
+    virtual size_t getSizeOfElement() const;
+    BufferUsage getBufferUsage() const;
 
 protected:
-    BufferType type_;
     BufferUsage usage_;
 };
 
-} // namespace
+}  // namespace
 
-#endif // IVW_BUFFER_REPRESENTATION_H
+#endif  // IVW_BUFFER_REPRESENTATION_H

@@ -44,11 +44,13 @@
 
 #include <pathsexternalmodules.h>
 
+#include <warn/push>
+#include <warn/ignore/all>
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
-#include <QStandardPaths>
-#include <QScreen>
+    #include <QStandardPaths>
+    #include <QScreen>
 #else
-#include <QDesktopServices>
+    #include <QDesktopServices>
 #endif
 #include <QActionGroup>
 #include <QDesktopWidget>
@@ -60,7 +62,7 @@
 #include <QVariant>
 
 #include <algorithm>
-
+#include <warn/pop>
 
 #ifdef IVW_PYTHON2_QT
 #define IVW_PYTHON_QT
@@ -476,6 +478,7 @@ void InviwoMainWindow::fillExampleWorkspaceMenu() {
             QObject::connect(action, SIGNAL(triggered()), this, SLOT(openExampleWorkspace()));
         }
     }
+    exampleWorkspaceMenu_->menuAction()->setVisible(!exampleWorkspaceMenu_->isEmpty());
 }
 
 void InviwoMainWindow::fillTestWorkspaceMenu() {
@@ -571,6 +574,7 @@ void InviwoMainWindow::fillTestWorkspaceMenu() {
             }
         }
     }
+    testWorkspaceMenu_->menuAction()->setVisible(!testWorkspaceMenu_->isEmpty());
 }
 
 std::string InviwoMainWindow::getCurrentWorkspace() {
@@ -867,7 +871,7 @@ bool InviwoMainWindow::askToSaveWorkspaceChanges() {
     bool continueOperation = true;
 
     if (getNetworkEditor()->isModified()) {
-        QMessageBox msgBox;
+        QMessageBox msgBox(this);
         msgBox.setText("Workspace Modified");
         msgBox.setInformativeText("Do you want to save your changes?");
         msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);

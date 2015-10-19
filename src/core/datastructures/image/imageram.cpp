@@ -30,6 +30,7 @@
 #include <inviwo/core/datastructures/image/imageram.h>
 #include <inviwo/core/datastructures/image/layerramprecision.h>
 #include <inviwo/core/datastructures/image/layerram.h>
+#include <inviwo/core/datastructures/image/image.h>
 
 namespace inviwo {
 
@@ -55,8 +56,9 @@ bool ImageRAM::copyRepresentationsTo(DataRepresentation* targetRep) const {
     if (!target) return false;
 
     // Copy and resize color layers
-    size_t minSize = std::min(source->getOwner()->getNumberOfColorLayers(),
-                              target->getOwner()->getNumberOfColorLayers());
+    auto owner = static_cast<const Image*>(this->getOwner());
+    size_t minSize = std::min(owner->getNumberOfColorLayers(),
+                              owner->getNumberOfColorLayers());
 
     for (size_t i = 0; i < minSize; ++i) {
         if (!source->getColorLayerRAM(i)->copyRepresentationsTo(target->getColorLayerRAM(i)))
@@ -82,7 +84,7 @@ void ImageRAM::update(bool editable) {
     pickingLayerRAM_ = nullptr;
 
     if (editable) {
-        Image* owner = this->getOwner();
+        Image* owner = static_cast<Image*>(this->getOwner());
         for (size_t i = 0; i < owner->getNumberOfColorLayers(); ++i) {
             colorLayersRAM_.push_back(
                 owner->getColorLayer(i)->getEditableRepresentation<LayerRAM>());
@@ -98,7 +100,7 @@ void ImageRAM::update(bool editable) {
             pickingLayerRAM_ = pickingLayer->getEditableRepresentation<LayerRAM>();
         }
     } else {
-        const Image* owner = this->getOwner();
+        auto owner = static_cast<const Image*>(this->getOwner());
         for (size_t i = 0; i < owner->getNumberOfColorLayers(); ++i) {
             colorLayersRAM_.push_back(
                 const_cast<LayerRAM*>(owner->getColorLayer(i)->getRepresentation<LayerRAM>()));
@@ -121,6 +123,10 @@ LayerRAM* ImageRAM::getColorLayerRAM(size_t idx) { return colorLayersRAM_.at(idx
 LayerRAM* ImageRAM::getDepthLayerRAM() { return depthLayerRAM_; }
 
 LayerRAM* ImageRAM::getPickingLayerRAM() { return pickingLayerRAM_; }
+
+std::type_index ImageRAM::getTypeIndex() const {
+    return std::type_index(typeid(ImageRAM));
+}
 
 const LayerRAM* ImageRAM::getColorLayerRAM(size_t idx) const { return colorLayersRAM_.at(idx); }
 

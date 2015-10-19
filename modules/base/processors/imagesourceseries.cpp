@@ -34,6 +34,7 @@
 #include <inviwo/core/datastructures/image/imageram.h>
 #include <inviwo/core/io/datareaderfactory.h>
 #include <inviwo/core/util/filesystem.h>
+#include <inviwo/core/io/datareaderexception.h>
 
 namespace inviwo {
 
@@ -109,7 +110,7 @@ void ImageSourceSeries::process() {
 
     if (reader) {
         try {
-            Layer* outLayer = reader->readMetaData(currentFileName);
+            auto outLayer = reader->readData(currentFileName);
             // Call getRepresentation here to force read a ram representation.
             // Otherwise the default image size, i.e. 256x265, will be reported
             // until you do the conversion. Since the LayerDisk does not have any metadata.

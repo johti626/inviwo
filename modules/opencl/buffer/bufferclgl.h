@@ -41,20 +41,18 @@
 
 namespace inviwo {
 
-typedef std::pair< std::shared_ptr<BufferObject>, std::shared_ptr<cl::BufferGL> > BufferSharingPair;
-typedef std::map< std::shared_ptr<BufferObject>, std::shared_ptr<cl::BufferGL> > CLBufferSharingMap;
-
+typedef std::pair<std::shared_ptr<BufferObject>, std::shared_ptr<cl::BufferGL> > BufferSharingPair;
+typedef std::map<std::shared_ptr<BufferObject>, std::shared_ptr<cl::BufferGL> > CLBufferSharingMap;
 
 class IVW_MODULE_OPENCL_API BufferCLGL : public BufferCLBase,
                                          public BufferRepresentation,
                                          public BufferObjectObserver {
 public:
-    BufferCLGL(size_t size, const DataFormatBase* format, BufferType type,
-        BufferUsage usage, std::shared_ptr<BufferObject> data,
-               cl_mem_flags readWriteFlag = CL_MEM_READ_WRITE);
+    BufferCLGL(size_t size, const DataFormatBase* format, BufferUsage usage,
+               std::shared_ptr<BufferObject> data, cl_mem_flags readWriteFlag = CL_MEM_READ_WRITE);
     BufferCLGL(const BufferCLGL& rhs);
     virtual ~BufferCLGL();
-    virtual BufferCLGL* clone() const;
+    virtual BufferCLGL* clone() const override;
 
     virtual size_t getSize() const override;
     virtual void setSize(size_t size) override;
@@ -62,8 +60,8 @@ public:
     const cl::Buffer& getBuffer() const { return *(clBuffer_); }
     std::shared_ptr<BufferObject> getBufferGL() const { return bufferObject_; }
 
-    cl::Buffer& getEditable() { return *clBuffer_; }
-    const cl::Buffer& get() const { return *clBuffer_; }
+    cl::Buffer& getEditable() override { return *clBuffer_; }
+    const cl::Buffer& get() const override { return *clBuffer_; }
 
     void aquireGLObject(std::vector<cl::Event>* syncEvents = nullptr) const {
         std::vector<cl::Memory> syncBuffers(1, *clBuffer_);
@@ -75,15 +73,16 @@ public:
         std::vector<cl::Memory> syncBuffers(1, *clBuffer_);
         OpenCL::getPtr()->getQueue().enqueueReleaseGLObjects(&syncBuffers, syncEvents, event);
     }
+    virtual std::type_index getTypeIndex() const override final;
 
     /**
      * Release shared object before it is initialized.
      */
-    void onBeforeBufferInitialization();
+    void onBeforeBufferInitialization() override;
     /**
      * Reattach shared object after it has been initialized.
      */
-    void onAfterBufferInitialization();
+    void onAfterBufferInitialization() override;
 
 protected:
     static CLBufferSharingMap clBufferSharingMap_;
@@ -91,7 +90,7 @@ protected:
     std::shared_ptr<BufferObject> bufferObject_;
     cl_mem_flags readWriteFlag_;
     size_t size_;
-    std::shared_ptr<cl::BufferGL> clBuffer_; ///< Potentially shared with other BufferCLGL
+    std::shared_ptr<cl::BufferGL> clBuffer_;  ///< Potentially shared with other BufferCLGL
 };
 
 }  // namespace

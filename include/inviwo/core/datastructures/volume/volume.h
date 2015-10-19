@@ -34,22 +34,23 @@
 #include <inviwo/core/datastructures/data.h>
 #include <inviwo/core/datastructures/spatialdata.h>
 #include <inviwo/core/datastructures/datamapper.h>
+#include <inviwo/core/datastructures/representationtraits.h>
+#include <inviwo/core/datastructures/volume/volumerepresentation.h>
 
 namespace inviwo {
 
 class CameraProperty;
-class VolumeRepresentation;
 
-class IVW_CORE_API Volume : public Data, public StructuredGridEntity<3> {
+class IVW_CORE_API Volume : public Data<VolumeRepresentation>, public StructuredGridEntity<3> {
 public:
     Volume(size3_t dimensions = size3_t(128, 128, 128),
            const DataFormatBase* format = DataUINT8::get());
     Volume(const Volume&);
-    Volume(VolumeRepresentation*);
+    Volume(std::shared_ptr<VolumeRepresentation>);
     Volume& operator=(const Volume& that);
-    virtual Volume* clone() const;
+    virtual Volume* clone() const override;
     virtual ~Volume();
-    virtual std::string getDataInfo() const;
+    virtual std::string getDataInfo() const override;
 
     size3_t getDimensions() const override;
     
@@ -74,7 +75,7 @@ public:
     void setWorldMatrix(const mat4& mat);
 
     virtual const StructuredCameraCoordinateTransformer<3>& getCoordinateTransformer(
-        const Camera& camera) const;
+        const Camera& camera) const override;
     using StructuredGridEntity<3>::getCoordinateTransformer;
 
     /**
@@ -83,7 +84,7 @@ public:
      *
      * Finds the maximum distance we can go from the center of a voxel without ending up outside the
      * voxel.
-     * For a volume with orthogonal basis it will be half the minumum voxel spacing in world space.
+     * For a volume with orthogonal basis it will be half the minimum voxel spacing in world space.
      *  _____
      * |     |
      * |  .  | <- Computes minimum distance from center point to edges.
@@ -99,9 +100,21 @@ public:
     static uvec3 COLOR_CODE;
     static const std::string CLASS_IDENTIFIER;
 
+
+    template<typename Kind>
+    const typename representation_traits<Volume, Kind>::type *getRep() const;
+
 protected:
-    virtual DataRepresentation* createDefaultRepresentation();
+    virtual std::shared_ptr<VolumeRepresentation> createDefaultRepresentation() const override;
 };
+
+template <typename Kind>
+const typename representation_traits<Volume, Kind>::type *Volume::getRep() const {
+    static_assert(
+        !std::is_same<typename representation_traits<Volume, Kind>::type, std::nullptr_t>::value,
+        "No representation of specified kind found");
+    return getRepresentation<typename representation_traits<Volume, Kind>::type>();
+}
 
 }  // namespace
 

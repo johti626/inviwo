@@ -45,13 +45,14 @@ public:
     MeshRAM();
     MeshRAM(const MeshRAM& rhs);
     MeshRAM& operator=(const MeshRAM& that);
-    virtual MeshRAM* clone() const;
-    virtual ~MeshRAM();
+    virtual MeshRAM* clone() const override;
+    virtual ~MeshRAM() = default;
+    virtual std::type_index getTypeIndex() const override final;
 
 protected:
-    virtual void update(bool editable);
+    virtual void update(bool editable) override;
 
-    std::vector<BufferRAM*> attributesRAM_;
+    std::vector<BufferRAM*> bufferRAM_;
 };
 
 } // namespace

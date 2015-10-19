@@ -32,15 +32,13 @@
 
 #include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/datastructures/datarepresentation.h>
+#include <inviwo/core/datastructures/representationtraits.h>
 
 namespace inviwo {
 
 class Volume;
 
 class IVW_CORE_API VolumeRepresentation : public DataRepresentation {
-
-    friend class Volume;
-
 public:
     VolumeRepresentation();
     VolumeRepresentation(const DataFormatBase* format);
@@ -53,6 +51,11 @@ public:
     // Needs to be overloaded by child classes.
     virtual void setDimensions(size3_t dimensions) = 0;
     virtual const size3_t& getDimensions() const = 0;
+};
+
+template <>
+struct representation_traits<Volume, kind::Base> {
+    using type = VolumeRepresentation;
 };
 
 } // namespace

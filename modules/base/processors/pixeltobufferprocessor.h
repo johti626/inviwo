@@ -63,16 +63,16 @@ namespace inviwo {
  */
 class IVW_MODULE_BASE_API PixelToBufferProcessor : public Processor, public InteractionHandler { 
 public:
-    using PosBuffer = BufferPrecision<double, POSITION_ATTRIB>;
+    using PosBuffer = Buffer<double>;
     PixelToBufferProcessor();
     virtual ~PixelToBufferProcessor(){}
     
     InviwoProcessorInfo();
     void setPixelToCollectFrom(const ivec2& xy);
     void clearOutput();
-    virtual void invokeEvent(Event* event);
+    virtual void invokeEvent(Event* event) override;
 protected:
-    virtual void process();
+    virtual void process() override;
     void inportChanged();
     void handleInteractionEventsChanged();
 private:

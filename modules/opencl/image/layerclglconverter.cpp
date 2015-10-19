@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #include <modules/opencl/image/layerclconverter.h>
@@ -35,28 +35,17 @@
 
 namespace inviwo {
 
-LayerRAM2CLGLConverter::LayerRAM2CLGLConverter()
-    : RepresentationConverterPackage<LayerCLGL>() {
-    addConverter(new LayerRAM2GLConverter());
-    addConverter(new LayerGL2CLGLConverter());
-}
-
-LayerCLGL2RAMConverter::LayerCLGL2RAMConverter()
-    : RepresentationConverterType<LayerRAM>() {
-}
-
-
-DataRepresentation* LayerCLGL2RAMConverter::createFrom(const DataRepresentation* source) {
-    DataRepresentation* destination = 0;
-    const LayerCLGL* layerCLGL = static_cast<const LayerCLGL*>(source);
+std::shared_ptr<LayerRAM> LayerCLGL2RAMConverter::createFrom(
+    std::shared_ptr<const LayerCLGL> layerCLGL) const {
     uvec2 dimensions = layerCLGL->getDimensions();
-    destination = createLayerRAM(dimensions, layerCLGL->getLayerType(), layerCLGL->getDataFormat());
+    auto destination =
+        createLayerRAM(dimensions, layerCLGL->getLayerType(), layerCLGL->getDataFormat());
 
     if (destination) {
-        LayerRAM* layerRAM = static_cast<LayerRAM*>(destination);
-        layerCLGL->getTexture()->download(layerRAM->getData());
-        //const cl::CommandQueue& queue = OpenCL::getPtr()->getQueue();
-        //queue.enqueueReadLayer(layerCL->getLayer(), true, glm::size3_t(0), glm::size3_t(dimensions, 1), 0, 0, layerRAM->getData());
+        layerCLGL->getTexture()->download(destination->getData());
+        // const cl::CommandQueue& queue = OpenCL::getPtr()->getQueue();
+        // queue.enqueueReadLayer(layerCL->getLayer(), true, glm::size3_t(0),
+        // glm::size3_t(dimensions, 1), 0, 0, layerRAM->getData());
     } else {
         LogError("Invalid conversion or not implemented");
     }
@@ -64,10 +53,8 @@ DataRepresentation* LayerCLGL2RAMConverter::createFrom(const DataRepresentation*
     return destination;
 }
 
-void LayerCLGL2RAMConverter::update(const DataRepresentation* source, DataRepresentation* destination) {
-    const LayerCLGL* layerSrc = static_cast<const LayerCLGL*>(source);
-    LayerRAM* layerDst = static_cast<LayerRAM*>(destination);
-
+void LayerCLGL2RAMConverter::update(std::shared_ptr<const LayerCLGL> layerSrc,
+                                    std::shared_ptr<LayerRAM> layerDst) const {
     if (layerSrc->getDimensions() != layerDst->getDimensions()) {
         layerDst->setDimensions(layerSrc->getDimensions());
     }
@@ -75,76 +62,62 @@ void LayerCLGL2RAMConverter::update(const DataRepresentation* source, DataRepres
     layerSrc->getTexture()->download(layerDst->getData());
 }
 
-LayerCLGL2GLConverter::LayerCLGL2GLConverter(): RepresentationConverterType<LayerGL>() {
+std::shared_ptr<LayerGL> LayerCLGL2GLConverter::createFrom(
+    std::shared_ptr<const LayerCLGL> src) const {
+    return std::make_shared<LayerGL>(src->getDimensions(), src->getLayerType(),
+                                     src->getDataFormat(), src->getTexture());
 }
 
-DataRepresentation* LayerCLGL2GLConverter::createFrom(const DataRepresentation* source) {
-    DataRepresentation* destination = 0;
-    const LayerCLGL* src = static_cast<const LayerCLGL*>(source);
-    destination = new LayerGL(src->getDimensions(), src->getLayerType(), src->getDataFormat(), src->getTexture());
-    return destination;
-}
-
-void LayerCLGL2GLConverter::update(const DataRepresentation* source, DataRepresentation* destination) {
+void LayerCLGL2GLConverter::update(std::shared_ptr<const LayerCLGL> source,
+                                   std::shared_ptr<LayerGL> destination) const {
     // Do nothing since they share data
 }
 
-DataRepresentation* LayerCLGL2CLConverter::createFrom(const DataRepresentation* source) {
+std::shared_ptr<LayerCL> LayerCLGL2CLConverter::createFrom(
+    std::shared_ptr<const LayerCLGL> src) const {
 #ifdef IVW_DEBUG
     LogWarn("Performance warning: Use shared CLGL representation instead of CL ");
 #endif
-    DataRepresentation* destination = 0;
-    const LayerCLGL* src = static_cast<const LayerCLGL*>(source);
-    destination = new LayerCL(src->getDimensions(), src->getLayerType(), src->getDataFormat());
-    {   SyncCLGL glSync;
+    auto destination =
+        std::make_shared<LayerCL>(src->getDimensions(), src->getLayerType(), src->getDataFormat());
+    {
+        SyncCLGL glSync;
         src->aquireGLObject(glSync.getGLSyncEvent());
-        OpenCL::getPtr()->getQueue().enqueueCopyImage(src->get(), static_cast<LayerCL*>(destination)->get(), glm::size3_t(0), glm::size3_t(0),
-                glm::size3_t(src->getDimensions(), 1));
+        OpenCL::getPtr()->getQueue().enqueueCopyImage(src->get(), destination->get(),
+                                                      glm::size3_t(0), glm::size3_t(0),
+                                                      glm::size3_t(src->getDimensions(), 1));
         src->releaseGLObject(nullptr, glSync.getLastReleaseGLEvent());
     }
     return destination;
 }
 
-void LayerCLGL2CLConverter::update(const DataRepresentation* source, DataRepresentation* destination) {
-    const LayerCLGL* src = static_cast<const LayerCLGL*>(source);
-    LayerCL* dst = static_cast<LayerCL*>(destination);
-
+void LayerCLGL2CLConverter::update(std::shared_ptr<const LayerCLGL> src,
+                                   std::shared_ptr<LayerCL> dst) const {
     if (src->getDimensions() != dst->getDimensions()) {
         dst->setDimensions(src->getDimensions());
     }
 
-    {   SyncCLGL glSync;
+    {
+        SyncCLGL glSync;
         src->aquireGLObject(glSync.getGLSyncEvent());
-        OpenCL::getPtr()->getQueue().enqueueCopyImage(src->get(), dst->get(), glm::size3_t(0), glm::size3_t(0), glm::size3_t(src->getDimensions(), 1));
+        OpenCL::getPtr()->getQueue().enqueueCopyImage(src->get(), dst->get(), glm::size3_t(0),
+                                                      glm::size3_t(0),
+                                                      glm::size3_t(src->getDimensions(), 1));
         src->releaseGLObject(nullptr, glSync.getLastReleaseGLEvent());
     }
 }
 
-
-DataRepresentation* LayerGL2CLGLConverter::createFrom(const DataRepresentation* source) {
-    DataRepresentation* destination = 0;
-    const LayerGL* layerGL = static_cast<const LayerGL*>(source);
-    destination = new LayerCLGL(layerGL->getDimensions(), layerGL->getLayerType(), layerGL->getDataFormat(),
-        layerGL->getTexture());
-    return destination;
+std::shared_ptr<LayerCLGL> LayerGL2CLGLConverter::createFrom(
+    std::shared_ptr<const LayerGL> layerGL) const {
+    return std::make_shared<LayerCLGL>(layerGL->getDimensions(), layerGL->getLayerType(),
+                                       layerGL->getDataFormat(), layerGL->getTexture());
 }
 
-void LayerGL2CLGLConverter::update(const DataRepresentation* source, DataRepresentation* destination) {
-    const LayerGL* layerSrc = static_cast<const LayerGL*>(source);
-    LayerCLGL* layerDst = static_cast<LayerCLGL*>(destination);
-
+void LayerGL2CLGLConverter::update(std::shared_ptr<const LayerGL> layerSrc,
+                                   std::shared_ptr<LayerCLGL> layerDst) const {
     if (layerSrc->getDimensions() != layerDst->getDimensions()) {
         layerDst->setDimensions(layerSrc->getDimensions());
     }
 }
 
-LayerCL2CLGLConverter::LayerCL2CLGLConverter() : RepresentationConverterPackage<LayerCLGL>() {
-    addConverter(new LayerCL2RAMConverter());
-    addConverter(new LayerRAM2GLConverter());
-    addConverter(new LayerGL2CLGLConverter());
-}
-
-
-
-
-} // namespace
+}  // namespace

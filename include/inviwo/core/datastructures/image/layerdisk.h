@@ -42,10 +42,10 @@ public:
     LayerDisk(std::string url, LayerType type = COLOR_LAYER);
     LayerDisk(const LayerDisk& rhs);
     LayerDisk& operator=(const LayerDisk& that);
-    virtual LayerDisk* clone() const;
+    virtual LayerDisk* clone() const override;
     virtual ~LayerDisk();
 
-    virtual void setDimensions(size2_t dimensions);
+    virtual void setDimensions(size2_t dimensions) override;
     /**
      * Copy and resize the representations of this onto the target.
      */
@@ -58,6 +58,7 @@ public:
      *
      */
     void updateDataFormat(const DataFormatBase* format);
+    virtual std::type_index getTypeIndex() const override final;
 };
 
 }  // namespace

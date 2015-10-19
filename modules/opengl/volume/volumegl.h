@@ -34,11 +34,17 @@
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/datastructures/volume/volumerepresentation.h>
 #include <modules/opengl/texture/texture3d.h>
+#include <inviwo/core/datastructures/representationtraits.h>
 
 namespace inviwo {
 
 class Shader;
 class Volume;
+
+namespace kind {
+    struct GL {};
+}
+
 
 class IVW_MODULE_OPENGL_API VolumeGL : public VolumeRepresentation {
 
@@ -48,7 +54,7 @@ public:
     VolumeGL(const VolumeGL& rhs);
     VolumeGL& operator=(const VolumeGL& rhs);
     virtual ~VolumeGL();
-    virtual VolumeGL* clone() const;
+    virtual VolumeGL* clone() const override;
 
     void bindTexture(GLenum texUnit) const;
     void unbindTexture() const;
@@ -57,9 +63,15 @@ public:
     virtual void setDimensions(size3_t dimensions) override;
 
     std::shared_ptr<Texture3D> getTexture() const { return volumeTexture_; }
+    virtual std::type_index getTypeIndex() const override final;
 private:
     size3_t dimensions_;
     std::shared_ptr<Texture3D> volumeTexture_;
+};
+
+template <>
+struct representation_traits<Volume, kind::GL> {
+    using type = VolumeGL;
 };
 
 } // namespace

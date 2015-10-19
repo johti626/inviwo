@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #include <inviwo/core/datastructures/geometry/simplemesh.h>
@@ -32,65 +32,47 @@
 
 namespace inviwo {
 
-SimpleMesh::SimpleMesh(GeometryEnums::DrawType dt, GeometryEnums::ConnectivityType ct)
-    : Mesh(dt, ct) {
-
-    addAttribute(new Position3dBuffer()); // pos 0
-    addAttribute(new TexCoord3dBuffer()); // pos 1
-    addAttribute(new ColorBuffer());      // pos 2
-    addIndicies(Mesh::AttributesInfo(dt,ct),  new IndexBuffer());
+SimpleMesh::SimpleMesh(DrawType dt, ConnectivityType ct) : Mesh(dt, ct) {
+    addBuffer(BufferType::POSITION_ATTRIB, std::make_shared<Buffer<vec3>>());  // pos 0
+    addBuffer(BufferType::TEXCOORD_ATTRIB, std::make_shared<Buffer<vec3>>());  // pos 1
+    addBuffer(BufferType::COLOR_ATTRIB, std::make_shared<Buffer<vec4>>());     // pos 2
+    addIndicies(Mesh::MeshInfo(dt, ct), std::make_shared<IndexBuffer>());
 }
 
-SimpleMesh::SimpleMesh(const SimpleMesh& rhs) : Mesh(rhs) {}
-
-SimpleMesh& SimpleMesh::operator=(const SimpleMesh& that) {
-    if (this != &that) {
-        Mesh::operator=(that);
-    }
-    return *this;
-}
-
-SimpleMesh* SimpleMesh::clone() const {
-    return new SimpleMesh(*this);
-}
-
-SimpleMesh::~SimpleMesh() {
-    deinitialize();
-}
+SimpleMesh* SimpleMesh::clone() const { return new SimpleMesh(*this); }
 
 unsigned int SimpleMesh::addVertex(vec3 pos, vec3 texCoord, vec4 color) {
-    auto posBuffer = static_cast<Position3dBuffer*>(attributes_[0])->getEditableRepresentation<Position3dBufferRAM>();
+    auto posBuffer =
+        static_cast<Vec3BufferRAM*>(buffers_[0].second->getEditableRepresentation<BufferRAM>());
     posBuffer->add(pos);
-    static_cast<TexCoord3dBuffer*>(attributes_[1])->getEditableRepresentation<TexCoord3dBufferRAM>()->add(texCoord);
-    static_cast<ColorBuffer*>(attributes_[2])->getEditableRepresentation<ColorBufferRAM>()->add(color);
+    static_cast<Vec3BufferRAM*>(buffers_[1].second->getEditableRepresentation<BufferRAM>())
+        ->add(texCoord);
+    static_cast<Vec4BufferRAM*>(buffers_[2].second->getEditableRepresentation<BufferRAM>())
+        ->add(color);
     return static_cast<unsigned int>(posBuffer->getSize() - 1);
 }
 
 void SimpleMesh::addIndex(unsigned int idx) {
-    indexAttributes_[0].second->getEditableRepresentation<IndexBufferRAM>()->add(idx);
+    static_cast<IndexBufferRAM*>(indices_[0].second->getEditableRepresentation<BufferRAM>())
+        ->add(idx);
 }
 
-void SimpleMesh::setIndicesInfo(GeometryEnums::DrawType dt, GeometryEnums::ConnectivityType ct) {
-    indexAttributes_[0].first = Mesh::AttributesInfo(dt, ct);
+void SimpleMesh::setIndicesInfo(DrawType dt, ConnectivityType ct) {
+    indices_[0].first = Mesh::MeshInfo(dt, ct);
 }
 
-const Position3dBuffer* SimpleMesh::getVertexList() const {
-    return static_cast<const Position3dBuffer*>(attributes_[0]);
+const Buffer<vec3>* SimpleMesh::getVertexList() const {
+    return static_cast<const Buffer<vec3>*>(buffers_[0].second.get());
 }
 
-const TexCoord3dBuffer* SimpleMesh::getTexCoordList() const {
-    return static_cast<const TexCoord3dBuffer*>(attributes_[1]);
+const Buffer<vec3>* SimpleMesh::getTexCoordList() const {
+    return static_cast<const Buffer<vec3>*>(buffers_[1].second.get());
 }
 
-const ColorBuffer* SimpleMesh::getColorList() const {
-    return static_cast<const ColorBuffer*>(attributes_[2]);
+const Buffer<vec4>* SimpleMesh::getColorList() const {
+    return static_cast<const Buffer<vec4>*>(buffers_[2].second.get());
 }
 
-const IndexBuffer* SimpleMesh::getIndexList() const {
-    return indexAttributes_[0].second;
-}
+const IndexBuffer* SimpleMesh::getIndexList() const { return indices_[0].second.get(); }
 
-
-
-} // namespace
-
+}  // namespace

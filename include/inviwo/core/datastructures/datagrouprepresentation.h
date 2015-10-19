@@ -37,6 +37,7 @@
 
 namespace inviwo {
 
+template<typename Repr>
 class DataGroup;
 
 /** 
@@ -53,26 +54,19 @@ class DataGroup;
  */
 class IVW_CORE_API DataGroupRepresentation : public DataRepresentation {
 
+    template<typename Repr>
     friend class DataGroup;
 
 public:
-    DataGroupRepresentation();
-    DataGroupRepresentation(const DataGroupRepresentation& rhs);
-    DataGroupRepresentation& operator=(const DataGroupRepresentation& that);
-    virtual DataGroupRepresentation* clone() const = 0;
-    virtual ~DataGroupRepresentation();
-
-    void setAsInvalid();
-    bool isValid() const;
+    DataGroupRepresentation() = default;
+    DataGroupRepresentation(const DataGroupRepresentation& rhs) = default;
+    DataGroupRepresentation& operator=(const DataGroupRepresentation& that) = default;
+    virtual DataGroupRepresentation* clone() const override = 0;
+    virtual ~DataGroupRepresentation() = default;
 
 protected:
     //Update representations_ with DataRepresentation from each Data and DataGroup object
     virtual void update(bool) = 0;
-
-    void setAsValid();
-
-private:
-    bool valid_;
 };
 
 } // namespace

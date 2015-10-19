@@ -32,33 +32,20 @@
 
 #include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/datastructures/data.h>
+#include <inviwo/core/datastructures/buffer/bufferrepresentation.h>
+#include <inviwo/core/datastructures/buffer/bufferramprecision.h>
+#include <initializer_list>
 
 namespace inviwo {
 
-enum BufferType {
-    POSITION_ATTRIB,
-    NORMAL_ATTRIB,
-    COLOR_ATTRIB,
-    TEXCOORD_ATTRIB,
-    CURVATURE_ATTRIB,
-    INDEX_ATTRIB,
-    NUMBER_OF_BUFFER_TYPES
-};
-
-enum BufferUsage { STATIC, DYNAMIC };
-
-class IVW_CORE_API Buffer : public Data {
+class IVW_CORE_API BufferBase : public Data<BufferRepresentation> {
 public:
-    Buffer(size_t size, const DataFormatBase* format = DataFormatBase::get(),
-           BufferType type = POSITION_ATTRIB, BufferUsage usage = STATIC);
-    Buffer(const Buffer& rhs);
-    Buffer& operator=(const Buffer& that);
-    virtual Buffer* clone() const;
-    virtual ~Buffer();
+    BufferBase(size_t size, const DataFormatBase* format, BufferUsage usage);
+    BufferBase(const BufferBase& rhs) = default;
+    BufferBase& operator=(const BufferBase& that) = default;
 
-    void resizeBufferRepresentations(Buffer* targetBuffer, size_t targetSize);
-
-    size_t getSize() const;
+    virtual BufferBase* clone() const override = 0;
+    virtual ~BufferBase() = default;
 
     /**
      * Set the number of elements in the buffer. This is destructive, the data will not be
@@ -67,75 +54,98 @@ public:
      * Last valid representation will remain valid after changing the size.
      */
     void setSize(size_t size);
+    size_t getSize() const;
 
-    size_t getSizeInBytes();
-    BufferType getBufferType() const { return type_; }
+    size_t getSizeInBytes() const;
+    BufferUsage getBufferUsage() const;
 
     static uvec3 COLOR_CODE;
     static const std::string CLASS_IDENTIFIER;
 
 protected:
-    virtual DataRepresentation* createDefaultRepresentation();
-
-private:
     size_t size_;
-    BufferType type_;
     BufferUsage usage_;
 };
 
-template <typename T, BufferType A = POSITION_ATTRIB>
-class BufferPrecision : public Buffer {
+template <typename T>
+class Buffer : public BufferBase {
 public:
-    BufferPrecision(size_t size = 0, BufferUsage usage = STATIC)
-        : Buffer(size, DataFormat<T>::get(), A, usage) {}
-    BufferPrecision(BufferUsage usage) : Buffer(0, DataFormat<T>::get(), A, usage) {}
-    BufferPrecision(const BufferPrecision& rhs) : Buffer(rhs) {}
-    BufferPrecision& operator=(const BufferPrecision& that) {
-        if (this != &that) {
-            Buffer::operator=(that);
-        }
-        return *this;
-    }
-    virtual BufferPrecision<T, A>* clone() const { return new BufferPrecision<T, A>(*this); }
+    Buffer(size_t size, BufferUsage usage = BufferUsage::STATIC);
+    Buffer(BufferUsage usage = BufferUsage::STATIC);
+    Buffer(std::shared_ptr<BufferRAMPrecision<T>> repr);
+    Buffer(const Buffer<T>& rhs) = default;
+    Buffer<T>& operator=(const Buffer<T>& that) = default;
+    virtual Buffer<T>* clone() const override;
+    virtual ~Buffer() = default;
 
-    virtual ~BufferPrecision() {}
+    BufferRAMPrecision<T>* getEditableRAMRepresentation();
+    const BufferRAMPrecision<T>* getRAMRepresentation() const;
 
-private:
-    static const DataFormatBase* defaultformat() { return DataFormat<T>::get(); }
+protected:
+    virtual std::shared_ptr<BufferRepresentation> createDefaultRepresentation() const override;
 };
 
-typedef BufferPrecision<vec2, POSITION_ATTRIB> Position2dBuffer;
-typedef BufferPrecision<vec2, TEXCOORD_ATTRIB> TexCoord2dBuffer;
-typedef BufferPrecision<vec3, POSITION_ATTRIB> Position3dBuffer;
-typedef BufferPrecision<vec4, COLOR_ATTRIB> ColorBuffer;
-typedef BufferPrecision<vec3, NORMAL_ATTRIB> NormalBuffer;
-typedef BufferPrecision<vec3, TEXCOORD_ATTRIB> TexCoord3dBuffer;
-typedef BufferPrecision<float, CURVATURE_ATTRIB> CurvatureBuffer;
-typedef BufferPrecision<std::uint32_t, INDEX_ATTRIB> IndexBuffer;
+// Used for index buffers
+using IndexBuffer = Buffer<std::uint32_t>;
 
-// Scalar buffers
-typedef BufferPrecision<std::uint8_t> BufferUInt8;
-typedef BufferPrecision<float, POSITION_ATTRIB> BufferFloat32;
-typedef BufferPrecision<std::int32_t, INDEX_ATTRIB> BufferInt32;
-typedef BufferPrecision<std::uint32_t, INDEX_ATTRIB> BufferUInt32;
-typedef BufferPrecision<double, POSITION_ATTRIB> BufferFloat64;
+namespace util {
+inline std::shared_ptr<IndexBuffer> makeIndexBuffer(std::initializer_list<std::uint32_t> data) {
+    auto indexBufferRAM =
+        std::make_shared<IndexBufferRAM>(std::vector<std::uint32_t>(std::move(data)));
+    auto indices = std::make_shared<IndexBuffer>(indexBufferRAM);
+    return indices;
+}
 
-// Vector buffers
-typedef BufferPrecision<vec2, TEXCOORD_ATTRIB> BufferVec2Float32;
-typedef BufferPrecision<vec3, POSITION_ATTRIB> BufferVec3Float32;
-typedef BufferPrecision<vec4, COLOR_ATTRIB>    BufferVec4Float32;
+template <typename T = vec3, BufferUsage U = BufferUsage::STATIC>
+std::shared_ptr<Buffer<T>> makeBuffer(std::initializer_list<T> data) {
+    auto repr = std::make_shared<BufferRAMPrecision<T>>(std::vector<T>(std::move(data)), U);
+    auto buffer = std::make_shared<Buffer<T>>(repr);
+    return buffer;
+}
 
-typedef BufferPrecision<dvec2, TEXCOORD_ATTRIB> BufferVec2Float64;
-typedef BufferPrecision<dvec3, POSITION_ATTRIB> BufferVec3Float64;
-typedef BufferPrecision<dvec4, COLOR_ATTRIB>    BufferVec4Float64;
+}  // namespace
 
-typedef BufferPrecision<ivec2, POSITION_ATTRIB> BufferVec2Int32;
-typedef BufferPrecision<ivec3, POSITION_ATTRIB> BufferVec3Int32;
-typedef BufferPrecision<ivec4, POSITION_ATTRIB> BufferVec4Int32;
+template <typename T>
+Buffer<T>::Buffer(std::shared_ptr<BufferRAMPrecision<T>> repr)
+    : BufferBase(repr->getSize(), repr->getDataFormat(), repr->getBufferUsage()) {
+    addRepresentation(repr);
+}
 
-typedef BufferPrecision<uvec2, POSITION_ATTRIB> BufferVec2UInt32;
-typedef BufferPrecision<uvec3, POSITION_ATTRIB> BufferVec3UInt32;
-typedef BufferPrecision<uvec4, POSITION_ATTRIB> BufferVec4UInt32;
+template <typename T>
+Buffer<T>::Buffer(size_t size, BufferUsage usage /*= BufferUsage::STATIC*/)
+    : BufferBase(size, DataFormat<T>::get(), usage) {}
+
+template <typename T>
+Buffer<T>::Buffer(BufferUsage usage /*= BufferUsage::STATIC*/)
+    : BufferBase(0, DataFormat<T>::get(), usage) {}
+
+template <typename T>
+Buffer<T>* Buffer<T>::clone() const {
+    return new Buffer<T>(*this);
+}
+
+template <typename T>
+const BufferRAMPrecision<T>* Buffer<T>::getRAMRepresentation() const {
+    if (auto res = dynamic_cast<const BufferRAMPrecision<T>*>(getRepresentation<BufferRAM>())) {
+        return res;
+    } else {
+        throw Exception("Unable to create requested RAM representation", IvwContext);
+    }
+}
+
+template <typename T>
+BufferRAMPrecision<T>* Buffer<T>::getEditableRAMRepresentation() {
+    if (auto res = dynamic_cast<BufferRAMPrecision<T>*>(getEditableRepresentation<BufferRAM>())) {
+        return res;
+    } else {
+        throw Exception("Unable to create requested RAM representation", IvwContext);
+    }
+}
+
+template <typename T>
+std::shared_ptr<BufferRepresentation> inviwo::Buffer<T>::createDefaultRepresentation() const {
+    return std::make_shared<BufferRAMPrecision<T>>(size_, usage_);
+}
 
 }  // namespace
 

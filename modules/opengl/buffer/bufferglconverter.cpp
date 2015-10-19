@@ -32,51 +32,36 @@
 
 namespace inviwo {
 
-BufferRAM2GLConverter::BufferRAM2GLConverter() : RepresentationConverterType<BufferGL>() {}
+std::shared_ptr<BufferGL> BufferRAM2GLConverter::createFrom(
+    std::shared_ptr<const BufferRAM> bufferRAM) const {
+    auto buffer = std::make_shared<BufferGL>(bufferRAM->getSize(), bufferRAM->getDataFormat(),
+                                             bufferRAM->getBufferUsage());
 
-BufferRAM2GLConverter::~BufferRAM2GLConverter() {}
-
-DataRepresentation* BufferRAM2GLConverter::createFrom(const DataRepresentation* source) {
-    const BufferRAM* bufferRAM = static_cast<const BufferRAM*>(source);
-    BufferGL* buffer =  new BufferGL(bufferRAM->getSize(), bufferRAM->getDataFormat(),
-                        bufferRAM->getBufferType(), bufferRAM->getBufferUsage());
-    
-    buffer->upload(bufferRAM->getData(), bufferRAM->getSize()*bufferRAM->getSizeOfElement());
-    
+    buffer->upload(bufferRAM->getData(), bufferRAM->getSize() * bufferRAM->getSizeOfElement());
     return buffer;
 }
 
-void BufferRAM2GLConverter::update(const DataRepresentation* source,
-                                   DataRepresentation* destination) {
-    const BufferRAM* src = static_cast<const BufferRAM*>(source);
-    BufferGL* dst = static_cast<BufferGL*>(destination);
-
+void BufferRAM2GLConverter::update(std::shared_ptr<const BufferRAM> src,
+                                   std::shared_ptr<BufferGL> dst) const {
     dst->setSize(src->getSize());
     dst->upload(src->getData(), src->getSize() * src->getSizeOfElement());
 }
 
-BufferGL2RAMConverter::BufferGL2RAMConverter() : RepresentationConverterType<BufferRAM>() {}
-
-BufferGL2RAMConverter::~BufferGL2RAMConverter() {}
-
-DataRepresentation* BufferGL2RAMConverter::createFrom(const DataRepresentation* source) {
-    const BufferGL* src = static_cast<const BufferGL*>(source);
-    BufferRAM* dst = createBufferRAM(src->getSize(), src->getDataFormat(), src->getBufferType(),
-                                     src->getBufferUsage());
+std::shared_ptr<BufferRAM> BufferGL2RAMConverter::createFrom(
+    std::shared_ptr<const BufferGL> src) const {
+    auto dst = createBufferRAM(src->getSize(), src->getDataFormat(), src->getBufferUsage());
 
     if (!dst)
         throw ConverterException(std::string("Cannot convert format from GL to RAM: ") +
-                                 src->getDataFormat()->getString(), IvwContext);
+                                     src->getDataFormat()->getString(),
+                                 IvwContext);
 
     src->download(dst->getData());
     return dst;
 }
 
-void BufferGL2RAMConverter::update(const DataRepresentation* source,
-                                   DataRepresentation* destination) {
-    const BufferGL* src = static_cast<const BufferGL*>(source);
-    BufferRAM* dst = static_cast<BufferRAM*>(destination);
-
+void BufferGL2RAMConverter::update(std::shared_ptr<const BufferGL> src,
+                                   std::shared_ptr<BufferRAM> dst) const {
     dst->setSize(src->getSize());
     src->download(dst->getData());
 }

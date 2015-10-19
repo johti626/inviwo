@@ -58,23 +58,23 @@ namespace inviwo {
 class IVW_MODULE_BASEGL_API FirstIvwProcessor : public Processor {
 public:
     FirstIvwProcessor();
-
+    virtual ~FirstIvwProcessor() = default;
+    
     InviwoProcessorInfo();
 
-    void initialize();
-    void deinitialize();
+    void initialize() override;
 
 protected:
-    virtual void process();
+    virtual void process() override;
 
 private:
     FloatVec3Property color_;
     ImageOutport outport_;
 
-    Position2dBuffer* quad_;
+    std::shared_ptr<Buffer<vec2>> quad_;
     const BufferGL* quadGL_;
 
-    Position2dBuffer* triangle_;
+    std::shared_ptr<Buffer<vec2>> triangle_;
     const BufferGL* triangleGL_;
 
     Shader shader_;

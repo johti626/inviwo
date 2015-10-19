@@ -33,22 +33,16 @@
 
 namespace inviwo {
 
-LayerRAM2CLConverter::LayerRAM2CLConverter() : RepresentationConverterType<LayerCL>() {}
-
-DataRepresentation* LayerRAM2CLConverter::createFrom(const DataRepresentation* source) {
-    DataRepresentation* destination = 0;
-    const LayerRAM* layerRAM = static_cast<const LayerRAM*>(source);
+std::shared_ptr<LayerCL> LayerRAM2CLConverter::createFrom(
+    std::shared_ptr<const LayerRAM> layerRAM) const {
     uvec2 dimensions = layerRAM->getDimensions();
     const void* data = layerRAM->getData();
-    destination =
-        new LayerCL(dimensions, layerRAM->getLayerType(), layerRAM->getDataFormat(), data);
-    return destination;
+    return std::make_shared<LayerCL>(dimensions, layerRAM->getLayerType(),
+                                     layerRAM->getDataFormat(), data);
 }
-void LayerRAM2CLConverter::update(const DataRepresentation* source,
-                                  DataRepresentation* destination) {
-    const LayerRAM* layerSrc = static_cast<const LayerRAM*>(source);
-    LayerCL* layerDst = static_cast<LayerCL*>(destination);
 
+void LayerRAM2CLConverter::update(std::shared_ptr<const LayerRAM> layerSrc,
+                                  std::shared_ptr<LayerCL> layerDst) const {
     if (layerSrc->getDimensions() != layerDst->getDimensions()) {
         layerDst->setDimensions(layerSrc->getDimensions());
     }
@@ -56,19 +50,17 @@ void LayerRAM2CLConverter::update(const DataRepresentation* source,
     layerDst->upload(layerSrc->getData());
 }
 
-LayerCL2RAMConverter::LayerCL2RAMConverter() : RepresentationConverterType<LayerRAM>() {}
-
-DataRepresentation* LayerCL2RAMConverter::createFrom(const DataRepresentation* source) {
-    DataRepresentation* destination = 0;
-    const LayerCL* layerCL = static_cast<const LayerCL*>(source);
+std::shared_ptr<LayerRAM> LayerCL2RAMConverter::createFrom(
+    std::shared_ptr<const LayerCL> layerCL) const {
     uvec2 dimensions = layerCL->getDimensions();
-    destination = createLayerRAM(dimensions, layerCL->getLayerType(), layerCL->getDataFormat());
+    auto destination =
+        createLayerRAM(dimensions, layerCL->getLayerType(), layerCL->getDataFormat());
 
     if (destination) {
-        LayerRAM* layerRAM = static_cast<LayerRAM*>(destination);
-        layerCL->download(layerRAM->getData());
+        layerCL->download(destination->getData());
         // const cl::CommandQueue& queue = OpenCL::getInstance()->getQueue();
-        // queue.enqueueReadLayer(layerCL->getLayer(), true, glm::size3_t(0), glm::size3_t(dimensions,
+        // queue.enqueueReadLayer(layerCL->getLayer(), true, glm::size3_t(0),
+        // glm::size3_t(dimensions,
         // 1), 0, 0, layerRAM->getData());
     } else {
         LogError("Invalid conversion or not implemented");
@@ -77,11 +69,8 @@ DataRepresentation* LayerCL2RAMConverter::createFrom(const DataRepresentation* s
     return destination;
 }
 
-void LayerCL2RAMConverter::update(const DataRepresentation* source,
-                                  DataRepresentation* destination) {
-    const LayerCL* layerSrc = static_cast<const LayerCL*>(source);
-    LayerRAM* layerDst = static_cast<LayerRAM*>(destination);
-
+void LayerCL2RAMConverter::update(std::shared_ptr<const LayerCL> layerSrc,
+                                  std::shared_ptr<LayerRAM> layerDst) const {
     if (layerSrc->getDimensions() != layerDst->getDimensions()) {
         layerDst->setDimensions(layerSrc->getDimensions());
     }

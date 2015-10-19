@@ -33,6 +33,8 @@
 #include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/datastructures/volume/volume.h>
+#include <inviwo/core/datastructures/volume/volumedisk.h>
+#include <inviwo/core/datastructures/volume/volumeramprecision.h>
 #include <inviwo/core/io/datareader.h>
 #include <inviwo/core/io/datareaderdialog.h>
 
@@ -43,14 +45,13 @@ public:
     RawVolumeReader();
     RawVolumeReader(const RawVolumeReader& rhs);
     RawVolumeReader& operator=(const RawVolumeReader& that);
-    virtual RawVolumeReader* clone() const;
-    virtual ~RawVolumeReader() {}
+    virtual RawVolumeReader* clone() const override;
+    virtual ~RawVolumeReader() = default;
 
     virtual void setParameters(const DataFormatBase* format, ivec3 dimensions, bool littleEndian);
 
-    virtual Volume* readMetaData(const std::string filePath);
-    virtual void* readData() const;
-    virtual void readDataInto(void* dest) const;
+    virtual std::shared_ptr<Volume> readData(const std::string filePath) override;
+
     bool haveReadLittleEndian() const { return littleEndian_; }
     const DataFormatBase* getFormat() const { return format_; }
 

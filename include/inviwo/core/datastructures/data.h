@@ -41,11 +41,11 @@ namespace inviwo {
 
 class IVW_CORE_API BaseData : public MetaDataOwner {
 public:
-    BaseData();
-    BaseData(const BaseData& rhs);
-    BaseData& operator=(const BaseData& rhs);
+    BaseData() = default;
+    BaseData(const BaseData& rhs) = default;
+    BaseData& operator=(const BaseData& rhs) = default;
     virtual BaseData* clone() const = 0;
-    virtual ~BaseData();
+    virtual ~BaseData() = default;
     virtual std::string getDataInfo() const;
 };
 
@@ -66,14 +66,15 @@ public:
  *  3 is needed for the factory pattern, 3 should be implemented using 1.
  *
  */
-class IVW_CORE_API Data : public BaseData {
+template <class Repr>
+class Data : public BaseData {
 public:
     Data();
     Data(const DataFormatBase*);
-    Data(const Data& rhs);
-    Data& operator=(const Data& rhs);
-    virtual Data* clone() const = 0;
-    virtual ~Data();
+    Data(const Data<Repr>& rhs);
+    Data<Repr>& operator=(const Data<Repr>& rhs);
+    virtual Data<Repr>* clone() const = 0;
+    virtual ~Data() = default;
 
     // Representations
     template <typename T>
@@ -86,288 +87,230 @@ public:
     bool hasRepresentation() const;
 
     bool hasRepresentations() const;
-    void addRepresentation(DataRepresentation* representation);
+    void addRepresentation(std::shared_ptr<Repr> representation);
 
     /**
      * Remove representation from data object.
      * This will delete the representation, thus rendering the representation pointer invalid.
-     *
      * @param representation The representation to remove
      */
-    void removeRepresentation(DataRepresentation* representation);
+    void removeRepresentation(const Repr* representation);
+    void removeOtherRepresentations(const Repr* representation);
     void clearRepresentations();
+    void invalidateAllOther(const Repr* repr);
 
     // DataFormat
     void setDataFormat(const DataFormatBase* format);
     const DataFormatBase* getDataFormat() const;
 
 protected:
-    virtual DataRepresentation* createDefaultRepresentation() = 0;
-
-    virtual void newRepresentationCreated() const {}
-
+    virtual std::shared_ptr<Repr> createDefaultRepresentation() const = 0;
     template <typename T>
-    void updateRepresentation(T* representation, int index) const;
-
-    template <typename T>
-    const T* createNewRepresentationUsingConverters() const;
-
-    template <typename T>
-    RepresentationConverterPackage<T>* findRepresentationConverterPackage(
-        DataRepresentation*, RepresentationConverterFactory*) const;
-
-    template <class T>
-    void invalidateAllOther();
-
+    const T* getValidRepresentation() const;
     void copyRepresentationsTo(Data* targetData) const;
 
-    /**
-     * Check if data needs to be updated.
-     * See http://www.cprogramming.com/tutorial/bitwise_operators.html
-     * @param index Index into representations_ vector.
-     * @return True if up-to-date
-     */
-    inline bool isRepresentationValid(int index) const {
-        return (validRepresentations_ & (1 << index)) != 0;
-    }
-    inline void setRepresentationAsValid(int index) const {
-        validRepresentations_ = validRepresentations_ | (1 << index);
-    }
-    inline void setRepresentationAsInvalid(int index) const {
-        validRepresentations_ = validRepresentations_ & ~(1 << index);
-    }
-    inline void setAllOtherRepresentationsAsInvalid(int index) const {
-        validRepresentations_ = (1 << index);
-    }
-    inline void setAllRepresentationsAsInvalid() const { validRepresentations_ = 0; }
-    inline void setAllRepresentationsAsValid() const { validRepresentations_ = ~0; }
-
-    mutable std::vector<DataRepresentation*> representations_;
-    mutable int validRepresentations_;  ///< Bit representation of valid representation. A maximum
-                                        ///of 32 representations are supported.
-    mutable DataRepresentation* lastValidRepresentation_;  ///< A pointer to the the most recently
-                                                           ///updated representation. Makes updates
-                                                           ///and creation faster.
-
+    mutable std::mutex mutex_;
+    mutable std::unordered_map<std::type_index, std::shared_ptr<Repr>> representations_;
+    // A pointer to the the most recently updated representation. Makes updates and creation faster.
+    mutable std::shared_ptr<Repr> lastValidRepresentation_;
     const DataFormatBase* dataFormatBase_;
 };
 
+template <class Repr>
+Data<Repr>::Data()
+    : BaseData(), lastValidRepresentation_(), dataFormatBase_(DataFormatBase::get()) {}
+
+template <class Repr>
+Data<Repr>::Data(const DataFormatBase* format)
+    : BaseData(), lastValidRepresentation_(), dataFormatBase_(format) {}
+
+template <class Repr>
+Data<Repr>::Data(const Data<Repr>& rhs)
+    : BaseData(rhs), lastValidRepresentation_(), dataFormatBase_(rhs.dataFormatBase_) {
+    rhs.copyRepresentationsTo(this);
+}
+
+template <class Repr>
+Data<Repr>& Data<Repr>::operator=(const Data<Repr>& that) {
+    if (this != &that) {
+        BaseData::operator=(that);
+        that.copyRepresentationsTo(this);
+        dataFormatBase_ = that.dataFormatBase_;
+    }
+
+    return *this;
+}
+
+template <class Repr>
 template <typename T>
-const T* Data::getRepresentation() const {
+const T* Data<Repr>::getRepresentation() const {
     if (!hasRepresentations()) {
-        DataRepresentation* repr = const_cast<Data*>(this)->createDefaultRepresentation();
-        if (!repr) {
-            // TODO Should we throw here? /Peter
-            LogError(
-                "CreateDefaultRepresentation retured nullptr. Possible missing subclass "
-                "implementation");
-            return nullptr;
-        }
-        repr->setOwner(const_cast<Data*>(this));
-        representations_.push_back(repr);
-        lastValidRepresentation_ = representations_[0];
-        setRepresentationAsValid(static_cast<int>(representations_.size()) - 1);
+        auto repr = createDefaultRepresentation();
+        if (!repr) throw Exception("Failed to create default representation", IvwContext);
+        const_cast<Data*>(this)->addRepresentation(repr);
     }
 
-    // check if a representation exists and return it
-    for (int i = 0; i < static_cast<int>(representations_.size()); ++i) {
-        T* representation = dynamic_cast<T*>(representations_[i]);
-
-        if (representation) {
-            if (isRepresentationValid(i)) {
-                lastValidRepresentation_ = representation;
-                return representation;
-            } else {
-                updateRepresentation<T>(representation, i);
-                lastValidRepresentation_ = representation;
-                return representation;
-            }
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        auto it = representations_.find(std::type_index(typeid(T)));
+        if (it != representations_.end() && it->second->isValid()) {
+            lastValidRepresentation_ = it->second;
+            return dynamic_cast<const T*>(lastValidRepresentation_.get());
+        } else {
+            return getValidRepresentation<T>();
         }
     }
-
-    // no representation exists, so we try to create one
-    const T* result = 0;
-    result = createNewRepresentationUsingConverters<T>();
-    // ivwAssert(result!=0, "Required representation converter does not exist.");
-    return result;
 }
 
+template <class Repr>
 template <typename T>
-const T* Data::createNewRepresentationUsingConverters() const {
-    // no representation exists, so we try to create one
+const T* Data<Repr>::getValidRepresentation() const {
     auto factory = RepresentationConverterFactory::getPtr();
-    auto converter = factory->getRepresentationConverter<T>(lastValidRepresentation_);
 
-    if (converter) {
-        DataRepresentation* result = converter->createFrom(lastValidRepresentation_);
-        if (!result) return nullptr;
-        result->setOwner(const_cast<Data*>(this));
-        representations_.push_back(result);
-        setRepresentationAsValid(static_cast<int>(representations_.size()) - 1);
-        lastValidRepresentation_ = result;
-        newRepresentationCreated();
-        return dynamic_cast<T*>(result);
-    }
+    auto package = factory->getRepresentationConverter(lastValidRepresentation_->getTypeIndex(),
+                                                       std::type_index(typeid(T)));
 
-    // A one-2-one converter could not be found, thus we want to find the smallest package of
-    // converters to get to our destination
-    if (auto package = findRepresentationConverterPackage<T>(lastValidRepresentation_, factory)) {
-        for (auto pkgconverter : package->getConverters()) {
-            // Check if we already have the destination representation
-            // and can update to it instead of creating a new
-            bool updatedRepresentation = false;
+    if (package) {
+        for (auto converter : package->getConverters()) {
+            std::shared_ptr<Repr> result;
 
-            for (int k = 0; k < static_cast<int>(representations_.size()); ++k) {
-                auto repr = representations_[k];
-                if (lastValidRepresentation_ != repr && pkgconverter->canConvertTo(repr)) {
-                    pkgconverter->update(lastValidRepresentation_, repr);
-                    setRepresentationAsValid(k);
-                    lastValidRepresentation_ = repr;
-                    updatedRepresentation = true;
-                    break;
-                }
+            auto dest = converter->getConverterID().second;
+            auto it = representations_.find(dest);
+            if (it != representations_.end()) {  // Next repr. already exist, just update it
+                result = it->second;
+                converter->update(lastValidRepresentation_, result);
+            } else {  // No representation found, create it
+                // TODO remove static cast here with template factory...
+                result = std::dynamic_pointer_cast<Repr>(
+                    converter->createFrom(lastValidRepresentation_));
+                if (!result) throw ConverterException("Converter failed to create", IvwContext);
+                result->setOwner(const_cast<Data*>(this));
+                representations_[result->getTypeIndex()] = result;
             }
-
-            // Create the representation if it did not exist
-            if (!updatedRepresentation) {
-                lastValidRepresentation_ = pkgconverter->createFrom(lastValidRepresentation_);
-                if (!lastValidRepresentation_) return nullptr;
-                lastValidRepresentation_->setOwner(const_cast<Data*>(this));
-                representations_.push_back(lastValidRepresentation_);
-                setRepresentationAsValid(static_cast<int>(representations_.size()) - 1);
-            }
+            result->setValid(true);
+            lastValidRepresentation_ = result;
         }
-
-        newRepresentationCreated();
-        return dynamic_cast<T*>(lastValidRepresentation_);
+        return dynamic_cast<const T*>(lastValidRepresentation_.get());
+    } else {
+        throw ConverterException("Found no converters", IvwContext);
     }
-
-    return nullptr;
 }
 
+template <class Repr>
 template <typename T>
-void Data::updateRepresentation(T* representation, int index) const {
-    auto factory = RepresentationConverterFactory::getPtr();
+T* Data<Repr>::getEditableRepresentation() {
+    auto repr = getRepresentation<T>();
+    invalidateAllOther(repr);
+    return const_cast<T*>(repr);
+}
+
+template <class Repr>
+template <typename T>
+bool Data<Repr>::hasRepresentation() const {
+    std::unique_lock<std::mutex> lock(mutex_);
+    return util::has_key(representations_, std::type_index(typeid(T)));
+}
+
+template <class Repr>
+void Data<Repr>::invalidateAllOther(const Repr* repr) {
+    bool found = false;
+    std::unique_lock<std::mutex> lock(mutex_);
+    for (auto& elem : representations_) {
+        if (elem.second.get() != repr) {
+            elem.second->setValid(false);
+        } else {
+            found = true;
+            elem.second->setValid(true);
+            lastValidRepresentation_ = elem.second;
+        }
+    }
+    if(!found) throw Exception("Called with representation not in representations.", IvwContext);
+}
+
+template <class Repr>
+void Data<Repr>::clearRepresentations() {
+    std::unique_lock<std::mutex> lock(mutex_);
+    representations_.clear();
+}
+
+template <class Repr>
+void Data<Repr>::copyRepresentationsTo(Data* targetData) const {
+    targetData->clearRepresentations();
 
     if (lastValidRepresentation_) {
-        if (auto converter = factory->getRepresentationConverter<T>(lastValidRepresentation_)) {
-            converter->update(lastValidRepresentation_, representation);
-            setRepresentationAsValid(index);
-            lastValidRepresentation_ = representation;
-            return;
-        }
-
-        // A one-2-one converter could not be found, thus we want to find the smallest package of
-        // converters to get to our destination
-        // Go-through the conversion package
-        if (auto package = findRepresentationConverterPackage<T>(lastValidRepresentation_, factory)) {
-            for (auto pkgconverter : package->getConverters()) {
-                for (int k = 0; k < static_cast<int>(representations_.size()); ++k) {
-                    if (pkgconverter->canConvertTo(representations_[k])) {
-                        pkgconverter->update(lastValidRepresentation_, representations_[k]);
-                        setRepresentationAsValid(k);
-                        lastValidRepresentation_ = representations_[k];
-                        break;
-                    }
-                }
-            }
-        }
+        auto rep = std::shared_ptr<Repr>(lastValidRepresentation_->clone());
+        targetData->addRepresentation(rep);
     }
 }
 
-template <typename T>
-RepresentationConverterPackage<T>* Data::findRepresentationConverterPackage(
-    DataRepresentation* validRepresentation, RepresentationConverterFactory* factory) const {
-    auto converterPackage = factory->getRepresentationConverterPackage<T>(validRepresentation);
-
-    DataRepresentation* result = nullptr;
-
-    if (converterPackage) {
-        return converterPackage;
-    } else {
-        // Not possible to convert from last valid representation.
-        // Check if it is possible to convert from another valid representation.
-        for (int i = 0; i < static_cast<int>(representations_.size()); ++i) {
-            if (isRepresentationValid(i)) {
-                auto currentConverterPackage =
-                    factory->getRepresentationConverterPackage<T>(representations_[i]);
-
-                if (currentConverterPackage) {
-                    if (converterPackage) {
-                        if (currentConverterPackage->getNumberOfConverters() <
-                            converterPackage->getNumberOfConverters()) {
-                            converterPackage = currentConverterPackage;
-                            result = representations_[i];
-                        }
-                    } else {
-                        converterPackage = currentConverterPackage;
-                        result = representations_[i];
-                    }
-                }
-            }
-        }
+template <class Repr>
+void Data<Repr>::addRepresentation(std::shared_ptr<Repr> repr) {
+    repr->setValid(true);
+    repr->setOwner(this);
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        representations_[repr->getTypeIndex()] = repr;
+        lastValidRepresentation_ = repr;
     }
-
-    // If not converter package was found, try to create one by combining one-2-one converters
-    if (!converterPackage) {
-        auto srcConverters = factory->getRepresentationConvertersFrom(validRepresentation);
-        auto toConverters = factory->getRepresentationConvertersTo<T>();
-
-        for (auto srcConverter : srcConverters) {
-            for (auto toConverter : toConverters) {
-                // Match srcTo with toSrc if src->srcTo and toSrc->to
-                if (!converterPackage && toConverter->isConverterReverse(srcConverter)) {
-                    converterPackage = new RepresentationConverterPackage<T>;
-                    converterPackage->addConverter(srcConverter);
-                    converterPackage->addConverter(toConverter);
-                    // Register the new convert so we don't have to do this again
-                    factory->registerObject(converterPackage);
-
-                    break;
-                }
-            }
-        }
-    } else {
-        validRepresentation = result;
-    }
-
-    // TODO, If not converter package was found, try to create one by combining one-2-one converters
-    // with converter packages
-
-    return converterPackage;
 }
 
-template <typename T>
-T* Data::getEditableRepresentation() {
-    T* result = const_cast<T*>(getRepresentation<T>());
+template <class Repr>
+void Data<Repr>::removeRepresentation(const Repr* representation) {
+    std::unique_lock<std::mutex> lock(mutex_);
 
-    if (representations_.size() > 1) invalidateAllOther<T>();
-
-    return result;
-}
-
-template <typename T>
-bool Data::hasRepresentation() const {
-    for (size_t i = 0; i < representations_.size(); i++) {
-        T* representation = dynamic_cast<T*>(representations_[i]);
-
-        if (representation) return true;
-    }
-
-    return false;
-}
-
-template <typename T>
-void Data::invalidateAllOther() {
-    for (int i = 0; i < static_cast<int>(representations_.size()); ++i) {
-        T* representation = dynamic_cast<T*>(representations_[i]);
-
-        if (representation) {
-            setAllOtherRepresentationsAsInvalid(i);
-            lastValidRepresentation_ = representations_[i];
+    for (auto& elem : representations_) {
+        if (elem.second.get() == representation) {
+            representations_.erase(elem.first);
             break;
         }
     }
+
+    if (lastValidRepresentation_.get() == representation) {
+        lastValidRepresentation_.reset();
+
+        for (auto& elem : representations_) {
+            if (elem.second->isValid()) {
+                lastValidRepresentation_ = elem.second;
+            }
+        }
+    }
+}
+
+template <class Repr>
+void Data<Repr>::removeOtherRepresentations(const Repr* representation) {
+    std::unique_lock<std::mutex> lock(mutex_);
+
+    std::unordered_map<std::type_index, std::shared_ptr<Repr>> repr;
+    for (auto& elem : representations_) {
+        if (elem.second.get() == representation) {
+            repr.insert(elem);
+            if (lastValidRepresentation_.get() != representation) {
+                if (elem.second->isValid()) {
+                    lastValidRepresentation_ = elem.second;
+                } else {
+                    lastValidRepresentation_.reset();
+                }
+            }
+            break;
+        }
+    }
+    std::swap(repr, representations_);
+}
+
+template <class Repr>
+bool Data<Repr>::hasRepresentations() const {
+    std::unique_lock<std::mutex> lock(mutex_);
+    return !representations_.empty();
+}
+
+template <class Repr>
+void Data<Repr>::setDataFormat(const DataFormatBase* format) {
+    dataFormatBase_ = format;
+}
+
+template <class Repr>
+const DataFormatBase* Data<Repr>::getDataFormat() const {
+    return dataFormatBase_;
 }
 
 }  // namespace

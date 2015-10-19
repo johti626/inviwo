@@ -39,7 +39,8 @@
 
 namespace inviwo {
 
-typedef std::pair< std::shared_ptr<Texture>, std::shared_ptr<cl::Image2DGL> > TextureCLImageSharingPair;
+typedef std::pair<std::shared_ptr<Texture>, std::shared_ptr<cl::Image2DGL> >
+    TextureCLImageSharingPair;
 typedef std::map<std::shared_ptr<Texture>, std::shared_ptr<cl::Image2DGL> > CLTextureSharingMap;
 
 /** \class LayerCLGL
@@ -56,33 +57,33 @@ class IVW_MODULE_OPENCL_API LayerCLGL : public LayerCLBase,
                                         public LayerRepresentation,
                                         public TextureObserver {
 public:
-    LayerCLGL(size2_t dimensions, LayerType type,
-        const DataFormatBase* format, std::shared_ptr<Texture2D> data);
+    LayerCLGL(size2_t dimensions, LayerType type, const DataFormatBase* format,
+              std::shared_ptr<Texture2D> data);
     virtual ~LayerCLGL();
     LayerCLGL(const LayerCLGL& rhs);
-    virtual LayerCLGL* clone() const;
+    virtual LayerCLGL* clone() const override;
 
     void initialize(Texture2D* texture);
     void deinitialize();
-    
+
     virtual void setDimensions(size2_t dimensions) override;
     virtual bool copyRepresentationsTo(DataRepresentation* target) const override;
 
-    virtual cl::Image2DGL& getEditable() { return *clImage_; }
-    virtual const cl::Image2DGL& get() const { return *clImage_; }
+    virtual cl::Image2DGL& getEditable() override { return *clImage_; }
+    virtual const cl::Image2DGL& get() const override { return *clImage_; }
 
     std::shared_ptr<Texture2D> getTexture() const { return texture_; }
     /**
     * This method will be called before the texture is initialized.
     * Override it to add behavior.
     */
-    virtual void notifyBeforeTextureInitialization();
+    virtual void notifyBeforeTextureInitialization() override;
 
     /**
     * This method will be called after the texture has been initialized.
     * Override it to add behavior.
     */
-    virtual void notifyAfterTextureInitialization();
+    virtual void notifyAfterTextureInitialization() override;
 
     void aquireGLObject(std::vector<cl::Event>* syncEvents = nullptr) const {
         std::vector<cl::Memory> syncLayers(1, *clImage_);
@@ -93,12 +94,11 @@ public:
         std::vector<cl::Memory> syncLayers(1, *clImage_);
         OpenCL::getPtr()->getQueue().enqueueReleaseGLObjects(&syncLayers, syncEvents, event);
     }
-
-
+    virtual std::type_index getTypeIndex() const override final;
 protected:
     static CLTextureSharingMap clImageSharingMap_;
-    std::shared_ptr<Texture2D> texture_; ///< Shared with LayerGL
-    std::shared_ptr<cl::Image2DGL> clImage_; ///< Potentially shared with other LayerCLGL
+    std::shared_ptr<Texture2D> texture_;      ///< Shared with LayerGL
+    std::shared_ptr<cl::Image2DGL> clImage_;  ///< Potentially shared with other LayerCLGL
 };
 
 }  // namespace

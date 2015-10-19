@@ -40,15 +40,16 @@ namespace inviwo {
 
 class IVW_CORE_API MeshDisk : public MeshRepresentation, public DiskRepresentation {
 public:
-    MeshDisk();
+    MeshDisk() = default;
     MeshDisk(std::string srcFile);
-    MeshDisk(const MeshDisk& rhs);
-    MeshDisk& operator=(const MeshDisk& that);
-    virtual ~MeshDisk(){}
-    virtual MeshDisk* clone() const;
+    MeshDisk(const MeshDisk& rhs) = default;
+    MeshDisk& operator=(const MeshDisk& that) = default;
+    virtual ~MeshDisk() = default;
+    virtual MeshDisk* clone() const override;
+    virtual std::type_index getTypeIndex() const override final;
 
 protected:
-    virtual void update(bool editable);
+    virtual void update(bool editable) override;
 };
 
 } // namespace

@@ -32,16 +32,15 @@
 #include <inviwo/core/util/stringconversion.h>
 #include <inviwo/core/datastructures/geometry/mesh.h>
 #include <inviwo/core/datastructures/buffer/bufferramprecision.h>
+#include <inviwo/core/io/datareaderexception.h>
 
 #include <warn/push>
 #include <warn/ignore/all>
-
 #include <assimp/Importer.hpp>   // C++ importer interface
 #include <assimp/scene.h>        // Output data structure
 #include <assimp/postprocess.h>  // Post processing flags
 #include <assimp/types.h>
 #include <assimp/importerdesc.h>
-
 #include <warn/pop>
 
 namespace inviwo {
@@ -59,18 +58,9 @@ AssimpReader::AssimpReader() : DataReaderType<Mesh>() {
     }
 }
 
-AssimpReader::AssimpReader(const AssimpReader& rhs) : DataReaderType<Mesh>(rhs) {}
-
 AssimpReader* AssimpReader::clone() const { return new AssimpReader(*this); }
 
-AssimpReader& AssimpReader::operator=(const AssimpReader& that) {
-    if (this != &that) {
-        DataReaderType<Mesh>::operator=(that);
-    }
-    return *this;
-}
-
-Mesh* AssimpReader::readMetaData(const std::string filePath) {
+std::shared_ptr<Mesh> AssimpReader::readData(const std::string filePath) {
     Assimp::Importer importer;
 
     // And have it read the given file with some example post processing
@@ -80,56 +70,58 @@ Mesh* AssimpReader::readMetaData(const std::string filePath) {
         filePath, aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_GenSmoothNormals |
                       aiProcess_JoinIdenticalVertices | aiProcess_SortByPType);
 
-    if (!scene) {
-        throw DataReaderException(importer.GetErrorString(), IvwContext);
-    }
+    if (!scene) throw DataReaderException(importer.GetErrorString(), IvwContext);
 
-    Mesh* mesh = new Mesh();
+    auto mesh = std::make_shared<Mesh>();
 
     // Only support reading one mesh from the scene. 
     for (size_t i = 0; i < std::min(size_t{1}, size_t{scene->mNumMeshes}); ++i) {
         aiMesh* m = scene->mMeshes[i];
 
-        Position3dBuffer* pbuff = new Position3dBuffer();
-        Position3dBufferRAM* prep = pbuff->getEditableRepresentation<Position3dBufferRAM>();
+        auto prep = std::make_shared<Vec3BufferRAM>(m->mNumVertices);
+        auto pbuff = std::make_shared<Buffer<vec3>>(prep);
+
         for (size_t j = 0; j < m->mNumVertices; ++j) {
             aiVector3D v = m->mVertices[j];
-            prep->add(vec3(v.x, v.y, v.z));
+            (*prep)[j] = vec3(v.x, v.y, v.z);
         }
-        mesh->addAttribute(pbuff);
+        mesh->addBuffer(BufferType::POSITION_ATTRIB, pbuff);
    
         for (size_t l = 0; l < m->GetNumUVChannels(); ++l) {
-            TexCoord3dBuffer* tbuff = new TexCoord3dBuffer();
-            TexCoord3dBufferRAM* trep = tbuff->getEditableRepresentation<TexCoord3dBufferRAM>();
+            auto trep = std::make_shared<Vec3BufferRAM>(m->mNumVertices);
+            auto tbuff = std::make_shared<Buffer<vec3>>(trep);
             for (size_t j = 0; j < m->mNumVertices; ++j) {
                 aiVector3D t = m->mTextureCoords[l][j];
-                trep->add(vec3(t.x, t.y, t.z));
+                (*trep)[j] = vec3(t.x, t.y, t.z);
             }
-            mesh->addAttribute(tbuff);
+            mesh->addBuffer(BufferType::TEXCOORD_ATTRIB, tbuff);
         }
 
         for (size_t l = 0; l < m->GetNumColorChannels(); ++l) {
-            ColorBuffer* cbuff = new ColorBuffer();
-            ColorBufferRAM* crep = cbuff->getEditableRepresentation<ColorBufferRAM>();
+            auto crep = std::make_shared<Vec4BufferRAM>(m->mNumVertices);
+            auto cbuff = std::make_shared<Buffer<vec4>>(crep);
+            
             for (size_t j = 0; j < m->mNumVertices; ++j) {
                 aiColor4D c = m->mColors[l][j];
-                crep->add(vec4(c.r, c.g, c.b, c.a));
+                (*crep)[j] = vec4(c.r, c.g, c.b, c.a);
             }
-            mesh->addAttribute(cbuff);
+            mesh->addBuffer(BufferType::COLOR_ATTRIB, cbuff);
         }
 
         if (m->HasNormals()) {
-            NormalBuffer* nbuff = new NormalBuffer();
-            NormalBufferRAM* nrep = nbuff->getEditableRepresentation<NormalBufferRAM>();
+            auto nrep = std::make_shared<Vec3BufferRAM>(m->mNumVertices);
+            auto nbuff = std::make_shared<Buffer<vec3>>(nrep);
+            
             for (size_t j = 0; j < m->mNumVertices; ++j) {
                 aiVector3D n = m->mNormals[j];
-                nrep->add(vec3(n.x, n.y, n.z));
+                (*nrep)[j] = vec3(n.x, n.y, n.z);
             }
-            mesh->addAttribute(nbuff);
+            mesh->addBuffer(BufferType::NORMAL_ATTRIB, nbuff);
         }
 
-        IndexBuffer* inds = new IndexBuffer();
-        IndexBufferRAM* ibuff = inds->getEditableRepresentation<IndexBufferRAM>();
+        auto ibuff = std::make_shared<IndexBufferRAM>();
+        auto inds = std::make_shared<IndexBuffer>(ibuff);
+        
         for (size_t j = 0; j < m->mNumFaces; ++j) {
             aiFace face = m->mFaces[j];
             for (size_t k = 0; k < face.mNumIndices; ++k) {
@@ -137,20 +129,18 @@ Mesh* AssimpReader::readMetaData(const std::string filePath) {
             }
         }
 
-        GeometryEnums::DrawType dt = GeometryEnums::NOT_SPECIFIED;
+        DrawType dt = DrawType::NOT_SPECIFIED;
         if (m->mPrimitiveTypes == aiPrimitiveType_POINT) {
-            dt = GeometryEnums::POINTS;
+            dt = DrawType::POINTS;
         } else if (m->mPrimitiveTypes == aiPrimitiveType_LINE) {
-            dt = GeometryEnums::LINES;
+            dt = DrawType::LINES;
         } else if (m->mPrimitiveTypes == aiPrimitiveType_TRIANGLE) {
-            dt = GeometryEnums::TRIANGLES;
+            dt = DrawType::TRIANGLES;
         }
-        mesh->addIndicies(Mesh::AttributesInfo(dt, GeometryEnums::NONE), inds);
+        mesh->addIndicies(Mesh::MeshInfo(dt, ConnectivityType::NONE), inds);
     }
 
     return mesh;
 }
-void* AssimpReader::readData() const { return nullptr; }
-void AssimpReader::readDataInto(void* dest) const {}
 
 }  // namespace

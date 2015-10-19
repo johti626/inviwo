@@ -40,6 +40,7 @@ set(MOC_FILES
     ${IVW_INCLUDE_DIR}/inviwo/qt/widgets/properties/propertysettingswidgetqt.h
     ${IVW_INCLUDE_DIR}/inviwo/qt/widgets/properties/propertywidgetqt.h
     ${IVW_INCLUDE_DIR}/inviwo/qt/widgets/properties/stringpropertywidgetqt.h
+    ${IVW_INCLUDE_DIR}/inviwo/qt/widgets/properties/stringmultilinepropertywidgetqt.h
     ${IVW_INCLUDE_DIR}/inviwo/qt/widgets/properties/syntaxhighlighter.h
     ${IVW_INCLUDE_DIR}/inviwo/qt/widgets/properties/texteditorwidgetqt.h
     ${IVW_INCLUDE_DIR}/inviwo/qt/widgets/properties/transferfunctioneditor.h
@@ -61,7 +62,6 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/qt/widgets/qstringhelper.h
     ${IVW_INCLUDE_DIR}/inviwo/qt/widgets/qtwidgetmodule.h
     ${IVW_INCLUDE_DIR}/inviwo/qt/widgets/rawdatareaderdialogqt.h
-    ${IVW_INCLUDE_DIR}/inviwo/qt/widgets/tooltiphelper.h
     ${MOC_FILES}
 )
 ivw_group("Header Files" ${HEADER_FILES})
@@ -105,6 +105,7 @@ set(SOURCE_FILES
     properties/propertywidgetqt.cpp
     properties/pythonsyntaxhighlighter.cpp
     properties/stringpropertywidgetqt.cpp
+    properties/stringmultilinepropertywidgetqt.cpp
     properties/syntaxhighlighter.cpp
     properties/texteditorwidgetqt.cpp
     properties/transferfunctioncontrolpointconnection.cpp
@@ -120,7 +121,6 @@ set(SOURCE_FILES
     rawdatareaderdialogqt.cpp
     sliderwidgetqt.cpp
     spinboxrangesliderwidgetqt.cpp
-    tooltiphelper.cpp
 )
 
 ivw_group("Source Files" ${SOURCE_FILES})

@@ -38,6 +38,8 @@
 #include <modules/opengl/texture/textureutils.h>
 #include <modules/opengl/shader/shaderutils.h>
 #include <modules/opengl/volume/volumeutils.h>
+#include <inviwo/core/common/inviwoapplication.h>
+#include <inviwo/core/util/rendercontext.h>
 
 namespace inviwo {
 
@@ -113,9 +115,36 @@ void VolumeRaycaster::onVolumeChange() {
 void VolumeRaycaster::process() {
     utilgl::activateAndClearTarget(outport_);
     shader_.activate();
-    
+
+    if (volumePort_.isChanged()) {
+        auto newVolume = volumePort_.getData();
+
+        if (newVolume->hasRepresentation<VolumeGL>()) {
+            loadedVolume_ = newVolume;
+        } else {
+            dispatchPool([this, newVolume]() {
+                RenderContext::getPtr()->activateLocalRenderContext();
+                newVolume->getRep<kind::GL>();
+                glFlush();
+                dispatchFront([this, newVolume]() {
+                    loadedVolume_ = newVolume;
+                    invalidate(INVALID_OUTPUT);
+                });
+            });
+        }
+    }
+
+    if (!loadedVolume_) {
+        LogInfo("No loaded data");
+        return;
+    }
+    if (!loadedVolume_->hasRepresentation<VolumeGL>()) {
+        LogInfo("No GL rep !!! ");
+        return;
+    }
+
     TextureUnitContainer units;
-    utilgl::bindAndSetUniforms(shader_, units, volumePort_);
+    utilgl::bindAndSetUniforms(shader_, units, *loadedVolume_, "volume");
     utilgl::bindAndSetUniforms(shader_, units, transferFunction_);
     utilgl::bindAndSetUniforms(shader_, units, entryPort_, COLOR_DEPTH_PICKING);
     utilgl::bindAndSetUniforms(shader_, units, exitPort_, COLOR_DEPTH);

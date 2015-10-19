@@ -71,14 +71,14 @@ public:
 
     InviwoProcessorInfo();
 
-    void initialize();
+    void initialize() override;
 
     void buildKernel();
 
-    void deinitialize();
+    void deinitialize() override;
 
 protected:
-    virtual void process();
+    virtual void process() override;
     void executeVolumeOperation(const Volume* volume, const VolumeCLBase* volumeCL,
                                 VolumeCLBase* volumeOutCL, const size3_t& outDim,
                                 const size3_t& globalWorkGroupSize,
@@ -93,7 +93,7 @@ private:
     BoolProperty useGLSharing_;
 
     bool supportsVolumeWrite_;  // Does the OpenCL device support volume writes?
-    Buffer* tmpVolume_;         // Used if writing to a volume is not supported
+    BufferBase* tmpVolume_;         // Used if writing to a volume is not supported
     std::shared_ptr<Volume> volumeOut_;
     cl::Kernel* kernel_;
 };

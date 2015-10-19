@@ -76,7 +76,10 @@ class QOpenGLContext;
 namespace inviwo {
 
 class IVW_MODULE_OPENGLQT_API CanvasQt : public QGLWindow, public CanvasGL {
+    #include <warn/push>
+    #include <warn/ignore/all>
     Q_OBJECT
+    #include <warn/pop>
 
     friend class CanvasProcessorWidgetQt;
 
@@ -86,29 +89,31 @@ public:
 
     static void defineDefaultContextFormat();
 
-    void initialize();
-    void initializeSquare();
-    void deinitialize();
-    void activate();
-    void glSwapBuffers();
-    void update();
+    virtual void initialize() override;
+    virtual void initializeSquare() override;
+    virtual void deinitialize() override;
+    virtual void activate() override;
+    virtual void glSwapBuffers() override;
+    virtual void update() override;
     void repaint();
 
-    virtual void resize(uvec2 size);
+    virtual void resize(uvec2 size) override;
+
+    virtual std::unique_ptr<Canvas> create() override;
 
 protected:
-    void initializeGL();
-    void paintGL();
+    void initializeGL() override;
+    void paintGL() override;
 
-    virtual bool event(QEvent *e);
-    virtual void mousePressEvent(QMouseEvent* e);
-    virtual void mouseReleaseEvent(QMouseEvent* e);
-    virtual void mouseMoveEvent(QMouseEvent* e);
-    virtual void wheelEvent (QWheelEvent* e);
-    virtual void keyPressEvent(QKeyEvent* keyEvent);
-    virtual void keyReleaseEvent(QKeyEvent* keyEvent);
+    virtual bool event(QEvent *e) override;
+    virtual void mousePressEvent(QMouseEvent* e) override;
+    virtual void mouseReleaseEvent(QMouseEvent* e) override;
+    virtual void mouseMoveEvent(QMouseEvent* e) override;
+    virtual void wheelEvent (QWheelEvent* e) override;
+    virtual void keyPressEvent(QKeyEvent* keyEvent) override;
+    virtual void keyReleaseEvent(QKeyEvent* keyEvent) override;
 
-    virtual void resizeEvent(QResizeEvent* event);
+    virtual void resizeEvent(QResizeEvent* event) override;
 
     static CanvasQt* getSharedCanvas();
 

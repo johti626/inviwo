@@ -40,10 +40,8 @@ namespace inviwo {
 template <typename T>
 class VolumeRAMPrecision : public VolumeRAM {
 public:
-    VolumeRAMPrecision(size3_t dimensions = size3_t(128, 128, 128),
-                       const DataFormatBase* format = DataFormat<T>::get());
-    VolumeRAMPrecision(T* data, size3_t dimensions = size3_t(128, 128, 128),
-                       const DataFormatBase* format = DataFormat<T>::get());
+    VolumeRAMPrecision(size3_t dimensions = size3_t(128, 128, 128));
+    VolumeRAMPrecision(T* data, size3_t dimensions = size3_t(128, 128, 128));
     VolumeRAMPrecision(const VolumeRAMPrecision<T>& rhs);
     VolumeRAMPrecision<T>& operator=(const VolumeRAMPrecision<T>& that);
     virtual VolumeRAMPrecision<T>* clone() const override;
@@ -75,7 +73,7 @@ public:
     virtual void setValueFromVec4Double(const size3_t& pos, dvec4 val) override;
 
     void setValuesFromVolume(const VolumeRAM* src, const size3_t& dstOffset, const size3_t& subSize,
-                             const size3_t& subOffset);
+                             const size3_t& subOffset) override;
 
     virtual double getValueAsSingleDouble(const size3_t& pos) const override;
     virtual dvec2 getValueAsVec2Double(const size3_t& pos) const override;
@@ -99,29 +97,29 @@ private:
  * @param format of volume to create.
  * @return nullptr if no valid format was specified.
  */
-IVW_CORE_API VolumeRAM* createVolumeRAM(const size3_t& dimensions, const DataFormatBase* format,
+IVW_CORE_API std::shared_ptr<VolumeRAM> createVolumeRAM(const size3_t& dimensions, const DataFormatBase* format,
                                         void* dataPtr = nullptr);
 
 struct VolumeRamDispatcher {
-    using type = VolumeRAM*;
+    using type = std::shared_ptr<VolumeRAM>;
     template <class T>
-    VolumeRAM* dispatch(void* dataPtr, const size3_t& dimensions) {
+    std::shared_ptr<VolumeRAM> dispatch(void* dataPtr, const size3_t& dimensions) {
         typedef typename T::type F;
-        return new VolumeRAMPrecision<F>(static_cast<F*>(dataPtr), dimensions);
+        return std::make_shared<VolumeRAMPrecision<F>>(static_cast<F*>(dataPtr), dimensions);
     }
 };
 
 
 template <typename T>
-VolumeRAMPrecision<T>::VolumeRAMPrecision(size3_t dimensions, const DataFormatBase* format)
-    : VolumeRAM(format)
+VolumeRAMPrecision<T>::VolumeRAMPrecision(size3_t dimensions)
+    : VolumeRAM(DataFormat<T>::get())
     , dimensions_(dimensions)
     , ownsDataPtr_(true)
     , data_(new T[dimensions_.x * dimensions_.y * dimensions_.z]()) {}
 
 template <typename T>
-VolumeRAMPrecision<T>::VolumeRAMPrecision(T* data, size3_t dimensions, const DataFormatBase* format)
-    : VolumeRAM(format)
+VolumeRAMPrecision<T>::VolumeRAMPrecision(T* data, size3_t dimensions)
+    : VolumeRAM(DataFormat<T>::get())
     , dimensions_(dimensions)
     , ownsDataPtr_(true)
     , data_(data ? data : new T[dimensions_.x * dimensions_.y * dimensions_.z]()) {}

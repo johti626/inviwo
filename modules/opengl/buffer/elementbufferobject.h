@@ -38,8 +38,7 @@ namespace inviwo {
 
 class IVW_MODULE_OPENGL_API ElementBufferObject : public BufferObject {
 public:
-    ElementBufferObject(size_t size, const DataFormatBase* format, BufferType type,
-                        BufferUsage usage);
+    ElementBufferObject(size_t size, const DataFormatBase* format, BufferUsage usage);
     virtual ~ElementBufferObject();
 
     virtual ElementBufferObject* clone() const;

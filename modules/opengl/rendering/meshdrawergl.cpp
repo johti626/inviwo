@@ -24,42 +24,37 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #include <modules/opengl/buffer/elementbuffergl.h>
 #include <modules/opengl/rendering/meshdrawergl.h>
+#include <modules/opengl/openglutils.h>
 
 namespace inviwo {
 
 MeshDrawerGL::MeshDrawerGL() : meshToDraw_(nullptr) {}
 
-MeshDrawerGL::MeshDrawerGL(const Mesh* mesh)
-    : meshToDraw_(mesh) {
-
-    initialize(mesh->getDefaultAttributesInfo());
+MeshDrawerGL::MeshDrawerGL(const Mesh* mesh) : meshToDraw_(mesh) {
+    initialize(mesh->getDefaultMeshInfo());
 }
 
-MeshDrawerGL::MeshDrawerGL(const Mesh* mesh, Mesh::AttributesInfo ai)
-    : meshToDraw_(mesh) {
-
+MeshDrawerGL::MeshDrawerGL(const Mesh* mesh, Mesh::MeshInfo ai) : meshToDraw_(mesh) {
     initialize(ai);
 }
 
-MeshDrawerGL::MeshDrawerGL(const Mesh* mesh, GeometryEnums::DrawType dt, GeometryEnums::ConnectivityType ct)
-    : meshToDraw_(mesh) {
-
-    initialize(Mesh::AttributesInfo(dt, ct));
+MeshDrawerGL::MeshDrawerGL(const Mesh* mesh, DrawType dt, ConnectivityType ct) : meshToDraw_(mesh) {
+    initialize(Mesh::MeshInfo(dt, ct));
 }
 
 MeshDrawerGL::MeshDrawerGL(MeshDrawerGL&& other)
-        : MeshDrawer(std::move(other))
-        , meshToDraw_{ other.meshToDraw_ }
-{
-    // move each element 
+    : MeshDrawer(std::move(other)), meshToDraw_{other.meshToDraw_} {
+    // move each element
     std::move(std::begin(other.drawMethods_), std::end(other.drawMethods_), &drawMethods_[0]);
     other.meshToDraw_ = nullptr;
 }
+
+MeshDrawerGL::~MeshDrawerGL(){}
 
 MeshDrawerGL& MeshDrawerGL::operator=(const MeshDrawerGL& rhs) {
     if (this != &rhs) {
@@ -69,160 +64,172 @@ MeshDrawerGL& MeshDrawerGL::operator=(const MeshDrawerGL& rhs) {
     return *this;
 }
 
-MeshDrawerGL::~MeshDrawerGL() {
-}
-
 void MeshDrawerGL::draw() {
-    const MeshGL* meshGL = getMeshGL();
-    meshGL->enable();
+    auto meshGL = meshToDraw_->getRepresentation<MeshGL>();
+    utilgl::Enable<MeshGL> enable(meshGL);
+    
     // If default is indices, render all index lists
     if (!drawMethods_[0].elementBufferList.empty()) {
-        for (int i = 1; i < GeometryEnums::NUMBER_OF_DRAW_TYPES; i++) {
+        for (int i = 1; i < static_cast<int>(DrawMode::NUMBER_OF_DRAW_MODES); i++) {
             if (!drawMethods_[i].elementBufferList.empty())
-                (this->*drawMethods_[i].drawFunc)(static_cast<GeometryEnums::DrawType>(i));
+                (this->*drawMethods_[i].drawFunc)(static_cast<DrawMode>(i));
         }
-    } else {
-        // Render just default one
-        (this->*drawMethods_[0].drawFunc)(GeometryEnums::NOT_SPECIFIED);
+    } else {// Render just default one
+        (this->*drawMethods_[0].drawFunc)(DrawMode::NOT_SPECIFIED);
     }
-    meshGL->disable();
 }
 
-void MeshDrawerGL::draw(GeometryEnums::DrawType dt) {
-    const MeshGL* meshGL = getMeshGL();
-    meshGL->enable();
-    (this->*drawMethods_[dt].drawFunc)(dt);
-    meshGL->disable();
+void MeshDrawerGL::draw(DrawMode dm) {
+    auto meshGL = meshToDraw_->getRepresentation<MeshGL>();
+    utilgl::Enable<MeshGL> enable(meshGL);   
+    (this->*drawMethods_[static_cast<size_t>(dm)].drawFunc)(dm);
 }
 
-const MeshGL* MeshDrawerGL::getMeshGL() const {
-    return meshToDraw_->getRepresentation<MeshGL>();
+GLenum MeshDrawerGL::getDefaultDrawMode() { return drawMethods_[0].drawMode; }
+
+void MeshDrawerGL::drawArray(DrawMode dmenum) const {
+    const auto dm = static_cast<size_t>(dmenum);
+    glDrawArrays(drawMethods_[dm].drawMode, 0,
+                 static_cast<GLsizei>(meshToDraw_->getBuffer(0)->getSize()));
 }
 
-GLenum MeshDrawerGL::getDefaultDrawMode() {
-    return drawMethods_[0].drawMode;
+void MeshDrawerGL::drawElements(DrawMode dmenum) const {
+    const auto dm = static_cast<size_t>(dmenum);
+    for (auto elem : drawMethods_[dm].elementBufferList) {
+        auto elementBufferGL = elem->getRepresentation<ElementBufferGL>();
+        elementBufferGL->bind();
+        glDrawElements(drawMethods_[dm].drawMode, static_cast<GLsizei>(elementBufferGL->getSize()),
+                       elementBufferGL->getFormatType(), nullptr);
+    }
 }
 
-GLenum MeshDrawerGL::getDrawMode(GeometryEnums::DrawType dt, GeometryEnums::ConnectivityType ct) {
-    switch (dt)
-    {
-        case GeometryEnums::TRIANGLES:
-            switch (ct)
-            {
-                case GeometryEnums::NONE:
-                    return GL_TRIANGLES;
+void MeshDrawerGL::initialize(Mesh::MeshInfo ai) {
+    const auto dm = static_cast<size_t>(getDrawMode(ai.dt, ai.ct));
+    const auto ns = static_cast<size_t>(DrawMode::NOT_SPECIFIED);
+    
+    drawMethods_[ns].drawFunc = &MeshDrawerGL::emptyFunc;
+    drawMethods_[ns].drawMode = getGLDrawMode(getDrawMode(ai.dt, ai.ct));
+    drawMethods_[ns].elementBufferList.clear();
 
-                case GeometryEnums::STRIP:
-                    return GL_TRIANGLE_STRIP;
+    for (size_t i = 1; i < static_cast<size_t>(DrawType::NUMBER_OF_DRAW_TYPES); i++) {
+        drawMethods_[i].drawFunc = drawMethods_[ns].drawFunc;
+        drawMethods_[i].drawMode = drawMethods_[ns].drawMode;
+        drawMethods_[i].elementBufferList.clear();
+    }
 
-                case GeometryEnums::FAN:
-                    return GL_TRIANGLE_FAN;
+    drawMethods_[dm].drawFunc = &MeshDrawerGL::drawArray;
+    drawMethods_[ns].drawFunc = &MeshDrawerGL::drawArray;
 
-                case GeometryEnums::ADJACENCY:
-                    return GL_TRIANGLES_ADJACENCY;
+    for (size_t i = 0; i < meshToDraw_->getNumberOfIndicies(); ++i) {
+        if (meshToDraw_->getIndicies(i)->getSize() > 0)
+            initializeIndexBuffer(meshToDraw_->getIndicies(i),
+                                  meshToDraw_->getIndexMeshInfo(i));
+    }
+}
 
-                case GeometryEnums::STRIP_ADJACENCY:
-                    return GL_TRIANGLE_STRIP_ADJACENCY;
+void MeshDrawerGL::initializeIndexBuffer(const BufferBase* indexBuffer, Mesh::MeshInfo ai) {
+    const auto dm = static_cast<int>(getDrawMode(ai.dt, ai.ct));
+    // check draw mode if there exists another indexBuffer
+    if (drawMethods_[dm].elementBufferList.size() == 0) {
+        drawMethods_[dm].drawFunc = &MeshDrawerGL::drawElements;
+        drawMethods_[dm].drawMode = getGLDrawMode(getDrawMode(ai.dt, ai.ct));
+    } 
+    drawMethods_[dm].elementBufferList.push_back(indexBuffer);
 
-                case GeometryEnums::LOOP:
-                case GeometryEnums::NUMBER_OF_CONNECTIVITY_TYPES:
+    // Specify first element buffer as default rendering method
+    const auto ns = static_cast<int>(DrawType::NOT_SPECIFIED);
+    if (drawMethods_[ns].elementBufferList.size() == 0) {
+        drawMethods_[ns].drawFunc = drawMethods_[dm].drawFunc;
+        drawMethods_[ns].drawMode = drawMethods_[dm].drawMode;
+        drawMethods_[ns].elementBufferList.push_back(drawMethods_[dm].elementBufferList.at(0));
+    }
+}
+
+MeshDrawerGL::DrawMode MeshDrawerGL::getDrawMode(DrawType dt, ConnectivityType ct) const {
+    switch (dt) {
+        case DrawType::TRIANGLES:
+            switch (ct) {
+                case ConnectivityType::NONE:
+                    return DrawMode::TRIANGLES;
+
+                case ConnectivityType::STRIP:
+                    return DrawMode::TRIANGLE_STRIP;
+
+                case ConnectivityType::FAN:
+                    return DrawMode::TRIANGLE_FAN;
+
+                case ConnectivityType::ADJACENCY:
+                    return DrawMode::TRIANGLES_ADJACENCY;
+
+                case ConnectivityType::STRIP_ADJACENCY:
+                    return DrawMode::TRIANGLE_STRIP_ADJACENCY;
+
+                case ConnectivityType::LOOP:
+                case ConnectivityType::NUMBER_OF_CONNECTIVITY_TYPES:
                 default:
-                    return GL_POINTS;
+                    return DrawMode::POINTS;
             }
 
-        case GeometryEnums::LINES:
-            switch (ct)
-            {
-                case GeometryEnums::NONE:
-                    return GL_LINES;
+        case DrawType::LINES:
+            switch (ct) {
+                case ConnectivityType::NONE:
+                    return DrawMode::LINES;
 
-                case GeometryEnums::STRIP:
-                    return GL_LINE_STRIP;
+                case ConnectivityType::STRIP:
+                    return DrawMode::LINE_STRIP;
 
-                case GeometryEnums::LOOP:
-                    return GL_LINE_LOOP;
+                case ConnectivityType::LOOP:
+                    return DrawMode::LINE_LOOP;
 
-                case GeometryEnums::ADJACENCY:
-                    return GL_LINES_ADJACENCY;
+                case ConnectivityType::ADJACENCY:
+                    return DrawMode::LINES_ADJACENCY;
 
-                case GeometryEnums::STRIP_ADJACENCY:
-                    return GL_LINE_STRIP_ADJACENCY;
+                case ConnectivityType::STRIP_ADJACENCY:
+                    return DrawMode::LINE_STRIP_ADJACENCY;
 
-                case GeometryEnums::FAN:
-                case GeometryEnums::NUMBER_OF_CONNECTIVITY_TYPES:
+                case ConnectivityType::FAN:
+                case ConnectivityType::NUMBER_OF_CONNECTIVITY_TYPES:
                 default:
-                    return GL_POINTS;
+                    return DrawMode::POINTS;
             }
 
-        case GeometryEnums::POINTS:
-        case GeometryEnums::NOT_SPECIFIED:
-        case GeometryEnums::NUMBER_OF_DRAW_TYPES:
+        case DrawType::POINTS:
+        case DrawType::NOT_SPECIFIED:
+        case DrawType::NUMBER_OF_DRAW_TYPES:
+        default:
+            return DrawMode::POINTS;
+    }
+}
+
+GLenum MeshDrawerGL::getGLDrawMode(DrawMode dm) const {
+    switch (dm) {
+        case DrawMode::POINTS:
+            return GL_POINTS;
+        case DrawMode::LINES:
+            return GL_LINES;
+        case DrawMode::LINE_STRIP:
+            return GL_LINE_STRIP;
+        case DrawMode::LINE_LOOP:
+            return GL_LINE_LOOP;
+        case DrawMode::LINES_ADJACENCY:
+            return GL_LINES_ADJACENCY;
+        case DrawMode::LINE_STRIP_ADJACENCY:
+            return GL_LINE_STRIP_ADJACENCY;
+        case DrawMode::TRIANGLES:
+            return GL_TRIANGLES;
+        case DrawMode::TRIANGLE_STRIP:
+            return GL_TRIANGLE_STRIP;
+        case DrawMode::TRIANGLE_FAN:
+            return GL_TRIANGLE_FAN;
+        case DrawMode::TRIANGLES_ADJACENCY:
+            return GL_TRIANGLES_ADJACENCY;
+        case DrawMode::TRIANGLE_STRIP_ADJACENCY:
+            return GL_TRIANGLE_STRIP_ADJACENCY;
+        case DrawMode::NUMBER_OF_DRAW_MODES:
+        case DrawMode::NOT_SPECIFIED:
         default:
             return GL_POINTS;
     }
 }
 
-void MeshDrawerGL::drawArray(GeometryEnums::DrawType dt) const {
-    glDrawArrays(drawMethods_[dt].drawMode,
-                 0,
-                 static_cast<GLsizei>(meshToDraw_->getAttributes(0)->getSize()));
-}
-
-void MeshDrawerGL::drawElements(GeometryEnums::DrawType dt) const {
-    
-    std::vector<const Buffer*>::const_iterator it = drawMethods_[dt].elementBufferList.begin();
-    while (it != drawMethods_[dt].elementBufferList.end()) {
-        const ElementBufferGL* elementBufferGL = (*it)->getRepresentation<ElementBufferGL>();
-        elementBufferGL->bind();
-        glDrawElements(drawMethods_[dt].drawMode, static_cast<GLsizei>(elementBufferGL->getSize()),
-                       elementBufferGL->getFormatType(), nullptr);
-        ++it;
-    }
-}
-
-void MeshDrawerGL::initialize(Mesh::AttributesInfo ai)
-{
-    drawMethods_[0].drawFunc = &MeshDrawerGL::emptyFunc;
-    drawMethods_[0].drawMode = getDrawMode(ai.dt, ai.ct);
-    drawMethods_[0].elementBufferList.clear();
-
-    for (int i=1; i<GeometryEnums::NUMBER_OF_DRAW_TYPES; i++) {
-        drawMethods_[i].drawFunc = drawMethods_[0].drawFunc;
-        drawMethods_[i].drawMode = drawMethods_[0].drawMode;
-        drawMethods_[i].elementBufferList.clear();
-    }
-
-    drawMethods_[ai.dt].drawFunc = &MeshDrawerGL::drawArray;
-    drawMethods_[GeometryEnums::NOT_SPECIFIED].drawFunc = &MeshDrawerGL::drawArray;
-    //drawMethods_[POINTS].drawFunc = &MeshDrawer::renderArray;
-    //drawMethods_[POINTS].drawMode = GL_POINTS;
-
-    for (size_t i=0; i < meshToDraw_->getNumberOfIndicies(); ++i) {
-        if (meshToDraw_->getIndicies(i)->getSize() > 0)
-            initializeIndexBuffer(meshToDraw_->getIndicies(i), meshToDraw_->getIndexAttributesInfo(i));
-    }
-}
-void MeshDrawerGL::initializeIndexBuffer(const Buffer* indexBuffer, Mesh::AttributesInfo ai) {
-    // check draw mode if there exists another indexBuffer
-    if (drawMethods_[ai.dt].elementBufferList.size() != 0) {
-        if (getDrawMode(ai.dt, ai.ct) != drawMethods_[ai.dt].drawMode) {
-            LogWarn("draw mode mismatch (element buffer " << ai.dt << ")");
-        }
-    } 
-    else {
-        drawMethods_[ai.dt].drawFunc = &MeshDrawerGL::drawElements;
-        drawMethods_[ai.dt].drawMode = getDrawMode(ai.dt, ai.ct);
-    }
-    drawMethods_[ai.dt].elementBufferList.push_back(indexBuffer);
-
-    // Specify first element buffer as default rendering method
-    if(drawMethods_[GeometryEnums::NOT_SPECIFIED].elementBufferList.size() == 0) {
-        drawMethods_[GeometryEnums::NOT_SPECIFIED].drawFunc = drawMethods_[ai.dt].drawFunc;
-        drawMethods_[GeometryEnums::NOT_SPECIFIED].drawMode = drawMethods_[ai.dt].drawMode;
-        drawMethods_[GeometryEnums::NOT_SPECIFIED].elementBufferList.push_back(drawMethods_[ai.dt].elementBufferList.at(0));
-    }
-}
-
-
-} // namespace
-
+}  // namespace

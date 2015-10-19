@@ -31,18 +31,16 @@
 
 namespace inviwo {
 
-BufferObject::BufferObject(size_t sizeInBytes, const DataFormatBase* format, BufferType type,
-                           BufferUsage usage, GLenum target /*= GL_ARRAY_BUFFER*/)
+BufferObject::BufferObject(size_t sizeInBytes, const DataFormatBase* format,                            BufferUsage usage, GLenum target /*= GL_ARRAY_BUFFER*/)
     : Observable<BufferObjectObserver>()
     , target_(target)
-    , glFormat_(getGLFormats()->getGLFormat(format->getId()))
-    , type_(type) {
+    , glFormat_(getGLFormats()->getGLFormat(format->getId())) {
     switch (usage) {
-        case DYNAMIC:
+        case BufferUsage::DYNAMIC:
             usageGL_ = GL_DYNAMIC_DRAW;
             break;
 
-        case STATIC:
+        case BufferUsage::STATIC:
         default:
             usageGL_ = GL_STATIC_DRAW;
             break;
@@ -59,8 +57,7 @@ BufferObject::BufferObject(const BufferObject& rhs)
     : Observable<BufferObjectObserver>()
     , usageGL_(rhs.usageGL_)
     , target_(rhs.target_)
-    , glFormat_(rhs.glFormat_)
-    , type_(rhs.type_) {
+    , glFormat_(rhs.glFormat_) {
     glGenBuffers(1, &id_);
     *this = rhs;
 }
@@ -70,10 +67,8 @@ BufferObject::BufferObject(BufferObject&& rhs)
     , usageGL_(rhs.usageGL_)
     , target_(rhs.target_)
     , glFormat_(rhs.glFormat_)
-    , type_(rhs.type_)
     // Steal buffer
-    , id_(rhs.id_)
-{
+    , id_(rhs.id_) {
     // Free resources from other
     rhs.id_ = 0;
 }
@@ -84,8 +79,7 @@ BufferObject& BufferObject::operator=(const BufferObject& rhs) {
         usageGL_ = rhs.usageGL_;
         target_ = rhs.target_;
         glFormat_ = rhs.glFormat_;
-        type_ = rhs.type_;
-        
+
         // TODO: Verify that data copying works. What about backwards compability?
         // Initialize size of buffer
         initialize(nullptr, rhs.sizeInBytes_);
@@ -109,7 +103,6 @@ BufferObject& BufferObject::operator=(BufferObject&& rhs) {
         target_ = rhs.target_;
         usageGL_ = rhs.usageGL_;
         glFormat_ = rhs.glFormat_;
-        type_ = rhs.type_;
         sizeInBytes_ = rhs.sizeInBytes_;
 
         // Release resources from source object

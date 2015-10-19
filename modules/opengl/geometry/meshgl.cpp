@@ -54,9 +54,7 @@ MeshGL& MeshGL::operator=(const MeshGL& that) {
     return *this;
 }
 
-MeshGL::~MeshGL() {
-    delete attributesArray_;
-}
+MeshGL::~MeshGL(){}
 
 MeshGL* MeshGL::clone() const {
     return new MeshGL(*this);
@@ -77,32 +75,38 @@ const BufferGL* MeshGL::getBufferGL(size_t idx) const{
 void MeshGL::update(bool editable) {
     attributesGL_.clear();
     Mesh* owner = this->getOwner();
-    attributesArray_->bind(); // Have to call bind before clear.
+    attributesArray_->bind();  // Have to call bind before clear.
     attributesArray_->clear();
     if (editable) {
-        for (Buffer* buf : owner->getBuffers()) {
-            BufferGL* bufGL = buf->getEditableRepresentation<BufferGL>();
+        for (auto buf : owner->getBuffers()) {
+            auto bufGL = buf.second->getEditableRepresentation<BufferGL>();
             attributesGL_.push_back(bufGL);
-            attributesArray_->attachBufferObject(bufGL->getBufferObject().get());
+            attributesArray_->attachBufferObject(bufGL->getBufferObject().get(),
+                                                 static_cast<GLuint>(buf.first));
         }
     } else {
-        for (Buffer* buf : owner->getBuffers()) {
-            const BufferGL* bufGL = buf->getRepresentation<BufferGL>();
+        for (auto buf : owner->getBuffers()) {
+            auto bufGL = buf.second->getRepresentation<BufferGL>();
             attributesGL_.push_back(bufGL);
-            attributesArray_->attachBufferObject(bufGL->getBufferObject().get());
+            attributesArray_->attachBufferObject(bufGL->getBufferObject().get(),
+                                                 static_cast<GLuint>(buf.first));
         }
     }
     attributesArray_->unbind();
 }
 
 Mesh* MeshGL::getOwner() {
-    return reinterpret_cast<Mesh*>(DataRepresentation::getOwner());
+    return static_cast<Mesh*>(DataRepresentation::getOwner());
 }
 
 const Mesh* MeshGL::getOwner() const {
-    return reinterpret_cast<const Mesh*>(DataRepresentation::getOwner());
+    return static_cast<const Mesh*>(DataRepresentation::getOwner());
 }
 
+
+std::type_index MeshGL::getTypeIndex() const {
+    return std::type_index(typeid(MeshGL));
+}
 
 } // namespace
 

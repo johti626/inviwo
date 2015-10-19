@@ -28,7 +28,9 @@
  *********************************************************************************/
 
 #include <modules/openglqt/canvasqt.h>
+#include <modules/openglqt/hiddencanvasqt.h>
 #include <inviwo/core/datastructures/image/layerram.h>
+#include <inviwo/core/common/inviwoapplication.h>
 #include <modules/opengl/openglcapabilities.h>
 #if defined(USE_NEW_OPENGLWIDGET)
 #include <QOpenGLContext>
@@ -43,6 +45,8 @@
 #else
 #define USING_QT4
 #endif
+
+#include <QThread>
 
 namespace inviwo {
 
@@ -210,7 +214,7 @@ void CanvasQt::activate() {
 #ifdef USE_QWINDOW
     thisGLContext_->makeCurrent(this);
 #else
-    makeCurrent();
+    context()->makeCurrent();
 #endif
 }
 
@@ -676,6 +680,16 @@ void CanvasQt::pinchTriggered(QPinchGesture* gesture) {
 void CanvasQt::resize(uvec2 size) {
     QGLWindow::resize(size.x, size.y);
     CanvasGL::resize(size);
+}
+
+std::unique_ptr<Canvas> CanvasQt::create() {
+    auto thread = QThread::currentThread();
+    auto res = dispatchFront([&thread]() {
+        auto canvas = util::make_unique<HiddenCanvasQt>();
+        canvas->context()->moveToThread(thread);
+        return canvas;
+    });
+    return res.get();
 }
 
 void CanvasQt::resizeEvent(QResizeEvent* event) {

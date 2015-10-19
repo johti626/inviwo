@@ -47,7 +47,7 @@ public:
     LayerGL(const LayerGL& rhs);
     LayerGL& operator=(const LayerGL& rhs);
     virtual ~LayerGL();
-    virtual LayerGL* clone() const;
+    virtual LayerGL* clone() const override;
 
     virtual void setDimensions(size2_t dimensions) override;
 
@@ -57,7 +57,7 @@ public:
     virtual bool copyRepresentationsTo(DataRepresentation*) const override;
 
     std::shared_ptr<Texture2D> getTexture() const { return texture_; }
-
+    virtual std::type_index getTypeIndex() const override final;
 private:
     std::shared_ptr<Texture2D> texture_; // Can be share
     mutable GLenum texUnit_;

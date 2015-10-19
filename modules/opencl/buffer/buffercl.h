@@ -51,20 +51,18 @@ public:
      * @param readWriteFlag Determine how memory will be used by Kernels: CL_MEM_READ_ONLY,
      *CL_MEM_WRITE_ONLY, CL_MEM_READ_WRITE
      */
-    BufferCL(size_t size, const DataFormatBase* format, BufferType type, BufferUsage usage = STATIC,
+    BufferCL(size_t size, const DataFormatBase* format, BufferUsage usage = BufferUsage::STATIC,
              const void* data = nullptr, cl_mem_flags readWriteFlag = CL_MEM_READ_WRITE);
     BufferCL(const BufferCL& rhs);
     virtual ~BufferCL();
 
-    virtual BufferCL* clone() const;
+    virtual BufferCL* clone() const override;
     virtual size_t getSize() const override;
     virtual void setSize(size_t size) override;
 
-    const Buffer* getAttribute() const;
-
-    cl::Buffer& getEditable() { return *clBuffer_; }
-    const cl::Buffer& get() const { return *clBuffer_; }
-
+    cl::Buffer& getEditable() override { return *clBuffer_; }
+    const cl::Buffer& get() const override { return *clBuffer_; }
+    virtual std::type_index getTypeIndex() const override final;
     /**
      * \brief Copies data from RAM to OpenCL.
      *
@@ -85,7 +83,7 @@ public:
 protected:
     cl_mem_flags readWriteFlag_;
     size_t size_;
-    std::unique_ptr<cl::Buffer> clBuffer_;  
+    std::unique_ptr<cl::Buffer> clBuffer_;
 };
 
 }  // namespace
@@ -102,7 +100,7 @@ IVW_MODULE_OPENCL_API cl_int Kernel::setArg(cl_uint index, const inviwo::BufferC
 // @note This function is only valid for buffers
 // that does not change the buffer data.
 template <>
-IVW_MODULE_OPENCL_API cl_int Kernel::setArg(cl_uint index, const inviwo::Buffer& value);
+IVW_MODULE_OPENCL_API cl_int Kernel::setArg(cl_uint index, const inviwo::BufferBase& value);
 
 }  // namespace cl
 

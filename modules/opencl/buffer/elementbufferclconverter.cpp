@@ -31,23 +31,14 @@
 
 namespace inviwo {
 
-ElementBufferRAM2CLConverter::ElementBufferRAM2CLConverter()
-    : RepresentationConverterType<ElementBufferCL>() {}
-
-ElementBufferRAM2CLConverter::~ElementBufferRAM2CLConverter() {}
-
-DataRepresentation* ElementBufferRAM2CLConverter::createFrom(const DataRepresentation* source) {
-    const BufferRAM* bufferRAM = static_cast<const BufferRAM*>(source);
-    ElementBufferCL* bufferCL = new ElementBufferCL(
-        bufferRAM->getSize(), bufferRAM->getDataFormat(), bufferRAM->getBufferType(),
-        bufferRAM->getBufferUsage(), bufferRAM->getData());
-    return bufferCL;
+std::shared_ptr<ElementBufferCL> ElementBufferRAM2CLConverter::createFrom(
+    std::shared_ptr<const BufferRAM> bufferRAM) const {
+    return std::make_shared<ElementBufferCL>(bufferRAM->getSize(), bufferRAM->getDataFormat(),
+                                             bufferRAM->getBufferUsage(), bufferRAM->getData());
 }
-void ElementBufferRAM2CLConverter::update(const DataRepresentation* source,
-                                          DataRepresentation* destination) {
-    const BufferRAM* src = static_cast<const BufferRAM*>(source);
-    ElementBufferCL* dst = static_cast<ElementBufferCL*>(destination);
 
+void ElementBufferRAM2CLConverter::update(std::shared_ptr<const BufferRAM> src,
+                                          std::shared_ptr<ElementBufferCL> dst) const {
     if (src->getSize() != dst->getSize()) {
         dst->setSize(src->getSize());
     }
@@ -55,24 +46,15 @@ void ElementBufferRAM2CLConverter::update(const DataRepresentation* source,
     dst->upload(src->getData(), src->getSize() * src->getSizeOfElement());
 }
 
-ElementBufferCL2RAMConverter::ElementBufferCL2RAMConverter()
-    : RepresentationConverterType<BufferRAM>() {}
-
-ElementBufferCL2RAMConverter::~ElementBufferCL2RAMConverter() {}
-
-DataRepresentation* ElementBufferCL2RAMConverter::createFrom(const DataRepresentation* source) {
-    const ElementBufferCL* src = static_cast<const ElementBufferCL*>(source);
-    BufferRAM* dst = createBufferRAM(src->getSize(), src->getDataFormat(), src->getBufferType(),
-                                     src->getBufferUsage());
+std::shared_ptr<BufferRAM> ElementBufferCL2RAMConverter::createFrom(
+    std::shared_ptr<const ElementBufferCL> src) const {
+    auto dst = createBufferRAM(src->getSize(), src->getDataFormat(), src->getBufferUsage());
     src->download(dst->getData());
     return dst;
 }
 
-void ElementBufferCL2RAMConverter::update(const DataRepresentation* source,
-                                          DataRepresentation* destination) {
-    const ElementBufferCL* src = static_cast<const ElementBufferCL*>(source);
-    BufferRAM* dst = static_cast<BufferRAM*>(destination);
-
+void ElementBufferCL2RAMConverter::update(std::shared_ptr<const ElementBufferCL> src,
+                                          std::shared_ptr<BufferRAM> dst) const {
     if (src->getSize() != dst->getSize()) {
         dst->setSize(src->getSize());
     }

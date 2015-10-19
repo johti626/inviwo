@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #include <inviwo/core/datastructures/geometry/basicmesh.h>
@@ -35,128 +35,87 @@
 #endif
 #include <math.h>
 
-
 namespace inviwo {
-BasicMesh::BasicMesh()
-    : Mesh() {
-    addAttribute(new Position3dBuffer()); // pos 0
-    addAttribute(new TexCoord3dBuffer()); // pos 1
-    addAttribute(new ColorBuffer());      // pos 2
-    addAttribute(new NormalBuffer());     // pos 3 
+BasicMesh::BasicMesh() : Mesh() {
+    vertices_ = std::make_shared<Buffer<vec3>>();
+    texCoords_ = std::make_shared<Buffer<vec3>>();
+    colors_ = std::make_shared<Buffer<vec4>>();
+    normals_ = std::make_shared<Buffer<vec3>>();
+
+    addBuffer(BufferType::POSITION_ATTRIB, vertices_);   // pos 0
+    addBuffer(BufferType::TEXCOORD_ATTRIB, texCoords_);  // pos 1
+    addBuffer(BufferType::COLOR_ATTRIB, colors_);        // pos 2
+    addBuffer(BufferType::NORMAL_ATTRIB, normals_);      // pos 3
 }
 
-BasicMesh::BasicMesh(const BasicMesh& rhs) 
-    : Mesh(rhs) {}
-
-BasicMesh& BasicMesh::operator=(const BasicMesh& that) {
-    if (this != &that) {
-        Mesh::operator=(that);
-    }
-    return *this;
-}
-
-BasicMesh* BasicMesh::clone() const {
-    return new BasicMesh(*this);
-}
-
-BasicMesh::~BasicMesh() {
-}
+BasicMesh* BasicMesh::clone() const { return new BasicMesh(*this); }
 
 size_t BasicMesh::addVertex(vec3 pos, vec3 normal, vec3 texCoord, vec4 color) {
-    auto posBuf = static_cast<Position3dBuffer*>(attributes_[0]);
-    posBuf->getEditableRepresentation<Position3dBufferRAM>()
-          ->add(pos);
-    static_cast<TexCoord3dBuffer*>(attributes_[1])
-        ->getEditableRepresentation<TexCoord3dBufferRAM>()
-        ->add(texCoord);
-    static_cast<ColorBuffer*>(attributes_[2])->getEditableRepresentation<ColorBufferRAM>()->add(
-        color);
-    static_cast<NormalBuffer*>(attributes_[3])->getEditableRepresentation<NormalBufferRAM>()->add(
-        normal);
-    return posBuf->getSize() - 1;
+    getEditableVerticesRAM()->add(pos);
+    getEditableTexCoordsRAM()->add(texCoord);
+    getEditableColorsRAM()->add(color);
+    getEditableNormalsRAM()->add(normal);
+    return getVertices()->getSize() - 1;
+}
+
+void BasicMesh::addVertices(std::initializer_list<Vertex> data) {
+    auto v = getEditableVerticesRAM();
+    auto t = getEditableTexCoordsRAM();
+    auto c = getEditableColorsRAM();
+    auto n = getEditableNormalsRAM();
+
+    for (const auto& elem : data) {
+        v->add(elem.pos);
+        n->add(elem.normal);
+        t->add(elem.tex);
+        c->add(elem.color);
+    }
 }
 
 void BasicMesh::setVertex(size_t index, vec3 pos, vec3 normal, vec3 texCoord, vec4 color) {
-    static_cast<Position3dBuffer*>(attributes_[0])
-        ->getEditableRepresentation<Position3dBufferRAM>()
-        ->set(index, pos);
-    static_cast<TexCoord3dBuffer*>(attributes_[1])
-        ->getEditableRepresentation<TexCoord3dBufferRAM>()
-        ->set(index, texCoord);
-    static_cast<ColorBuffer*>(attributes_[2])->getEditableRepresentation<ColorBufferRAM>()->set(index,
-        color);
-    static_cast<NormalBuffer*>(attributes_[3])->getEditableRepresentation<NormalBufferRAM>()->set(index,
-        normal);
+    getEditableVerticesRAM()->set(index, pos);
+    getEditableTexCoordsRAM()->set(index, texCoord);
+    getEditableColorsRAM()->set(index, color);
+    getEditableNormalsRAM()->set(index, normal);
 }
 
 void BasicMesh::setVertexPosition(size_t index, vec3 pos) {
-    static_cast<Position3dBuffer*>(attributes_[0])
-        ->getEditableRepresentation<Position3dBufferRAM>()
-        ->set(index, pos);
+    getEditableVerticesRAM()->set(index, pos);
 }
 
 void BasicMesh::setVertexNormal(size_t index, vec3 normal) {
-    static_cast<NormalBuffer*>(attributes_[3])->getEditableRepresentation<NormalBufferRAM>()->set(index,
-        normal);
+    getEditableNormalsRAM()->set(index, normal);
 }
 
 void BasicMesh::setVertexTexCoord(size_t index, vec3 texCoord) {
-    static_cast<TexCoord3dBuffer*>(attributes_[1])
-        ->getEditableRepresentation<TexCoord3dBufferRAM>()
-        ->set(index, texCoord);
+    getEditableTexCoordsRAM()->set(index, texCoord);
 }
 
 void BasicMesh::setVertexColor(size_t index, vec4 color) {
-    static_cast<ColorBuffer*>(attributes_[2])->getEditableRepresentation<ColorBufferRAM>()->set(index,
-        color);
+    getEditableColorsRAM()->set(index, color);
 }
 
-IndexBufferRAM* BasicMesh::addIndexBuffer(GeometryEnums::DrawType dt,
-                                          GeometryEnums::ConnectivityType ct) {
-    IndexBuffer* indices_ = new IndexBuffer();
-    addIndicies(Mesh::AttributesInfo(dt, ct), indices_);
-    return indices_->getEditableRepresentation<IndexBufferRAM>();
-}
-
-std::string BasicMesh::getDataInfo() const {
-    std::stringstream ss;
-    ss  << "<table border='0' cellspacing='0' cellpadding='0' style='border-color:white;white-space:pre;'>\n"
-        << "<tr><td style='color:#bbb;padding-right:8px;'>Type</td><td><nobr>Basic mesh</nobr></td></tr>\n"
-        << "<tr><td style='color:#bbb;padding-right:8px;'>Vertiecs</td><td><nobr>" << attributes_[0]->getSize() << "</nobr></td></tr>\n"
-        << "<tr><td style='color:#bbb;padding-right:8px;'>Normal</td><td><nobr>" << attributes_[3]->getSize() << "</nobr></td></tr>\n"
-        << "<tr><td style='color:#bbb;padding-right:8px;'>Texture Coords</td><td><nobr>" << attributes_[1]->getSize() << "</nobr></td></tr>\n"
-        << "<tr><td style='color:#bbb;padding-right:8px;'>Colors</td><td><nobr>" << attributes_[2]->getSize() << "</nobr></td></tr>\n"
-        << "<tr><td style='color:#bbb;padding-right:8px;'>Index buffers</td><td><nobr>" << getNumberOfIndicies() << "</nobr></td></tr>\n"
-        << "</tr></table>\n";
-
-    return ss.str();
+IndexBufferRAM* BasicMesh::addIndexBuffer(DrawType dt, ConnectivityType ct) {
+    auto indicesRam = std::make_shared<IndexBufferRAM>();
+    auto indices_ = std::make_shared<IndexBuffer>(indicesRam);
+    addIndicies(Mesh::MeshInfo(dt, ct), indices_);
+    return indicesRam.get();
 }
 
 void BasicMesh::append(const BasicMesh* mesh) {
-    const Position3dBufferRAM* pos = mesh->getVertices()->getRepresentation<Position3dBufferRAM>();
-    const NormalBufferRAM* norm = mesh->getNormals()->getRepresentation<NormalBufferRAM>();
-    const TexCoord3dBufferRAM* tex = mesh->getTexCoords()->getRepresentation<TexCoord3dBufferRAM>();
-    const ColorBufferRAM* col = mesh->getColors()->getRepresentation<ColorBufferRAM>();
+    size_t size = buffers_[0].second->getSize();
 
-    size_t size = attributes_[0]->getSize();
+    getEditableVerticesRAM()->append(mesh->getVerticesRAM()->getDataContainer());
+    getEditableTexCoordsRAM()->append(mesh->getTexCoordsRAM()->getDataContainer());
+    getEditableColorsRAM()->append(mesh->getColorsRAM()->getDataContainer());
+    getEditableNormalsRAM()->append(mesh->getNormalsRAM()->getDataContainer());
 
-    static_cast<Position3dBuffer*>(attributes_[0])
-        ->getEditableRepresentation<Position3dBufferRAM>()
-        ->append(pos->getDataContainer());
-    static_cast<TexCoord3dBuffer*>(attributes_[1])
-        ->getEditableRepresentation<TexCoord3dBufferRAM>()
-        ->append(tex->getDataContainer());
-    static_cast<ColorBuffer*>(attributes_[2])->getEditableRepresentation<ColorBufferRAM>()->append(
-        col->getDataContainer());
-    static_cast<NormalBuffer*>(attributes_[3])
-        ->getEditableRepresentation<NormalBufferRAM>()
-        ->append(norm->getDataContainer());
-
-    for (auto buffer : mesh->indexAttributes_) {
+    for (auto buffer : mesh->indices_) {
         IndexBufferRAM* ind = addIndexBuffer(buffer.first.dt, buffer.first.ct);
 
         const std::vector<unsigned int>* newinds =
-            buffer.second->getRepresentation<IndexBufferRAM>()->getDataContainer();
+            static_cast<const IndexBufferRAM*>(buffer.second->getRepresentation<BufferRAM>())
+                ->getDataContainer();
 
         for (const auto& newind : *newinds) {
             ind->add(static_cast<const unsigned int>(newind + size));
@@ -164,160 +123,159 @@ void BasicMesh::append(const BasicMesh* mesh) {
     }
 }
 
-const Position3dBuffer* BasicMesh::getVertices() const {
-    return static_cast<Position3dBuffer*>(attributes_[0]);
+const Buffer<vec3>* BasicMesh::getVertices() const { return vertices_.get(); }
+
+const Buffer<vec3>* BasicMesh::getTexCoords() const { return texCoords_.get(); }
+
+const Buffer<vec4>* BasicMesh::getColors() const { return colors_.get(); }
+
+const Buffer<vec3>* BasicMesh::getNormals() const { return normals_.get(); }
+
+const Vec3BufferRAM* BasicMesh::getVerticesRAM() const { return vertices_->getRAMRepresentation(); }
+const Vec3BufferRAM* BasicMesh::getTexCoordsRAM() const {
+    return texCoords_->getRAMRepresentation();
+}
+const Vec4BufferRAM* BasicMesh::getColorsRAM() const { return colors_->getRAMRepresentation(); }
+const Vec3BufferRAM* BasicMesh::getNormalsRAM() const { return normals_->getRAMRepresentation(); }
+
+Vec3BufferRAM* BasicMesh::getEditableVerticesRAM() {
+    return vertices_->getEditableRAMRepresentation();
 }
 
-const TexCoord3dBuffer* BasicMesh::getTexCoords() const {
-    return static_cast<TexCoord3dBuffer*>(attributes_[1]);
+Vec3BufferRAM* BasicMesh::getEditableTexCoordsRAM() {
+    return texCoords_->getEditableRAMRepresentation();
 }
 
-const ColorBuffer* BasicMesh::getColors() const {
-    return static_cast<ColorBuffer*>(attributes_[2]);
+Vec4BufferRAM* BasicMesh::getEditableColorsRAM() { return colors_->getEditableRAMRepresentation(); }
+Vec3BufferRAM* BasicMesh::getEditableNormalsRAM() {
+    return normals_->getEditableRAMRepresentation();
 }
 
-const NormalBuffer* BasicMesh::getNormals() const {
-    return static_cast<NormalBuffer*>(attributes_[3]);
-}  
-    
-vec3 BasicMesh::orthvec(const vec3& vec){
+vec3 BasicMesh::orthvec(const vec3& vec) {
     vec3 u(1.0f, 0.0f, 0.0f);
     vec3 n = glm::normalize(vec);
     float p = glm::dot(u, n);
     if (std::abs(p) != 1.0f) {
-        return glm::normalize(u - p*n);
-    }else{
-        return vec3(0.0f,1.0f,0.0f);
+        return glm::normalize(u - p * n);
+    } else {
+        return vec3(0.0f, 1.0f, 0.0f);
     }
 }
 
 vec3 BasicMesh::calcnormal(const vec3& r, const vec3& p) {
-    return glm::normalize(r + glm::dot(r, r - p) / glm::dot(p - r, p - r)* (p-r));
+    return glm::normalize(r + glm::dot(r, r - p) / glm::dot(p - r, p - r) * (p - r));
 }
 
 vec3 BasicMesh::tospherical(const vec2& v) {
-    return vec3(std::sin(v.x)*std::cos(v.y), std::sin(v.x)*std::sin(v.y), std::cos(v.x));
+    return vec3(std::sin(v.x) * std::cos(v.y), std::sin(v.x) * std::sin(v.y), std::cos(v.x));
 }
 
-BasicMesh* BasicMesh::disk(const vec3& center,
-                           const vec3& normal,
-                           const vec4& color,
-                           const float& radius,
-                           const size_t& segments) {
-
-    BasicMesh* mesh = new BasicMesh();
+std::shared_ptr<BasicMesh> BasicMesh::disk(const vec3& center, const vec3& normal,
+                                           const vec4& color, const float& radius,
+                                           const size_t& segments) {
+    auto mesh = std::make_shared<BasicMesh>();
     mesh->setModelMatrix(mat4(1.f));
-    IndexBufferRAM* inds = mesh->addIndexBuffer(GeometryEnums::TRIANGLES, GeometryEnums::NONE);
+    IndexBufferRAM* inds = mesh->addIndexBuffer(DrawType::TRIANGLES, ConnectivityType::NONE);
     vec3 orth = orthvec(normal);
-    
-    mesh->addVertex(center, normal, vec3(0.5f,0.5f,0.0f), color);
-    
-    vec3 tc = vec3(0.5f,0.5f,0.0f);
-    vec3 tn = vec3(0.0f,0.0f,1.0f);
-    vec3 to = vec3(0.5f,0.0f,0.0f);
+
+    mesh->addVertex(center, normal, vec3(0.5f, 0.5f, 0.0f), color);
+
+    vec3 tc = vec3(0.5f, 0.5f, 0.0f);
+    vec3 tn = vec3(0.0f, 0.0f, 1.0f);
+    vec3 to = vec3(0.5f, 0.0f, 0.0f);
     vec3 p;
     vec3 t;
-    double angle = 2.0*M_PI / segments;
-    for (size_t i = 0; i < segments; ++i) {
+    double angle = 2.0 * M_PI / segments;
+    const auto ns = static_cast<std::uint32_t>(segments);
+    for (std::uint32_t i = 0; i < ns; ++i) {
         p = center + radius * glm::rotate(orth, static_cast<float>(i * angle), normal);
-        t = tc + glm::rotate(to,static_cast<float>(i * angle), tn);
+        t = tc + glm::rotate(to, static_cast<float>(i * angle), tn);
         mesh->addVertex(p, normal, t, color);
-        inds->add(0);
-        inds->add(static_cast<const unsigned int>(1+i));
-        inds->add(static_cast<const unsigned int>(1+( (i+1) % segments)));
+        inds->add({0, 1 + i, 1 + ((i + 1) % ns)});
     }
     return mesh;
 }
-    
-BasicMesh* BasicMesh::cone(const vec3& start,
-                           const vec3& stop,
-                           const vec4& color,
-                           const float& radius,
-                           const size_t& segments) {
+
+std::shared_ptr<BasicMesh> BasicMesh::cone(const vec3& start, const vec3& stop, const vec4& color,
+                                           const float& radius, const size_t& segments) {
     vec3 tc = vec3(0.5f, 0.5f, 0.0f);
     vec3 tn = vec3(0.0f, 0.0f, 1.0f);
     vec3 to = vec3(0.5f, 0.0f, 0.0f);
 
-    BasicMesh* mesh = new BasicMesh();
+    auto mesh = std::make_shared<BasicMesh>();
     mesh->setModelMatrix(mat4(1.f));
-    IndexBufferRAM* inds = mesh->addIndexBuffer(GeometryEnums::TRIANGLES, GeometryEnums::NONE);
-    vec3 normal = glm::normalize(stop-start);
+    auto inds = mesh->addIndexBuffer(DrawType::TRIANGLES, ConnectivityType::NONE);
+    vec3 normal = glm::normalize(stop - start);
     vec3 orth = orthvec(normal);
-    double angle = 2.0*M_PI / segments;
-    for (size_t i = 0; i < segments; ++i) {
-        mesh->addVertex(stop, 
-                        calcnormal(glm::rotate(orth, static_cast<float>((i + 0.5) * angle), normal), stop - start),
-                        tc, 
-                        color);
+    double angle = 2.0 * M_PI / segments;
+    const auto ns = static_cast<std::uint32_t>(segments);
+    for (std::uint32_t i = 0; i < ns; ++i) {
+        mesh->addVertex(stop,
+                        calcnormal(glm::rotate(orth, static_cast<float>((i + 0.5) * angle), normal),
+                                   stop - start),
+                        tc, color);
 
-        mesh->addVertex(start + radius*glm::rotate(orth, static_cast<float>(i * angle), normal),
-                        calcnormal(glm::rotate(orth, static_cast<float>(i * angle), normal), stop - start),
-                        tc + to*glm::rotate(orth, static_cast<float>(i * angle), tn),
-                        color);
+        mesh->addVertex(
+            start + radius * glm::rotate(orth, static_cast<float>(i * angle), normal),
+            calcnormal(glm::rotate(orth, static_cast<float>(i * angle), normal), stop - start),
+            tc + to * glm::rotate(orth, static_cast<float>(i * angle), tn), color);
 
-        mesh->addVertex(start + radius*glm::rotate(orth, static_cast<float>((i+1.0) * angle), normal),
-                        calcnormal(glm::rotate(orth, static_cast<float>((i+1.0) * angle), normal), stop - start),
-                        tc + to*glm::rotate(orth, static_cast<float>((i+1.0) * angle), tn),
-                        color);
+        mesh->addVertex(
+            start + radius * glm::rotate(orth, static_cast<float>((i + 1.0) * angle), normal),
+            calcnormal(glm::rotate(orth, static_cast<float>((i + 1.0) * angle), normal),
+                       stop - start),
+            tc + to * glm::rotate(orth, static_cast<float>((i + 1.0) * angle), tn), color);
 
-        inds->add(static_cast<const unsigned int>(i * 3 + 0));
-        inds->add(static_cast<const unsigned int>(i * 3 + 1));
-        inds->add(static_cast<const unsigned int>(i * 3 + 2));
+        inds->add({i * 3 + 0, i * 3 + 1, i * 3 + 2});
     }
 
     return mesh;
 }
 
-BasicMesh* BasicMesh::cylinder(const vec3& start,
-                               const vec3& stop,
-                               const vec4& color,
-                               const float& radius,
-                               const size_t& segments) {
-    
-    BasicMesh* mesh = new BasicMesh();
+std::shared_ptr<BasicMesh> BasicMesh::cylinder(const vec3& start, const vec3& stop,
+                                               const vec4& color, const float& radius,
+                                               const size_t& segments) {
+    auto mesh = std::make_shared<BasicMesh>();
     mesh->setModelMatrix(mat4(1.f));
-      
-    IndexBufferRAM* inds = mesh->addIndexBuffer(GeometryEnums::TRIANGLES, GeometryEnums::NONE);
-    vec3 normal = glm::normalize(stop-start);
+
+    auto inds = mesh->addIndexBuffer(DrawType::TRIANGLES, ConnectivityType::NONE);
+    vec3 normal = glm::normalize(stop - start);
     vec3 orth = orthvec(normal);
-    vec3 o;                                   
-    double angle = 2.0*M_PI / segments;
+    vec3 o;
+    double angle = 2.0 * M_PI / segments;
     float j;
-    
+
     for (size_t i = 0; i < segments; ++i) {
         j = static_cast<float>(i);
         o = glm::rotate(orth, static_cast<float>(i * angle), normal);
-        mesh->addVertex(start + radius*o, o, vec3(j/segments,0.0f,0.0f), color);
-        mesh->addVertex(stop + radius*o, o, vec3(j/segments,1.0f,0.0f), color);
+        mesh->addVertex(start + radius * o, o, vec3(j / segments, 0.0f, 0.0f), color);
+        mesh->addVertex(stop + radius * o, o, vec3(j / segments, 1.0f, 0.0f), color);
 
-        inds->add(static_cast<const unsigned int>(i * 2 + 1));
-        inds->add(static_cast<const unsigned int>(i * 2 + 0));
-        inds->add(static_cast<const unsigned int>(((i + 1) * 2) % (2*segments) + 0));
+        inds->add(static_cast<std::uint32_t>(i * 2 + 1));
+        inds->add(static_cast<std::uint32_t>(i * 2 + 0));
+        inds->add(static_cast<std::uint32_t>(((i + 1) * 2) % (2 * segments) + 0));
 
-        inds->add(static_cast<const unsigned int>(i * 2 + 1));
-        inds->add(static_cast<const unsigned int>(((i + 1) * 2) % (2*segments) + 0));
-        inds->add(static_cast<const unsigned int>(((i + 1) * 2) % (2*segments) + 1));
+        inds->add(static_cast<std::uint32_t>(i * 2 + 1));
+        inds->add(static_cast<std::uint32_t>(((i + 1) * 2) % (2 * segments) + 0));
+        inds->add(static_cast<std::uint32_t>(((i + 1) * 2) % (2 * segments) + 1));
     }
-    //inds->add(static_cast<const unsigned int>(1));
-    //inds->add(static_cast<const unsigned int>(0));
-    
-    BasicMesh* startcap = disk(start, -normal, color, radius, segments);
-    BasicMesh* endcap = disk(stop, normal, color, radius, segments);
 
-    mesh->append(startcap);
-    mesh->append(endcap);
+    auto startcap = disk(start, -normal, color, radius, segments);
+    auto endcap = disk(stop, normal, color, radius, segments);
 
-    delete startcap;
-    delete endcap;
-    
+    mesh->append(startcap.get());
+    mesh->append(endcap.get());
+
     return mesh;
 }
 
-    
-BasicMesh* BasicMesh::line(const vec3& start, const vec3& stop, const vec3& normal, const vec4& color /*= vec4(1.0f, 0.0f, 0.0f, 1.0f)*/, const float&width /*= 1.0f*/, const ivec2& inres /*= ivec2(1)*/) {
-    BasicMesh* mesh = new BasicMesh();
+std::shared_ptr<BasicMesh> BasicMesh::line(const vec3& start, const vec3& stop, const vec3& normal,
+                                           const vec4& color /*= vec4(1.0f, 0.0f, 0.0f, 1.0f)*/,
+                                           const float& width /*= 1.0f*/,
+                                           const ivec2& inres /*= ivec2(1)*/) {
+    auto mesh = std::make_shared<BasicMesh>();
     mesh->setModelMatrix(mat4(1.f));
-    IndexBufferRAM* inds = mesh->addIndexBuffer(GeometryEnums::TRIANGLES, GeometryEnums::NONE);
+    auto inds = mesh->addIndexBuffer(DrawType::TRIANGLES, ConnectivityType::NONE);
 
     vec3 right = orthvec(normal);
     vec3 up = glm::cross(right, normal);
@@ -328,12 +286,12 @@ BasicMesh* BasicMesh::line(const vec3& start, const vec3& stop, const vec3& norm
 
     for (int j = 0; j < res.y; j++) {
         for (int i = 0; i < res.x; i++) {
-            mesh->addVertex(
-                startCornerPoint + static_cast<float>(i) / static_cast<float>(inres.x) * direction +
-                static_cast<float>(j) / static_cast<float>(inres.y) * width * up,
-                normal, vec3(static_cast<float>(i) / static_cast<float>(inres.x),
-                static_cast<float>(j) / static_cast<float>(inres.y), 0.0f),
-                color);
+            mesh->addVertex(startCornerPoint +
+                                static_cast<float>(i) / static_cast<float>(inres.x) * direction +
+                                static_cast<float>(j) / static_cast<float>(inres.y) * width * up,
+                            normal, vec3(static_cast<float>(i) / static_cast<float>(inres.x),
+                                         static_cast<float>(j) / static_cast<float>(inres.y), 0.0f),
+                            color);
 
             if (i != inres.x && j != inres.y) {
                 inds->add(i + res.x * j);
@@ -350,36 +308,26 @@ BasicMesh* BasicMesh::line(const vec3& start, const vec3& stop, const vec3& norm
     return mesh;
 }
 
-BasicMesh* BasicMesh::arrow(const vec3& start,
-                            const vec3& stop,
-                            const vec4& color,
-                            const float& radius,
-                            const float& arrowfraction,
-                            const float& arrowRadius,
-                            const size_t& segments) {
-    
-    BasicMesh* mesh = new BasicMesh();
+std::shared_ptr<BasicMesh> BasicMesh::arrow(const vec3& start, const vec3& stop, const vec4& color,
+                                            const float& radius, const float& arrowfraction,
+                                            const float& arrowRadius, const size_t& segments) {
+    auto mesh = std::make_shared<BasicMesh>();
     mesh->setModelMatrix(mat4(1.f));
 
-    vec3 mid = start + (1-arrowfraction)*(stop-start);
-    BasicMesh* cylinderpart = cylinder(start, mid, color, radius, segments);
-    mesh->append(cylinderpart);
-    delete cylinderpart;
-    
-    BasicMesh* diskpart = disk(mid, start-mid, color, arrowRadius, segments);
-    mesh->append(diskpart);
-    delete diskpart;
-    
-    BasicMesh* conepart = cone(mid, stop, color, arrowRadius, segments);
-    mesh->append(conepart);
-    delete conepart;
-    
+    vec3 mid = start + (1 - arrowfraction) * (stop - start);
+    auto cylinderpart = cylinder(start, mid, color, radius, segments);
+    mesh->append(cylinderpart.get());
+
+    auto diskpart = disk(mid, start - mid, color, arrowRadius, segments);
+    mesh->append(diskpart.get());
+
+    auto conepart = cone(mid, stop, color, arrowRadius, segments);
+    mesh->append(conepart.get());
+
     return mesh;
 }
-    
-BasicMesh* BasicMesh::colorsphere(const vec3& center,
-                                  const float& radius) {
-     
+
+std::shared_ptr<BasicMesh> BasicMesh::colorsphere(const vec3& center, const float& radius) {
     std::vector<vec2> spheremesh;
     spheremesh.push_back(vec2(M_PI_2, 0.0f));
     spheremesh.push_back(vec2(M_PI_2, M_PI_2));
@@ -399,18 +347,18 @@ BasicMesh* BasicMesh::colorsphere(const vec3& center,
     spheremesh.push_back(vec2(std::atan(std::sqrt(2.0f) / 5.0f), M_PI_4));
     spheremesh.push_back(vec2(std::atan(1.0f / 6.0f), M_PI_2));
     spheremesh.push_back(vec2(M_PI_2, std::atan(2.0f / 5.0f)));
-    spheremesh.push_back(vec2(std::atan(2.0f*std::sqrt(5.0f)), std::atan(1.0f / 2.0f)));
+    spheremesh.push_back(vec2(std::atan(2.0f * std::sqrt(5.0f)), std::atan(1.0f / 2.0f)));
     spheremesh.push_back(vec2(std::atan(std::sqrt(13.0f) / 2.0f), std::atan(2.0f / 3.0f)));
-    spheremesh.push_back(vec2(std::atan((2.0f*std::sqrt(2.0f)) / 3.0f), M_PI_4));
+    spheremesh.push_back(vec2(std::atan((2.0f * std::sqrt(2.0f)) / 3.0f), M_PI_4));
     spheremesh.push_back(vec2(std::atan(std::sqrt(5.0f) / 4.0f), std::atan(2.0f)));
     spheremesh.push_back(vec2(std::atan(2.0f / 5.0f), M_PI_2));
     spheremesh.push_back(vec2(M_PI_2, std::atan(3.0f / 4.0f)));
-    spheremesh.push_back(vec2(std::atan(3.0f*std::sqrt(2.0f)), M_PI_4));
+    spheremesh.push_back(vec2(std::atan(3.0f * std::sqrt(2.0f)), M_PI_4));
     spheremesh.push_back(vec2(std::atan(std::sqrt(13.0f) / 2.0f), std::atan(3.0f / 2.0f)));
     spheremesh.push_back(vec2(std::atan(std::sqrt(10.0f) / 3.0f), std::atan(3.0f)));
     spheremesh.push_back(vec2(std::atan(3.0f / 4.0f), M_PI_2));
     spheremesh.push_back(vec2(M_PI_2, std::atan(4.0f / 3.0f)));
-    spheremesh.push_back(vec2(std::atan(2.0f*std::sqrt(5.0f)), std::atan(2.0f)));
+    spheremesh.push_back(vec2(std::atan(2.0f * std::sqrt(5.0f)), std::atan(2.0f)));
     spheremesh.push_back(vec2(std::atan(std::sqrt(17.0f) / 2.0f), std::atan(4.0f)));
     spheremesh.push_back(vec2(std::atan(4.0f / 3.0f), M_PI_2));
     spheremesh.push_back(vec2(M_PI_2, std::atan(5.0f / 2.0f)));
@@ -470,16 +418,15 @@ BasicMesh* BasicMesh::colorsphere(const vec3& center,
     sphereind.push_back(uvec3(34, 30, 33));
     sphereind.push_back(uvec3(36, 33, 35));
 
-
-    BasicMesh* mesh = new BasicMesh();
+    auto mesh = std::make_shared<BasicMesh>();
     mesh->setModelMatrix(mat4(1.f));
 
     vec3 quad(0);
     for (quad.x = -1.0f; quad.x <= 1.0f; quad.x += 2.0f) {
         for (quad.y = -1.0f; quad.y <= 1.0f; quad.y += 2.0f) {
             for (quad.z = -1.0f; quad.z <= 1.0f; quad.z += 2.0f) {
-                BasicMesh* temp = new BasicMesh();
-                IndexBufferRAM* inds = temp->addIndexBuffer(GeometryEnums::TRIANGLES, GeometryEnums::NONE);
+                BasicMesh temp;
+                auto inds = temp.addIndexBuffer(DrawType::TRIANGLES, ConnectivityType::NONE);
 
                 vec3 normal;
                 vec3 vertex;
@@ -487,151 +434,111 @@ BasicMesh* BasicMesh::colorsphere(const vec3& center,
                 vec4 color((quad + 1.0f) / 2.0f, 1.0f);
                 for (auto& elem : spheremesh) {
                     normal = quad * tospherical(elem);
-                    vertex = center + radius*normal;
+                    vertex = center + radius * normal;
                     tcoord = vec3(quad.x * (elem).x, quad.y * (elem).y, 0.0f);
-                    temp->addVertex(vertex, normal, tcoord, color);
+                    temp.addVertex(vertex, normal, tcoord, color);
                 }
 
-                if (quad.x*quad.y*quad.z > 0) {
+                if (quad.x * quad.y * quad.z > 0) {
                     for (auto& elem : sphereind) {
-                        inds->add(elem.x);
-                        inds->add(elem.y);
-                        inds->add(elem.z);
+                        inds->add({elem.x, elem.y, elem.z});
                     }
                 } else {
                     for (auto& elem : sphereind) {
-                        inds->add(elem.z);
-                        inds->add(elem.y);
-                        inds->add(elem.x);
+                        inds->add({elem.z, elem.y, elem.x});
                     }
                 }
-                mesh->append(temp);
-                delete temp;
+                mesh->append(&temp);
             }
         }
-    } 
+    }
     return mesh;
 }
 
-static vec3 V(const mat4& m,const vec3 v){
-    vec4 V = m * vec4(v,1);
+static vec3 V(const mat4& m, const vec3 v) {
+    vec4 V = m * vec4(v, 1);
     return V.xyz() / V.w;
 }
 
-static vec3 N(const mat4& m,const vec3 v){
-    vec4 V = m * vec4(v,0);
+static vec3 N(const mat4& m, const vec3 v) {
+    vec4 V = m * vec4(v, 0);
     return V.xyz();
 }
 
-BasicMesh* BasicMesh::cube(const mat4& m, const vec4 &color){
-    BasicMesh* mesh = new BasicMesh();
+std::shared_ptr<BasicMesh> BasicMesh::cube(const mat4& m, const vec4& color) {
+    auto mesh = std::make_shared<BasicMesh>();
     mesh->setModelMatrix(mat4(1));
-    
-    IndexBufferRAM* indices = mesh->addIndexBuffer(GeometryEnums::TRIANGLES,GeometryEnums::NONE);
 
-    //Front back
-    mesh->addVertex(V(m,vec3(0,0,0)),N(m,vec3(0,0,-1)),vec3(0,0,0),color);    
-    mesh->addVertex(V(m,vec3(1,0,0)),N(m,vec3(0,0,-1)),vec3(1,0,0),color);    
-    mesh->addVertex(V(m,vec3(1,1,0)),N(m,vec3(0,0,-1)),vec3(1,1,0),color);    
-    mesh->addVertex(V(m,vec3(0,1,0)),N(m,vec3(0,0,-1)),vec3(0,1,0),color);    
-    int o = 0;
-    indices->add(0);
-    indices->add(2);    
-    indices->add(1);
-    indices->add(0);
-    indices->add(3);    
-    indices->add(2);
+    auto indices = mesh->addIndexBuffer(DrawType::TRIANGLES, ConnectivityType::NONE);
 
-    mesh->addVertex(V(m,vec3(0,0,1)),N(m,vec3(0,0,1)),vec3(0,0,1),color);    
-    mesh->addVertex(V(m,vec3(1,0,1)),N(m,vec3(0,0,1)),vec3(1,0,1),color);    
-    mesh->addVertex(V(m,vec3(1,1,1)),N(m,vec3(0,0,1)),vec3(1,1,1),color);    
-    mesh->addVertex(V(m,vec3(0,1,1)),N(m,vec3(0,0,1)),vec3(0,1,1),color);    
+    // Front back
+    mesh->addVertices({{V(m, vec3(0, 0, 0)), N(m, vec3(0, 0, -1)), vec3(0, 0, 0), color},
+                       {V(m, vec3(1, 0, 0)), N(m, vec3(0, 0, -1)), vec3(1, 0, 0), color},
+                       {V(m, vec3(1, 1, 0)), N(m, vec3(0, 0, -1)), vec3(1, 1, 0), color},
+                       {V(m, vec3(0, 1, 0)), N(m, vec3(0, 0, -1)), vec3(0, 1, 0), color}});
+
+    std::uint32_t o = 0;
+    indices->add({0 + o, 2 + o, 1 + o, 0 + o, 3 + o, 2 + o});
+
+    mesh->addVertices({{V(m, vec3(0, 0, 1)), N(m, vec3(0, 0, 1)), vec3(0, 0, 1), color},
+                       {V(m, vec3(1, 0, 1)), N(m, vec3(0, 0, 1)), vec3(1, 0, 1), color},
+                       {V(m, vec3(1, 1, 1)), N(m, vec3(0, 0, 1)), vec3(1, 1, 1), color},
+                       {V(m, vec3(0, 1, 1)), N(m, vec3(0, 0, 1)), vec3(0, 1, 1), color}});
+
     o += 4;
-    indices->add(0+o); 
-    indices->add(1+o);   
-    indices->add(2+o);
-    indices->add(0+o);    
-    indices->add(2+o);
-    indices->add(3+o);
+    indices->add({0 + o, 2 + o, 1 + o, 0 + o, 3 + o, 2 + o});
 
-
-
-    //Right left
-    mesh->addVertex(V(m,vec3(0,0,0)),N(m,vec3(-1,0,0)),vec3(0,0,0),color);       
-    mesh->addVertex(V(m,vec3(0,1,0)),N(m,vec3(-1,0,0)),vec3(0,1,0),color);    
-    mesh->addVertex(V(m,vec3(0,1,1)),N(m,vec3(-1,0,0)),vec3(0,1,1),color);    
-    mesh->addVertex(V(m,vec3(0,0,1)),N(m,vec3(-1,0,0)),vec3(0,0,1),color);    
+    // Right left
+    mesh->addVertices({{V(m, vec3(0, 0, 0)), N(m, vec3(-1, 0, 0)), vec3(0, 0, 0), color},
+                       {V(m, vec3(0, 1, 0)), N(m, vec3(-1, 0, 0)), vec3(0, 1, 0), color},
+                       {V(m, vec3(0, 1, 1)), N(m, vec3(-1, 0, 0)), vec3(0, 1, 1), color},
+                       {V(m, vec3(0, 0, 1)), N(m, vec3(-1, 0, 0)), vec3(0, 0, 1), color}});
     o += 4;
-    indices->add(0+o); 
-    indices->add(2+o);   
-    indices->add(1+o);
-    indices->add(0+o);  
-    indices->add(3+o);  
-    indices->add(2+o);
+    indices->add({0 + o, 2 + o, 1 + o, 0 + o, 3 + o, 2 + o});
 
-    mesh->addVertex(V(m,vec3(1,0,0)),N(m,vec3(1,0,0)),vec3(1,0,0),color);      
-    mesh->addVertex(V(m,vec3(1,1,0)),N(m,vec3(1,0,0)),vec3(1,1,0),color);    
-    mesh->addVertex(V(m,vec3(1,1,1)),N(m,vec3(1,0,0)),vec3(1,1,1),color);    
-    mesh->addVertex(V(m,vec3(1,0,1)),N(m,vec3(1,0,0)),vec3(1,0,1),color);    
+    mesh->addVertices({{V(m, vec3(1, 0, 0)), N(m, vec3(1, 0, 0)), vec3(1, 0, 0), color},
+                       {V(m, vec3(1, 1, 0)), N(m, vec3(1, 0, 0)), vec3(1, 1, 0), color},
+                       {V(m, vec3(1, 1, 1)), N(m, vec3(1, 0, 0)), vec3(1, 1, 1), color},
+                       {V(m, vec3(1, 0, 1)), N(m, vec3(1, 0, 0)), vec3(1, 0, 1), color}});
     o += 4;
-    indices->add(0+o);   
-    indices->add(1+o);
-    indices->add(2+o); 
-    indices->add(0+o);  
-    indices->add(2+o);
-    indices->add(3+o);  
+    indices->add({0 + o, 2 + o, 1 + o, 0 + o, 3 + o, 2 + o});
 
-
-
-    //top bottom
-    mesh->addVertex(V(m,vec3(0,1,0)),N(m,vec3(0,1,0)),vec3(0,1,0),color);    
-    mesh->addVertex(V(m,vec3(1,1,0)),N(m,vec3(0,1,0)),vec3(1,1,0),color);    
-    mesh->addVertex(V(m,vec3(1,1,1)),N(m,vec3(0,1,0)),vec3(1,1,1),color);    
-    mesh->addVertex(V(m,vec3(0,1,1)),N(m,vec3(0,1,0)),vec3(0,1,1),color);    
+    // top bottom
+    mesh->addVertices({{V(m, vec3(0, 1, 0)), N(m, vec3(0, 1, 0)), vec3(0, 1, 0), color},
+                       {V(m, vec3(1, 1, 0)), N(m, vec3(0, 1, 0)), vec3(1, 1, 0), color},
+                       {V(m, vec3(1, 1, 1)), N(m, vec3(0, 1, 0)), vec3(1, 1, 1), color},
+                       {V(m, vec3(0, 1, 1)), N(m, vec3(0, 1, 0)), vec3(0, 1, 1), color}});
     o += 4;
-    indices->add(0+o);   
-    indices->add(2+o); 
-    indices->add(1+o);
-    indices->add(0+o);  
-    indices->add(3+o);  
-    indices->add(2+o);
+    indices->add({0 + o, 2 + o, 1 + o, 0 + o, 3 + o, 2 + o});
 
-    mesh->addVertex(V(m,vec3(0,0,0)),N(m,vec3(0,-1,0)),vec3(0,-1,0),color);     
-    mesh->addVertex(V(m,vec3(1,0,0)),N(m,vec3(0,-1,0)),vec3(1,-1,0),color);    
-    mesh->addVertex(V(m,vec3(1,0,1)),N(m,vec3(0,-1,0)),vec3(1,-1,1),color);    
-    mesh->addVertex(V(m,vec3(0,0,1)),N(m,vec3(0,-1,0)),vec3(0,-1,1),color);    
+    mesh->addVertices({{V(m, vec3(0, 0, 0)), N(m, vec3(0, -1, 0)), vec3(0, -1, 0), color},
+                       {V(m, vec3(1, 0, 0)), N(m, vec3(0, -1, 0)), vec3(1, -1, 0), color},
+                       {V(m, vec3(1, 0, 1)), N(m, vec3(0, -1, 0)), vec3(1, -1, 1), color},
+                       {V(m, vec3(0, 0, 1)), N(m, vec3(0, -1, 0)), vec3(0, -1, 1), color}});
     o += 4;
-    indices->add(0+o);    
-    indices->add(1+o);
-    indices->add(2+o);
-    indices->add(0+o);    
-    indices->add(2+o);
-    indices->add(3+o);
+    indices->add({0 + o, 2 + o, 1 + o, 0 + o, 3 + o, 2 + o});
 
     return mesh;
 }
 
-BasicMesh* BasicMesh::coordindicator(const vec3& center, const float& size) {
+std::shared_ptr<BasicMesh> BasicMesh::coordindicator(const vec3& center, const float& size) {
     size_t segments = 16;
     float bsize = size * 1.0f;
     float fsize = size * 1.2f;
     float radius = size * 0.08f;
     float arrowpart = 0.12f;
     float arrowRadius = 2.0f * radius;
-    BasicMesh* mesh = new BasicMesh();
+    auto mesh = std::make_shared<BasicMesh>();
     mesh->setModelMatrix(mat4(1.f));
 
-    std::unique_ptr<BasicMesh> xarrow{
-        arrow(center - vec3(bsize, 0.0f, 0.0f), center + vec3(fsize, 0.0f, 0.0f),
-              vec4(1.0f, 0.0f, 0.0f, 1.0f), radius, arrowpart, arrowRadius, segments)};
-    std::unique_ptr<BasicMesh> yarrow{
-        arrow(center - vec3(0.0f, bsize, 0.0f), center + vec3(0.0f, fsize, 0.0f),
-              vec4(0.0f, 1.0f, 0.0f, 1.0f), radius, arrowpart, arrowRadius, segments)};
-    std::unique_ptr<BasicMesh> zarrow{
-        arrow(center - vec3(0.0f, 0.0f, bsize), center + vec3(0.0f, 0.0f, fsize),
-              vec4(0.0f, 0.0f, 1.0f, 1.0f), radius, arrowpart, arrowRadius, segments)};
+    auto xarrow = arrow(center - vec3(bsize, 0.0f, 0.0f), center + vec3(fsize, 0.0f, 0.0f),
+                        vec4(1.0f, 0.0f, 0.0f, 1.0f), radius, arrowpart, arrowRadius, segments);
+    auto yarrow = arrow(center - vec3(0.0f, bsize, 0.0f), center + vec3(0.0f, fsize, 0.0f),
+                        vec4(0.0f, 1.0f, 0.0f, 1.0f), radius, arrowpart, arrowRadius, segments);
+    auto zarrow = arrow(center - vec3(0.0f, 0.0f, bsize), center + vec3(0.0f, 0.0f, fsize),
+                        vec4(0.0f, 0.0f, 1.0f, 1.0f), radius, arrowpart, arrowRadius, segments);
 
-    std::unique_ptr<BasicMesh> sphere{colorsphere(center, 0.7f * size)};
+    auto sphere = colorsphere(center, 0.7f * size);
 
     mesh->append(sphere.get());
     mesh->append(xarrow.get());
@@ -641,70 +548,35 @@ BasicMesh* BasicMesh::coordindicator(const vec3& center, const float& size) {
     return mesh;
 }
 
-BasicMesh* BasicMesh::boundingbox(const mat4& basisandoffset, const vec4& color) {
-    BasicMesh* mesh = new BasicMesh();
+std::shared_ptr<BasicMesh> BasicMesh::boundingbox(const mat4& basisandoffset, const vec4& color) {
+    auto mesh = std::make_shared<BasicMesh>();
     mesh->setModelMatrix(basisandoffset);
 
-    mesh->addVertex(vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0), vec3(0.0, 0.0, 0.0), color);
-    mesh->addVertex(vec3(1.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0), vec3(1.0, 0.0, 0.0), color);
-    mesh->addVertex(vec3(0.0, 1.0, 0.0), vec3(1.0, 1.0, 1.0), vec3(0.0, 1.0, 0.0), color);
-    mesh->addVertex(vec3(0.0, 0.0, 1.0), vec3(1.0, 1.0, 1.0), vec3(0.0, 0.0, 1.0), color);
-    mesh->addVertex(vec3(1.0, 1.0, 0.0), vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, 0.0), color);
-    mesh->addVertex(vec3(0.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), vec3(0.0, 1.0, 1.0), color);
-    mesh->addVertex(vec3(1.0, 0.0, 1.0), vec3(1.0, 1.0, 1.0), vec3(1.0, 0.0, 1.0), color);
-    mesh->addVertex(vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), color);
+    mesh->addVertices({{vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0), vec3(0.0, 0.0, 0.0), color},
+                       {vec3(1.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0), vec3(1.0, 0.0, 0.0), color},
+                       {vec3(0.0, 1.0, 0.0), vec3(1.0, 1.0, 1.0), vec3(0.0, 1.0, 0.0), color},
+                       {vec3(0.0, 0.0, 1.0), vec3(1.0, 1.0, 1.0), vec3(0.0, 0.0, 1.0), color},
+                       {vec3(1.0, 1.0, 0.0), vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, 0.0), color},
+                       {vec3(0.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), vec3(0.0, 1.0, 1.0), color},
+                       {vec3(1.0, 0.0, 1.0), vec3(1.0, 1.0, 1.0), vec3(1.0, 0.0, 1.0), color},
+                       {vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), color}});
 
-    IndexBufferRAM* inds = mesh->addIndexBuffer(GeometryEnums::LINES, GeometryEnums::NONE);
-
-    inds->add(0);
-    inds->add(1);
-
-    inds->add(0);
-    inds->add(2);
-
-    inds->add(0);
-    inds->add(3);
-
-    inds->add(1);
-    inds->add(6);
-
-    inds->add(1);
-    inds->add(4);
-
-    inds->add(2);
-    inds->add(5);
-
-    inds->add(2);
-    inds->add(4);
-
-    inds->add(3);
-    inds->add(5);
-
-    inds->add(3);
-    inds->add(6);
-
-    inds->add(5);
-    inds->add(7);
-
-    inds->add(6);
-    inds->add(7);
-
-    inds->add(4);
-    inds->add(7);
+    auto inds = mesh->addIndexBuffer(DrawType::LINES, ConnectivityType::NONE);
+    inds->add({0, 1, 0, 2, 0, 3, 1, 6, 1, 4, 2, 5, 2, 4, 3, 5, 3, 6, 5, 7, 6, 7, 4, 7});
 
     return mesh;
 }
 
-BasicMesh* BasicMesh::square(const vec3& pos, const vec3& normal, const glm::vec2& extent,
-                             const vec4& color /*= vec4(1,1,1,1)*/,
-                             const ivec2& inres /*= ivec2(1)*/) {
-    BasicMesh* mesh = new BasicMesh();
+std::shared_ptr<BasicMesh> BasicMesh::square(const vec3& pos, const vec3& normal,
+                                             const glm::vec2& extent,
+                                             const vec4& color /*= vec4(1,1,1,1)*/,
+                                             const ivec2& inres /*= ivec2(1)*/) {
+    auto mesh = std::make_shared<BasicMesh>();
     mesh->setModelMatrix(mat4(1.f));
-    IndexBufferRAM* inds = mesh->addIndexBuffer(GeometryEnums::TRIANGLES, GeometryEnums::NONE);
+    auto inds = mesh->addIndexBuffer(DrawType::TRIANGLES, ConnectivityType::NONE);
 
     vec3 right = orthvec(normal);
     vec3 up = glm::cross(right, normal);
-
 
     vec3 start = pos - 0.5f * extent.x * right - 0.5f * extent.y * up;
     ivec2 res = inres + ivec2(1);

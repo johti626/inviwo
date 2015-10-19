@@ -45,7 +45,7 @@ public:
     ImageRAM();
     ImageRAM(const ImageRAM& rhs);
     ImageRAM& operator=(const ImageRAM& that);
-    virtual ImageRAM* clone() const;
+    virtual ImageRAM* clone() const override;
     virtual ~ImageRAM();
 
     virtual bool copyRepresentationsTo(DataRepresentation* target) const override;
@@ -57,6 +57,8 @@ public:
     const LayerRAM* getColorLayerRAM(size_t idx = 0) const;
     const LayerRAM* getDepthLayerRAM() const;
     const LayerRAM* getPickingLayerRAM() const;
+
+    virtual std::type_index getTypeIndex() const override final;
 
 protected:
     virtual void update(bool editable) override;

@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #include <inviwo/core/datastructures/buffer/bufferram.h>
@@ -32,24 +32,14 @@
 
 namespace inviwo {
 
-BufferRAM::BufferRAM(const DataFormatBase* format, BufferType type, BufferUsage usage)
-    : BufferRepresentation(format, type, usage) {}
-    
-BufferRAM::BufferRAM(const BufferRAM& rhs) : BufferRepresentation(rhs) {}
+BufferRAM::BufferRAM(const DataFormatBase* format, BufferUsage usage)
+    : BufferRepresentation(format, usage) {}
 
-BufferRAM& BufferRAM::operator=(const BufferRAM& that) {
-    if (this != &that) {
-        BufferRepresentation::operator=(that);
-    }
-    return *this;
-}
+std::type_index BufferRAM::getTypeIndex() const { return std::type_index(typeid(BufferRAM)); }
 
-BufferRAM::~BufferRAM() {}
-
-BufferRAM* createBufferRAM(size_t size, const DataFormatBase* format, BufferType type,
-                           BufferUsage usage) {
+std::shared_ptr<BufferRAM> createBufferRAM(size_t size, const DataFormatBase* format,
+                                           BufferUsage usage) {
     BufferRamDispatcher disp;
-    return format->dispatch(disp, size, format, type, usage);
+    return format->dispatch(disp, size, usage);
 }
-
 }

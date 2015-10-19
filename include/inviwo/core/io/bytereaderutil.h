@@ -27,39 +27,20 @@
  *
  *********************************************************************************/
 
-#include <inviwo/qt/widgets/tooltiphelper.h>
-#include <inviwo/qt/widgets/inviwoqtutils.h>
+#ifndef IVW_BYTEREADERUTIL_H
+#define IVW_BYTEREADERUTIL_H
+
+#include <inviwo/core/common/inviwocoredefine.h>
+#include <inviwo/core/common/inviwo.h>
 
 namespace inviwo {
 
-ToolTipHelper::ToolTipHelper(std::string item /*= ""*/) : ss() {
-    utilqt::localizeStream(ss);
+namespace util {
 
-    ss << "<html><head>"
-       << "<style>"
-       << "table { border-color:white;white-space:pre;margin-top:5px;margin-bottom:5px; }"
-       << "table > tr > td { padding-left:5px; padding-right:5px; }"
-       << "</style><head/><body>";
-
-    if (!item.empty()) ss << "<b style='color:white;'>" << item << "</b>";
-}
-
-ToolTipHelper::~ToolTipHelper() {}
-
-
-ToolTipHelper& ToolTipHelper::tableTop() {
-    ss << "<table border='0' cellspacing='0' cellpadding='0'"
-       << "style='border-color:white;white-space:pre;margin: 5px 0;'>";
-    return *this;
-}
-
-ToolTipHelper& ToolTipHelper::tableBottom() {
-    ss << "</table>";
-    return *this;
-}
-
-ToolTipHelper::operator std::string() {
-    return ss.str() + "</body></html>";
-}
+void IVW_CORE_API readBytesIntoBuffer(const std::string& file, size_t offset, size_t bytes,
+                                      bool littleEndian, size_t elementSize, void* dest);
+}  // namespace
 
 }  // namespace
+
+#endif  // IVW_BYTEREADERUTIL_H

@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #include "volumeglconverter.h"
@@ -32,39 +32,25 @@
 
 namespace inviwo {
 
-VolumeRAM2GLConverter::VolumeRAM2GLConverter()
-    : RepresentationConverterType<VolumeGL>()
-{}
-
-VolumeRAM2GLConverter::~VolumeRAM2GLConverter() {}
-
-DataRepresentation* VolumeRAM2GLConverter::createFrom(const DataRepresentation* source) {
-    const VolumeRAM* volumeRAM = static_cast<const VolumeRAM*>(source);
-    VolumeGL* volume = new VolumeGL(volumeRAM->getDimensions(), volumeRAM->getDataFormat(), false);
+std::shared_ptr<VolumeGL> VolumeRAM2GLConverter::createFrom(
+    std::shared_ptr<const VolumeRAM> volumeRAM) const {
+    auto volume =
+        std::make_shared<VolumeGL>(volumeRAM->getDimensions(), volumeRAM->getDataFormat(), false);
     volume->getTexture()->initialize(volumeRAM->getData());
     return volume;
 }
 
-void VolumeRAM2GLConverter::update(const DataRepresentation* source, DataRepresentation* destination) {
-    const VolumeRAM* volumeSrc = static_cast<const VolumeRAM*>(source);
-    VolumeGL* volumeDst = static_cast<VolumeGL*>(destination);
-
+void VolumeRAM2GLConverter::update(std::shared_ptr<const VolumeRAM> volumeSrc,
+                                   std::shared_ptr<VolumeGL> volumeDst) const {
     if (volumeSrc->getDimensions() != volumeDst->getDimensions()) {
         volumeDst->setDimensions(volumeSrc->getDimensions());
     }
-
     volumeDst->getTexture()->upload(volumeSrc->getData());
 }
 
-VolumeGL2RAMConverter::VolumeGL2RAMConverter()
-    : RepresentationConverterType<VolumeRAM>()
-{}
-
-VolumeGL2RAMConverter::~VolumeGL2RAMConverter() {}
-
-DataRepresentation* VolumeGL2RAMConverter::createFrom(const DataRepresentation* source) {
-    const VolumeGL* volumeGL = static_cast<const VolumeGL*>(source);
-    VolumeRAM* volume = createVolumeRAM(volumeGL->getDimensions(), volumeGL->getDataFormat());
+std::shared_ptr<VolumeRAM> VolumeGL2RAMConverter::createFrom(
+    std::shared_ptr<const VolumeGL> volumeGL) const {
+    auto volume = createVolumeRAM(volumeGL->getDimensions(), volumeGL->getDataFormat());
 
     if (volume) {
         volumeGL->getTexture()->download(volume->getData());
@@ -76,18 +62,15 @@ DataRepresentation* VolumeGL2RAMConverter::createFrom(const DataRepresentation* 
     return nullptr;
 }
 
-void VolumeGL2RAMConverter::update(const DataRepresentation* source, DataRepresentation* destination) {
-    const VolumeGL* volumeSrc = static_cast<const VolumeGL*>(source);
-    VolumeRAM* volumeDst = static_cast<VolumeRAM*>(destination);
-
+void VolumeGL2RAMConverter::update(std::shared_ptr<const VolumeGL> volumeSrc,
+                                   std::shared_ptr<VolumeRAM> volumeDst) const {
     if (volumeSrc->getDimensions() != volumeDst->getDimensions()) {
         volumeDst->setDimensions(volumeSrc->getDimensions());
     }
 
     volumeSrc->getTexture()->download(volumeDst->getData());
 
-    if (volumeDst->hasHistograms())
-        volumeDst->getHistograms()->setValid(false);
+    if (volumeDst->hasHistograms()) volumeDst->getHistograms()->setValid(false);
 }
 
-} // namespace
+}  // namespace

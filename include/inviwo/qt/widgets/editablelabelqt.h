@@ -41,7 +41,10 @@
 namespace inviwo {
 
 class IVW_QTWIDGETS_API EditableLabelQt : public QWidget, public PropertyObserver {
+    #include <warn/push>
+    #include <warn/ignore/all>
     Q_OBJECT
+    #include <warn/pop>
 public:
     EditableLabelQt(PropertyWidgetQt* parent, Property* property, bool shortenText = true);
     EditableLabelQt(PropertyWidgetQt* parent, std::string text, bool shortenText = true);
@@ -50,8 +53,8 @@ public:
     void setContextMenu(QMenu* menu) { contextMenu_ = menu; };
     void setShortenText(bool shorten);
 
-    QSize sizeHint() const;
-    QSize minimumSizeHint() const;
+    QSize sizeHint() const override;
+    QSize minimumSizeHint() const override;
 
 public slots:
     void edit();
@@ -59,12 +62,12 @@ public slots:
     void showContextMenu(const QPoint& pos);
 
 protected:
-    virtual void resizeEvent(QResizeEvent*);
+    virtual void resizeEvent(QResizeEvent*) override;
 
 private:
     void updateText();
     void generateWidget();
-    void mouseDoubleClickEvent(QMouseEvent* e);
+    void mouseDoubleClickEvent(QMouseEvent* e) override;
     virtual void onSetDisplayName(const std::string& displayName) override;
     QString shortenText();
 

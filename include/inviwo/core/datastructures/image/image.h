@@ -34,30 +34,26 @@
 #include <inviwo/core/datastructures/datagroup.h>
 #include <inviwo/core/datastructures/image/layer.h>
 #include <inviwo/core/datastructures/image/imagetypes.h>
+#include <inviwo/core/datastructures/image/imagerepresentation.h>
 
 namespace inviwo {
 
-class IVW_CORE_API Image : public DataGroup {
+class IVW_CORE_API Image : public DataGroup<ImageRepresentation> {
 public:
     Image(size2_t dimensions = size2_t(8, 8), const DataFormatBase* format = DataVec4UINT8::get());
-    Image(Layer* colorLayer);
+    Image(std::shared_ptr<Layer> colorLayer);
     Image(const Image&);
     Image& operator=(const Image& that);
     virtual Image* clone() const;
-    virtual ~Image();
+    virtual ~Image() = default;
     virtual std::string getDataInfo() const;
-
-    void deinitialize();
-    void initialize(Layer* colorLayer = nullptr, size2_t dimensions = size2_t(8, 8),
-                    const DataFormatBase* format = DataVec4UINT8::get());
-
-    size_t addColorLayer(Layer*);
 
     const Layer* getLayer(LayerType, size_t idx = 0) const;
     Layer* getLayer(LayerType, size_t idx = 0);
 
     const Layer* getColorLayer(size_t idx = 0) const;
     Layer* getColorLayer(size_t idx = 0);
+    void addColorLayer(std::shared_ptr<Layer> layer);
 
     size_t getNumberOfColorLayers() const;
 
@@ -70,7 +66,7 @@ public:
     size2_t getDimensions() const;
 
     /**
-     * Reeize all representation to dimension. This is destructive, the data will not be
+     * Resize all representation to dimension. This is destructive, the data will not be
      * preserved. Use copyRepresentationsTo to update the data.
      */
     void setDimensions(size2_t dimensions);
@@ -85,10 +81,11 @@ public:
 
     static uvec3 COLOR_CODE;
     static const std::string CLASS_IDENTIFIER;
+
 protected:
-    std::vector<Layer*> colorLayers_;  //< owning pointer
-    Layer* depthLayer_;                //< owning pointer
-    Layer* pickingLayer_;              //< owning pointer
+    std::vector<std::shared_ptr<Layer>> colorLayers_;
+    std::shared_ptr<Layer> depthLayer_;
+    std::shared_ptr<Layer> pickingLayer_;
 };
 
 }  // namespace

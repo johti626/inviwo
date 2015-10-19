@@ -162,12 +162,12 @@ void MeshClipping::onAlignPlaneNormalToCameraNormalPressed(){
     const std::vector<vec3>* vertexList;
     const SimpleMesh* simpleInputMesh = dynamic_cast<const SimpleMesh*>(geom.get());
     if (simpleInputMesh) {
-        vertexList = simpleInputMesh->getVertexList()->getRepresentation<Position3dBufferRAM>()->getDataContainer();
+        vertexList = simpleInputMesh->getVertexList()->getRAMRepresentation()->getDataContainer();
     }
     else {
         const BasicMesh* basicInputMesh = dynamic_cast<const BasicMesh*>(geom.get());
         if (basicInputMesh) {
-            vertexList = basicInputMesh->getVertices()->getRepresentation<Position3dBufferRAM>()->getDataContainer();
+            vertexList = basicInputMesh->getVertices()->getRAMRepresentation()->getDataContainer();
         }
         else {
             LogError("Unsupported mesh type, only simple and basic meshes are supported");
@@ -325,7 +325,7 @@ std::vector<EdgeIndex> triangleListtoEdgeList(const std::vector<unsigned int>* t
 }
 
 Mesh* MeshClipping::clipGeometryAgainstPlaneRevised(const Mesh* in, Plane plane) {
-    GeometryEnums::ConnectivityType indexAttrInfo;
+    ConnectivityType indexAttrInfo;
     const std::vector<vec3>* vertexList;
     const std::vector<vec3>* texcoordlist;
     const std::vector<vec4>* colorList;
@@ -333,19 +333,19 @@ Mesh* MeshClipping::clipGeometryAgainstPlaneRevised(const Mesh* in, Plane plane)
     
     const SimpleMesh* simpleInputMesh = dynamic_cast<const SimpleMesh*>(in);
     if (simpleInputMesh) {
-        vertexList = simpleInputMesh->getVertexList()->getRepresentation<Position3dBufferRAM>()->getDataContainer();
-        texcoordlist = simpleInputMesh->getTexCoordList()->getRepresentation<TexCoord3dBufferRAM>()->getDataContainer();
-        colorList = simpleInputMesh->getColorList()->getRepresentation<ColorBufferRAM>()->getDataContainer();
-        triangleList = simpleInputMesh->getIndexList()->getRepresentation<IndexBufferRAM>()->getDataContainer();
-        indexAttrInfo = simpleInputMesh->getIndexAttributesInfo(0).ct;
+        vertexList = simpleInputMesh->getVertexList()->getRAMRepresentation()->getDataContainer();
+        texcoordlist = simpleInputMesh->getTexCoordList()->getRAMRepresentation()->getDataContainer();
+        colorList = simpleInputMesh->getColorList()->getRAMRepresentation()->getDataContainer();
+        triangleList = simpleInputMesh->getIndexList()->getRAMRepresentation()->getDataContainer();
+        indexAttrInfo = simpleInputMesh->getIndexMeshInfo(0).ct;
     } else {
         // TODO do clipping in all the index list now we only consider the first one 
         const BasicMesh* basicInputMesh = dynamic_cast<const BasicMesh*>(in);
         if(basicInputMesh) {
-            vertexList = basicInputMesh->getVertices()->getRepresentation<Position3dBufferRAM>()->getDataContainer();
-            texcoordlist = basicInputMesh->getTexCoords()->getRepresentation<TexCoord3dBufferRAM>()->getDataContainer();
-            colorList = basicInputMesh->getColors()->getRepresentation<ColorBufferRAM>()->getDataContainer();
-            triangleList = basicInputMesh->getIndexBuffers()[0].second->getRepresentation<IndexBufferRAM>()->getDataContainer();
+            vertexList = basicInputMesh->getVertices()->getRAMRepresentation()->getDataContainer();
+            texcoordlist = basicInputMesh->getTexCoords()->getRAMRepresentation()->getDataContainer();
+            colorList = basicInputMesh->getColors()->getRAMRepresentation()->getDataContainer();
+            triangleList = basicInputMesh->getIndexBuffers()[0].second->getRAMRepresentation()->getDataContainer();
             indexAttrInfo = basicInputMesh->getIndexBuffers()[0].first.ct;
         } else {
             LogError("Unsupported mesh type, only simeple and basic meshes are supported");
@@ -354,12 +354,12 @@ Mesh* MeshClipping::clipGeometryAgainstPlaneRevised(const Mesh* in, Plane plane)
     }
 
 
-    SimpleMesh* outputMesh = new SimpleMesh(GeometryEnums::TRIANGLES);
+    SimpleMesh* outputMesh = new SimpleMesh(DrawType::TRIANGLES);
 
     //Check if we are using indicies
     if (triangleList->size() > 0) {
         //Check if it is a Triangle Strip
-        if (indexAttrInfo == GeometryEnums::STRIP) {
+        if (indexAttrInfo == ConnectivityType::STRIP) {
             // Iterate over edges by edge
             unsigned int idx[3];
             std::vector<vec3> newVertices;
@@ -750,8 +750,8 @@ Mesh* MeshClipping::clipGeometryAgainstPlane(const Mesh* in, Plane plane) {
         -   Use correct outputEdgeList to create a correctly sorted triangle strip list
     */
     //LogInfo("Fetching vertex- and triangle lists.");
-    const std::vector<vec3>* inputList = inputMesh->getVertexList()->getRepresentation<Position3dBufferRAM>()->getDataContainer();
-    const std::vector<unsigned int>* triangleList = inputMesh->getIndexList()->getRepresentation<IndexBufferRAM>()->getDataContainer();
+    const std::vector<vec3>* inputList = inputMesh->getVertexList()->getRAMRepresentation()->getDataContainer();
+    const std::vector<unsigned int>* triangleList = inputMesh->getIndexList()->getRAMRepresentation()->getDataContainer();
     std::vector<EdgeIndex> edgeList = triangleListtoEdgeList(triangleList);
     std::vector<unsigned int> clippedVertInd;
     // For each clip plane, do:
@@ -909,9 +909,9 @@ Mesh* MeshClipping::clipGeometryAgainstPlane(const Mesh* in, Plane plane) {
     //LogInfo("Number of verts in output mesh: " <<
     //  outputList.size());
     if (renderAsPoints_.get())
-        outputMesh->setIndicesInfo(GeometryEnums::POINTS, GeometryEnums::NONE);
+        outputMesh->setIndicesInfo(DrawType::POINTS, ConnectivityType::NONE);
     else
-        outputMesh->setIndicesInfo(GeometryEnums::TRIANGLES, GeometryEnums::STRIP);
+        outputMesh->setIndicesInfo(DrawType::TRIANGLES, ConnectivityType::STRIP);
 
     for (unsigned int i=0; i<outputList.size(); ++i) {
         outputMesh->addIndex(i);

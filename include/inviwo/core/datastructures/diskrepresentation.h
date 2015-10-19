@@ -24,47 +24,56 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #ifndef IVW_DISKREPRESENTATION_H
 #define IVW_DISKREPRESENTATION_H
 
 #include <inviwo/core/common/inviwocoredefine.h>
-#include <string>
+#include <inviwo/core/common/inviwo.h>
+#include <inviwo/core/util/cloneableptr.h>
+#include <inviwo/core/datastructures/datarepresentation.h>
 
 namespace inviwo {
 
-class DataReader;
+class DiskRepresentationLoader;
 
 class IVW_CORE_API DiskRepresentation {
-
 public:
     DiskRepresentation();
-    DiskRepresentation(std::string);
-    DiskRepresentation(const DiskRepresentation& rhs);
-    DiskRepresentation& operator=(const DiskRepresentation& that);
+    DiskRepresentation(std::string, DiskRepresentationLoader* loader = nullptr);
+    DiskRepresentation(const DiskRepresentation& rhs) = default;
+    DiskRepresentation& operator=(const DiskRepresentation& that) = default;
+    virtual ~DiskRepresentation() = default;    
     virtual DiskRepresentation* clone() const;
-    virtual ~DiskRepresentation();
 
     const std::string& getSourceFile() const;
     bool hasSourceFile() const;
 
-    void setDataReader(DataReader* reader);
+    void setLoader(DiskRepresentationLoader* loader);
 
-    void* readData() const;
-    void readDataInto(void* dest) const;
+    std::shared_ptr<DataRepresentation> createRepresentation() const;
+    void updateRepresentation(std::shared_ptr<DataRepresentation> dest) const;
 
 private:
-
-    #include <warn/push>
-    #include <warn/ignore/dll-interface>
+#include <warn/push>
+#include <warn/ignore/dll-interface>
     std::string sourceFile_;
-    #include <warn/pop>
+#include <warn/pop>
+
     // DiskRepresentation owns a DataReader to be able to convert it self into RAM.
-    DataReader* reader_;
+    util::cloneable_ptr<DiskRepresentationLoader> loader_;
 };
 
-} // namespace
+class IVW_CORE_API DiskRepresentationLoader {
+public:
+    virtual ~DiskRepresentationLoader() = default;
+    virtual DiskRepresentationLoader* clone() const = 0;
+    virtual std::shared_ptr<DataRepresentation> createRepresentation() const = 0;
+    virtual void updateRepresentation(std::shared_ptr<DataRepresentation> dest) const = 0;
+};
 
-#endif // IVW_DISKREPRESENTATION_H
+}  // namespace
+
+#endif  // IVW_DISKREPRESENTATION_H

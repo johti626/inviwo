@@ -39,11 +39,11 @@ namespace inviwo {
 class IVW_CORE_API BufferRAM : public BufferRepresentation {
 public:
     BufferRAM(const DataFormatBase* format = DataFormatBase::get(),
-              BufferType type = POSITION_ATTRIB, BufferUsage usage = STATIC);
-    BufferRAM(const BufferRAM& rhs);
-    BufferRAM& operator=(const BufferRAM& that);
-    virtual BufferRAM* clone() const = 0;
-    virtual ~BufferRAM();
+              BufferUsage usage = BufferUsage::STATIC);
+    BufferRAM(const BufferRAM& rhs) = default;
+    BufferRAM& operator=(const BufferRAM& that) = default;
+    virtual BufferRAM* clone() const override = 0;
+    virtual ~BufferRAM() = default;
 
     virtual void* getData() = 0;
     virtual const void* getData() const = 0;
@@ -57,6 +57,8 @@ public:
     virtual dvec2 getValueAsVec2Double(size_t index) const = 0;
     virtual dvec3 getValueAsVec3Double(size_t index) const = 0;
     virtual dvec4 getValueAsVec4Double(size_t index) const = 0;
+
+    virtual std::type_index getTypeIndex() const override final;
 };
 
 /**
@@ -67,18 +69,23 @@ public:
  * @param format of buffer to create.
  * @return nullptr if no valid format was specified.
  */
-IVW_CORE_API BufferRAM* createBufferRAM(size_t size, const DataFormatBase* format, BufferType type,
-                                        BufferUsage usage);
-    
+IVW_CORE_API std::shared_ptr<BufferRAM> createBufferRAM(size_t size, const DataFormatBase* format,
+                                                        BufferUsage usage);
+
 template <typename T>
 class BufferRAMPrecision;
+
+template <BufferUsage U = BufferUsage::STATIC, typename T = vec3>
+std::shared_ptr<BufferRAMPrecision<T>> createBufferRAM(std::vector<T> data) {
+    return std::make_shared<BufferRAMPrecision<T>>(std::move(data), DataFormat<T>::get(), U);
+}
+
 struct BufferRamDispatcher {
-    using type = BufferRAM*;
+    using type = std::shared_ptr<BufferRAM>;
     template <class T>
-    BufferRAM* dispatch(size_t size, const DataFormatBase* format, BufferType type,
-                        BufferUsage usage) {
+    std::shared_ptr<BufferRAM> dispatch(size_t size, BufferUsage usage) {
         typedef typename T::type F;
-        return new BufferRAMPrecision<F>(size, format, type, usage);
+        return std::make_shared<BufferRAMPrecision<F>>(size, usage);
     }
 };
 

@@ -55,6 +55,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/light/spotlight.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/representationconverter.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/representationconverterfactory.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/representationtraits.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/spatialdata.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/transferfunction.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/transferfunctiondatapoint.h
@@ -84,8 +85,10 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/pickingmanager.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/pickingobject.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/trackball.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/io/bytereaderutil.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/datareader.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/datareaderdialog.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/io/datareaderexception.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/datareaderfactory.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/datawriter.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/datawriterfactory.h
@@ -93,6 +96,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/io/datvolumewriter.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/ivfvolumereader.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/ivfvolumewriter.h    
+    ${IVW_INCLUDE_DIR}/inviwo/core/io/rawvolumeramloader.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/rawvolumereader.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/deserializationerrorhandler.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/ivwdeserializer.h
@@ -198,6 +202,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/util/canvas.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/capabilities.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/clock.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/util/cloneableptr.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/colorconversion.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/commandlineparser.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/datetime.h
@@ -238,6 +243,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/util/threadpool.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/timer.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/tinydirinterface.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/util/tooltiphelper.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/utilities.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/vectoroperations.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/volumesampler.h
@@ -311,8 +317,10 @@ set(SOURCE_FILES
     interaction/pickingmanager.cpp
     interaction/pickingobject.cpp
     interaction/trackball.cpp
+    io/bytereaderutil.cpp
     io/datareader.cpp
     io/datareaderdialog.cpp
+    io/datareaderexception.cpp
     io/datareaderfactory.cpp
     io/datawriter.cpp
     io/datawriterfactory.cpp
@@ -320,6 +328,7 @@ set(SOURCE_FILES
     io/datvolumewriter.cpp 
     io/ivfvolumereader.cpp 
     io/ivfvolumewriter.cpp  
+    io/rawvolumeramloader.cpp
     io/rawvolumereader.cpp
     io/serialization/deserializationerrorhandler.cpp
     io/serialization/ivwdeserializer.cpp
@@ -429,6 +438,7 @@ set(SOURCE_FILES
     util/systemcapabilities.cpp
     util/timer.cpp
     util/tinydirinterface.cpp
+    util/tooltiphelper.cpp
     util/utilities.cpp
     util/volumesampler.cpp
 )

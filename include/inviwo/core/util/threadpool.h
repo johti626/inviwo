@@ -58,6 +58,7 @@
 #define IVW_THREADPOOL_H
 
 #include <inviwo/core/common/inviwocoredefine.h>
+#include <inviwo/core/util/rendercontext.h>
 
 #include <warn/push>
 #include <warn/ignore/all>
@@ -129,13 +130,13 @@ inline void ThreadPool::addWorker() {
                     return this->workers[i].abort || this->workers[i].stop || !this->tasks.empty();
                 });
                 if (this->workers[i].abort || (this->workers[i].stop && this->tasks.empty()))
-                    return;
+                    break;
                 task = std::move(this->tasks.front());
                 this->tasks.pop();
             }
 
             task();
-        }
+        }        
     });
 }
 
@@ -145,9 +146,11 @@ inline void ThreadPool::removeWorker() {
             std::unique_lock<std::mutex> lock(queue_mutex);
             workers.back().stop = true;
         }
+        auto id = workers.back().thread.get_id();
         condition.notify_all();
         workers.back().thread.join();
         workers.pop_back();
+        RenderContext::getPtr()->clearContext(id);
     }
 }
 

@@ -29,6 +29,7 @@
 
 #include <inviwo/core/datastructures/image/imagedisk.h>
 #include <inviwo/core/datastructures/image/layerdisk.h>
+#include <inviwo/core/datastructures/image/image.h>
 
 namespace inviwo {
 
@@ -55,8 +56,12 @@ bool ImageDisk::copyRepresentationsTo(DataRepresentation*) const {
     return false;
 }
 
+std::type_index ImageDisk::getTypeIndex() const {
+    return std::type_index(typeid(ImageDisk));
+}
+
 void ImageDisk::update(bool editable) {
-    Image *owner = this->getOwner();
+    auto owner = static_cast<Image*>(this->getOwner());
     if (editable) {
         for (size_t i=0; i<owner->getNumberOfColorLayers(); ++i)
             owner->getColorLayer(i)->getEditableRepresentation<LayerDisk>();

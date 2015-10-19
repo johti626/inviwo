@@ -37,13 +37,11 @@ namespace inviwo {
 template <typename T>
 class LayerRAMPrecision : public LayerRAM {
 public:
-    LayerRAMPrecision(size2_t dimensions = size2_t(8, 8), LayerType type = COLOR_LAYER,
-                      const DataFormatBase* format = defaultformat());
-    LayerRAMPrecision(T* data, size2_t dimensions = size2_t(8, 8), LayerType type = COLOR_LAYER,
-                      const DataFormatBase* format = defaultformat());
+    LayerRAMPrecision(size2_t dimensions = size2_t(8, 8), LayerType type = COLOR_LAYER);
+    LayerRAMPrecision(T* data, size2_t dimensions = size2_t(8, 8), LayerType type = COLOR_LAYER);
     LayerRAMPrecision(const LayerRAMPrecision<T>& rhs);
     LayerRAMPrecision<T>& operator=(const LayerRAMPrecision<T>& that);
-    virtual LayerRAMPrecision<T>* clone() const;
+    virtual LayerRAMPrecision<T>* clone() const override;
     virtual ~LayerRAMPrecision();
 
     virtual void* getData() override;
@@ -51,23 +49,22 @@ public:
     virtual void setData(void* data, size2_t dimensions) override;
 
     /**
-     * Reeize the representation to dimension. This is destructive, the data will not be
+     * Resize the representation to dimension. This is destructive, the data will not be
      * preserved. Use copyRepresentationsTo to update the data.
      */
     virtual void setDimensions(size2_t dimensions) override;
 
-    void setValueFromSingleDouble(const size2_t& pos, double val);
-    void setValueFromVec2Double(const size2_t& pos, dvec2 val);
-    void setValueFromVec3Double(const size2_t& pos, dvec3 val);
-    void setValueFromVec4Double(const size2_t& pos, dvec4 val);
+    void setValueFromSingleDouble(const size2_t& pos, double val) override;
+    void setValueFromVec2Double(const size2_t& pos, dvec2 val) override;
+    void setValueFromVec3Double(const size2_t& pos, dvec3 val) override;
+    void setValueFromVec4Double(const size2_t& pos, dvec4 val) override;
 
-    double getValueAsSingleDouble(const size2_t& pos) const;
-    dvec2 getValueAsVec2Double(const size2_t& pos) const;
-    dvec3 getValueAsVec3Double(const size2_t& pos) const;
-    dvec4 getValueAsVec4Double(const size2_t& pos) const;
+    double getValueAsSingleDouble(const size2_t& pos) const override;
+    dvec2 getValueAsVec2Double(const size2_t& pos) const override;
+    dvec3 getValueAsVec3Double(const size2_t& pos) const override;
+    dvec4 getValueAsVec4Double(const size2_t& pos) const override;
 
 private:
-    static const DataFormatBase* defaultformat() { return DataFormat<T>::get(); }
     std::unique_ptr<T[]> data_;
 };
 
@@ -79,27 +76,26 @@ private:
  * @param format of layer to create.
  * @return nullptr if no valid format was specified.
  */
-IVW_CORE_API LayerRAM* createLayerRAM(const size2_t& dimensions, LayerType type,
+IVW_CORE_API std::shared_ptr<LayerRAM> createLayerRAM(const size2_t& dimensions, LayerType type,
                                       const DataFormatBase* format);
 
 struct IVW_CORE_API LayerRAMDispatcher {
-    using type = LayerRAM*;
+    using type = std::shared_ptr<LayerRAM>;
     template <class T>
-    LayerRAM* dispatch(const size2_t& dimensions, LayerType type) {
+    std::shared_ptr<LayerRAM> dispatch(const size2_t& dimensions, LayerType type) {
         using F = typename T::type;
-        return new LayerRAMPrecision<F>(dimensions, type);
+        return std::make_shared<LayerRAMPrecision<F>>(dimensions, type);
     }
 };
 
 template <typename T>
-LayerRAMPrecision<T>::LayerRAMPrecision(size2_t dimensions, LayerType type,
-                                        const DataFormatBase* format)
-    : LayerRAM(dimensions, type, format), data_(new T[dimensions_.x * dimensions_.y]()) {}
+LayerRAMPrecision<T>::LayerRAMPrecision(size2_t dimensions, LayerType type)
+    : LayerRAM(dimensions, type, DataFormat<T>::get())
+    , data_(new T[dimensions_.x * dimensions_.y]()) {}
 
 template <typename T>
-LayerRAMPrecision<T>::LayerRAMPrecision(T* data, size2_t dimensions, LayerType type,
-                                        const DataFormatBase* format)
-    : LayerRAM(dimensions, type, format)
+LayerRAMPrecision<T>::LayerRAMPrecision(T* data, size2_t dimensions, LayerType type)
+    : LayerRAM(dimensions, type, DataFormat<T>::get())
     , data_(data ? data : new T[dimensions_.x * dimensions_.y]()) {}
 
 template <typename T>

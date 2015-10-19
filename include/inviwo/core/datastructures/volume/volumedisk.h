@@ -33,6 +33,7 @@
 #include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/datastructures/diskrepresentation.h>
 #include <inviwo/core/datastructures/volume/volumerepresentation.h>
+#include <inviwo/core/datastructures/volume/volume.h>
 
 namespace inviwo {
 
@@ -44,13 +45,20 @@ public:
                const DataFormatBase* format = DataUINT8::get());
     VolumeDisk(const VolumeDisk& rhs);
     VolumeDisk& operator=(const VolumeDisk& that);
-    virtual VolumeDisk* clone() const;
+    virtual VolumeDisk* clone() const override;
     virtual ~VolumeDisk();
 
-    virtual void setDimensions(size3_t dimensions);
-    virtual const size3_t& getDimensions() const;
+    virtual std::type_index getTypeIndex() const override final;
+
+    virtual void setDimensions(size3_t dimensions) override;
+    virtual const size3_t& getDimensions() const override;
 private:
     size3_t dimensions_;
+};
+
+template <>
+struct representation_traits<Volume, kind::Disk> {
+    using type = VolumeDisk;
 };
 
 }  // namespace

@@ -31,10 +31,11 @@
 
 namespace inviwo {
 
-BufferGL::BufferGL(size_t size, const DataFormatBase* format, BufferType type, BufferUsage usage,
+BufferGL::BufferGL(size_t size, const DataFormatBase* format, BufferUsage usage,
                    std::shared_ptr<BufferObject> data)
-    : BufferRepresentation(format, type, usage)
-    , buffer_(data ? data : std::make_shared<BufferObject>(size * format->getSize(), format, type, usage))
+    : BufferRepresentation(format, usage)
+    , buffer_(data ? data
+                   : std::make_shared<BufferObject>(size * format->getSize(), format, usage))
     , bufferArray_(nullptr)
     , size_(size) {
     LGL_ERROR_SUPPRESS;
@@ -46,20 +47,17 @@ BufferGL::BufferGL(const BufferGL& rhs)
     , bufferArray_(nullptr)
     , size_(rhs.size_) {}
 
-BufferGL::~BufferGL() {
-    delete bufferArray_;
-}
+BufferGL::~BufferGL(){}
 
 BufferGL* BufferGL::clone() const { return new BufferGL(*this); }
 
 size_t BufferGL::getSize() const { return size_; }
 
 void BufferGL::setSize(size_t size) {
-    if (size == size_) {
-        return;
+    if (size != size_) {
+        size_ = size;
+        buffer_->setSize(size * getSizeOfElement());
     }
-    size_ = size;
-    buffer_->setSize(size * getSizeOfElement());
 }
 
 GLuint BufferGL::getId() const { return buffer_->getId(); }
@@ -76,7 +74,7 @@ void BufferGL::download(void* data) const { buffer_->download(data); }
 
 void BufferGL::enable() const {
     if (!bufferArray_) {
-        bufferArray_ = new BufferObjectArray();
+        bufferArray_ = util::make_unique<BufferObjectArray>();
         bufferArray_->bind();
         bufferArray_->attachBufferObject(buffer_.get(), 0);
     } else {
@@ -87,5 +85,7 @@ void BufferGL::enable() const {
 void BufferGL::disable() const {
     if (bufferArray_) bufferArray_->unbind();
 }
+
+std::type_index BufferGL::getTypeIndex() const { return std::type_index(typeid(BufferGL)); }
 
 }  // namespace

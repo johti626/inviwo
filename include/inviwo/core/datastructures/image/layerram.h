@@ -42,7 +42,7 @@ public:
              const DataFormatBase* format = DataVec4UINT8::get());
     LayerRAM(const LayerRAM& rhs);
     LayerRAM& operator=(const LayerRAM& that);
-    LayerRAM* clone() const = 0;
+    LayerRAM* clone() const override = 0;
     virtual ~LayerRAM();
 
     /**
@@ -69,6 +69,8 @@ public:
     static inline size_t posToIndex(const size2_t& pos, const size2_t& dim) {
         return pos.x + (pos.y * dim.x);
     }
+
+    virtual std::type_index getTypeIndex() const override final;
 };
 
 }  // namespace

@@ -34,69 +34,37 @@
 
 namespace inviwo {
 
-Buffer::Buffer(size_t size, const DataFormatBase* format, BufferType type, BufferUsage usage)
-    : Data(format), size_(size), type_(type), usage_(usage) {}
-Buffer::Buffer(const Buffer& rhs)
-    : Data(rhs), size_(rhs.size_), type_(rhs.type_), usage_(rhs.usage_) {}
+BufferBase::BufferBase(size_t size, const DataFormatBase* format, BufferUsage usage)
+    : Data<BufferRepresentation>(format), size_(size), usage_(usage) {}
 
-Buffer& Buffer::operator=(const Buffer& that) {
-    if (this != &that) {
-        Data::operator=(that);
-        size_ = that.size_;
-        type_ = that.type_;
-        usage_ = that.usage_;
-    }
-    return *this;
-}
+size_t BufferBase::getSizeInBytes() const { return size_ * dataFormatBase_->getSize(); }
 
-Buffer* Buffer::clone() const { return new Buffer(*this); }
+inviwo::BufferUsage BufferBase::getBufferUsage() const { return usage_; }
 
-Buffer::~Buffer() {}
+inviwo::uvec3 BufferBase::COLOR_CODE = uvec3(255, 113, 0);
 
-size_t Buffer::getSizeInBytes() { return size_ * dataFormatBase_->getSize(); }
+const std::string BufferBase::CLASS_IDENTIFIER = "org.inviwo.Buffer";
 
-inviwo::uvec3 Buffer::COLOR_CODE = uvec3(255, 113, 0);
-
-const std::string Buffer::CLASS_IDENTIFIER = "org.inviwo.Buffer";
-
-void Buffer::setSize(size_t size) {
+void BufferBase::setSize(size_t size) {
     if (size != size_) {
         size_ = size;
 
         if (lastValidRepresentation_) {
-            // Resize last valid representation 
-            static_cast<BufferRepresentation*>(lastValidRepresentation_)->setSize(size);
-
-            // and remove the other ones
-            util::erase_remove_if(representations_, [this](DataRepresentation* repr) {
-                if (repr != lastValidRepresentation_) {
-                    delete repr;
-                    return true;
-                } else {
-                    return false;
-                }
-            });
-
-            setAllRepresentationsAsInvalid();
-            // Set the remaining representation as valid.
-            // Solves issue where the buffer will try to update 
-            // the remaining representation with itself when getRepresentation of the same type is called
-            setRepresentationAsValid(0);
-        } 
-        
+            // Resize last valid representation
+            lastValidRepresentation_->setSize(size);
+            removeOtherRepresentations(lastValidRepresentation_.get());
+        }
     }
 }
 
-DataRepresentation* Buffer::createDefaultRepresentation() {
-    return createBufferRAM(getSize(), dataFormatBase_, type_, usage_);
-}
-
-size_t Buffer::getSize() const {
+size_t BufferBase::getSize() const {
     // We need to update the size if a representation has changed size
     if (lastValidRepresentation_)
-        const_cast<Buffer*>(this)->size_ =
-            static_cast<const BufferRepresentation*>(lastValidRepresentation_)->getSize();
+        const_cast<BufferBase*>(this)->size_ = lastValidRepresentation_->getSize();
 
     return size_;
 }
+
+
+
 }
