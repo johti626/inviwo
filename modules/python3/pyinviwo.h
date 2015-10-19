@@ -43,10 +43,12 @@
 
 namespace inviwo {
 class PyModule;
+class Python3Module;
+
 class IVW_MODULE_PYTHON3_API PyInviwo : public Singleton<PyInviwo>,
                                         public Observable<PyInviwoObserver> {
 public:
-    PyInviwo();
+    PyInviwo(Python3Module* module);
     virtual ~PyInviwo();
 
     /**
@@ -59,9 +61,9 @@ public:
     void registerPyModule(PyModule* pyModule);
 
     /**
-    * \brief add a path for where ptyhon scripts will look for modules
+    * \brief add a path for where python scripts will look for modules
     *
-    * add a path for where ptyhon scripts will look for modules
+    * add a path for where python scripts will look for modules
     *
     * @param const std::string& path path to folder
     * @param PyMethodDef * module static array of registered classes in a module
@@ -75,9 +77,9 @@ public:
     void importModule(const std::string& moduleName);
 
 protected:
-    void initPythonCInterface();
+    void initPythonCInterface(Python3Module* module);
     void initDefaultInterfaces();
-    void initOutputRedirector();
+    void initOutputRedirector(Python3Module* module);
 
 private:
     bool isInit_;

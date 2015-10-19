@@ -36,9 +36,7 @@
 
 namespace inviwo {
 
-GLFWModule::GLFWModule() : InviwoModule() {
-    setIdentifier("GLFW");
-
+GLFWModule::GLFWModule(InviwoApplication* app) : InviwoModule(app, "GLFW") {
     if (!glfwInit()) {
         LogError("GLFW could not be initialized.");
     }
@@ -50,18 +48,15 @@ GLFWModule::GLFWModule() : InviwoModule() {
     GLFWSharedCanvas_->initializeSquare();
     GLFWSharedCanvas_->defaultGLState();
 
-    registerProcessorWidgetAndAssociate<CanvasProcessorGL>(new CanvasProcessorWidgetGLFW());
+    registerProcessorWidgetAndAssociate<CanvasProcessorGL>(util::make_unique<CanvasProcessorWidgetGLFW>());
 }
 
-GLFWModule::~GLFWModule() {}
-
-void GLFWModule::deinitialize() {
+GLFWModule::~GLFWModule() {
     if (GLFWSharedCanvas_ == RenderContext::getPtr()->getDefaultRenderContext()) {
         RenderContext::getPtr()->setDefaultRenderContext(nullptr);
-        GLFWSharedCanvas_->deinitialize();
-        delete GLFWSharedCanvas_;
-    }    
-    InviwoModule::deinitialize();
+    }
+    GLFWSharedCanvas_->deinitialize();
+    delete GLFWSharedCanvas_;
 }
 
 } // namespace

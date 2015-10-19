@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,21 +27,32 @@
  *
  *********************************************************************************/
 
-#ifndef IVW_QTWIDGETMODULE_H
-#define IVW_QTWIDGETMODULE_H
+#ifndef IVW_PORTINSPECTORFACTORYOBJECT_H
+#define IVW_PORTINSPECTORFACTORYOBJECT_H
 
-#include <inviwo/qt/widgets/inviwoqtwidgetsdefine.h>
+#include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/common/inviwo.h>
-#include <inviwo/core/common/inviwomodule.h>
 
 namespace inviwo {
 
-class IVW_QTWIDGETS_API QtWidgetModule : public InviwoModule {
+class PortInspector;
+
+class IVW_CORE_API PortInspectorFactoryObject {
 public:
-    QtWidgetModule(InviwoApplication* app);
-    virtual ~QtWidgetModule() {}
+    PortInspectorFactoryObject(const std::string& portClassIdentifier,
+                               const std::string& inspectorWorkspaceFileName);
+    virtual ~PortInspectorFactoryObject() {}
+
+    virtual PortInspector* create();
+
+    std::string getClassIdentifier() const;
+
+private:
+    std::string portClassIdentifier_;
+    std::string inspectorWorkspaceFileName_;
 };
 
-}  // namespace
+} // namespace
 
-#endif  // IVW_QTWIDGETMODULE_H
+#endif // IVW_PORTINSPECTORFACTORYOBJECT_H
+

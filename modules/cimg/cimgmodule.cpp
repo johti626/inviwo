@@ -34,17 +34,15 @@
 
 namespace inviwo {
 
-CImgModule::CImgModule() : InviwoModule() {
-    setIdentifier("CImg");
-
+CImgModule::CImgModule(InviwoApplication* app) : InviwoModule(app, "CImg") {
     // Register Data Readers
-    registerDataReader(new CImgLayerReader());
+    registerDataReader(util::make_unique<CImgLayerReader>());
     
     //TODO: Test HDR format
     //registerDataReader(new CImgVolumeReader());
     
     // Register Data Writers
-    registerDataWriter(new CImgLayerWriter());
+    registerDataWriter(util::make_unique<CImgLayerWriter>());
 }
 
 } // namespace

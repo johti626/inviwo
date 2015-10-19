@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,21 +27,33 @@
  *
  *********************************************************************************/
 
-#ifndef IVW_QTWIDGETMODULE_H
-#define IVW_QTWIDGETMODULE_H
+#ifndef IVW_NETWORKLOCK_H
+#define IVW_NETWORKLOCK_H
 
-#include <inviwo/qt/widgets/inviwoqtwidgetsdefine.h>
+#include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/common/inviwo.h>
-#include <inviwo/core/common/inviwomodule.h>
 
 namespace inviwo {
 
-class IVW_QTWIDGETS_API QtWidgetModule : public InviwoModule {
-public:
-    QtWidgetModule(InviwoApplication* app);
-    virtual ~QtWidgetModule() {}
+class ProcessorNetwork;
+
+// A RAII utility for locking and unlocking the network
+struct IVW_CORE_API NetworkLock {
+    NetworkLock();
+    NetworkLock(ProcessorNetwork* network);
+    ~NetworkLock();
+
+    NetworkLock(NetworkLock const&) = delete;
+    NetworkLock& operator=(NetworkLock const& that) = delete;
+    NetworkLock(NetworkLock&& rhs) = delete;
+    NetworkLock& operator=(NetworkLock&& that) = delete;
+
+private:
+    ProcessorNetwork* network_;
 };
 
-}  // namespace
 
-#endif  // IVW_QTWIDGETMODULE_H
+} // namespace
+
+#endif // IVW_NETWORKLOCK_H
+

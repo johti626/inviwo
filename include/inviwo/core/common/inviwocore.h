@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #ifndef IVW_INVIWOCORE_H
@@ -34,20 +34,17 @@
 #include <inviwo/core/common/inviwomodule.h>
 
 namespace inviwo {
+class InviwoApplication;
 
 /**
  * \class InviwoCore
- *
  * \brief Module which registers all module related functionality available in the core.
  */
 class IVW_CORE_API InviwoCore : public InviwoModule {
-
 public:
-    InviwoCore();
-
-protected:
+    InviwoCore(InviwoApplication* app);
 };
 
-} // namespace
+}  // namespace
 
-#endif // IVW_INVIWOCORE_H
+#endif  // IVW_INVIWOCORE_H

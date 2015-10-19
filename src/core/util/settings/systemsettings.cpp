@@ -31,6 +31,7 @@
 #include <inviwo/core/util/settings/systemsettings.h>
 #include <inviwo/core/util/systemcapabilities.h>
 #include <inviwo/core/util/formatconversion.h>
+#include <inviwo/core/common/inviwocore.h>
 
 namespace inviwo {
 
@@ -126,11 +127,7 @@ SystemSettings::SystemSettings()
     logStackTraceProperty_.onChange(this, &SystemSettings::logStacktraceCallback);
     // btnAllocTestProperty_.onChange(this, &SystemSettings::allocationTest);
     // addProperty(&btnAllocTestProperty_);
-}
-
-SystemSettings::~SystemSettings() {}
-
-void SystemSettings::initialize() {
+    
     pythonSyntax_.setVisible(false);
     glslSyntax_.setVisible(false);
 
@@ -143,8 +140,6 @@ void SystemSettings::initialize() {
         isDeserializing_ = false;
     }
 }
-
-void SystemSettings::deinitialize() {}
 
 void SystemSettings::logStacktraceCallback() {
     LogCentral::getPtr()->setLogStacktrace(logStackTraceProperty_.get());

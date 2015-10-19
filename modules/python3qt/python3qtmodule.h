@@ -37,14 +37,9 @@ namespace inviwo {
     class PyModule;
     class PythonMenu;
 class IVW_MODULE_PYTHON3QT_API Python3QtModule : public InviwoModule {
-
 public:
-    Python3QtModule();
+    Python3QtModule(InviwoApplication* app);
     virtual ~Python3QtModule();
-
-
-    virtual void initialize();
-    virtual void deinitialize();
 
 private:
     void initPyQtModule();

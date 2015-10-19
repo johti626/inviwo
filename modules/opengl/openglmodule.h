@@ -38,12 +38,8 @@
 namespace inviwo {
 
 class IVW_MODULE_OPENGL_API OpenGLModule : public InviwoModule {
-
 public:
-    OpenGLModule();
-    virtual ~OpenGLModule();
-    
-    virtual void initialize() override;
+    OpenGLModule(InviwoApplication* app);
 };
 
 } // namespace

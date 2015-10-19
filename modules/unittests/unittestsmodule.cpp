@@ -40,8 +40,7 @@
 using namespace inviwo;
 
 namespace inviwo {
-UnitTestsModule::UnitTestsModule() : InviwoModule() {
-    setIdentifier("UnitTests");
+UnitTestsModule::UnitTestsModule(InviwoApplication* app) : InviwoModule(app, "UnitTests") {
     LogErrorCounter::init();
     LogCentral::getPtr()->registerLogger(LogErrorCounter::getPtr());
 }
@@ -49,13 +48,6 @@ UnitTestsModule::UnitTestsModule() : InviwoModule() {
 UnitTestsModule::~UnitTestsModule() {
     LogCentral::getPtr()->unregisterLogger(LogErrorCounter::getPtr());
     LogErrorCounter::deleteInstance();
-}
-
-void UnitTestsModule::initialize() {
-    InviwoModule::initialize();  // call superclass initialize
-}
-void UnitTestsModule::deinitialize() {
-    InviwoModule::deinitialize();  // call superclass deinitialize
 }
 
 int UnitTestsModule::runAllTests() {

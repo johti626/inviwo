@@ -37,17 +37,14 @@
 namespace inviwo {
 
 class IVW_MODULE_GLFW_API GLFWModule : public InviwoModule {
-
 public:
-    GLFWModule();
+    GLFWModule(InviwoApplication* app);
     virtual ~GLFWModule();
-
-    virtual void deinitialize();
 
 protected:
     template <typename T>
-    void registerProcessorWidgetAndAssociate(ProcessorWidget* processorWidget) {
-        registerProcessorWidget(T::CLASS_IDENTIFIER, processorWidget);
+    void registerProcessorWidgetAndAssociate(std::unique_ptr<ProcessorWidget> processorWidget) {
+        registerProcessorWidget(T::CLASS_IDENTIFIER, std::move(processorWidget));
     }
 
 private:

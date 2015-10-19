@@ -84,6 +84,22 @@ std::unique_ptr<Derived> dynamic_unique_ptr_cast(
     return std::unique_ptr<Derived>(nullptr);
 }
 
+// Default construct if possible otherwise return nullptr;
+template <typename T, typename std::enable_if<
+    !std::is_abstract<T>::value && std::is_default_constructible<T>::value,
+    int>::type = 0>
+    T* defaultConstructType() {
+    return new T();
+};
+
+template <typename T, typename std::enable_if<
+    std::is_abstract<T>::value || !std::is_default_constructible<T>::value,
+    int>::type = 0>
+    T* defaultConstructType() {
+    return nullptr;
+};
+
+
 // type trait to check if T is derived from std::basic_string
 namespace detail {
 template <typename T, class Enable = void>
@@ -116,6 +132,22 @@ void erase_remove_if(T& cont, Pred pred) {
     using std::begin;
     using std::end;
     cont.erase(std::remove_if(begin(cont), end(cont), pred), cont.end());
+}
+
+template <typename T, typename Pred>
+size_t map_erase_remove_if(T& cont, Pred pred) {
+    using std::begin;
+    using std::end;
+    size_t removed{0};
+    for (auto it = begin(cont); it != end(cont);) {
+        if (pred(*it)) {
+            it = cont.erase(it);
+            removed++;
+        } else {
+            ++it;
+        }
+    }
+    return removed;
 }
 
 template <typename T>

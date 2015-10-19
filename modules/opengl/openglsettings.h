@@ -43,23 +43,12 @@ namespace inviwo {
 class IVW_MODULE_OPENGL_API OpenGLSettings : public Settings {
 
 public:
-    OpenGLSettings(OpenGLCapabilities*);
-    virtual ~OpenGLSettings();
-    virtual void initialize();
-    virtual void deinitialize();
+    OpenGLSettings();
 
     BoolProperty shaderReloadingProperty_;
     ButtonProperty btnOpenGLInfo_;
     OptionPropertyString selectedOpenGLProfile_;
     TemplateOptionProperty<Shader::UniformWarning> uniformWarnings_;
-
-protected:
-    void updateProfile();
-
-private:
-    OpenGLCapabilities* openGlCap_;
-    bool hasOutputedGLSLVersionOnce_;
-    std::string contextMode_;
 };
 
 } // namespace

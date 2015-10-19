@@ -34,9 +34,29 @@
 
 namespace inviwo {
 
-void RepresentationConverterFactory::registerObject(RepresentationConverter* converter) {
+bool RepresentationConverterFactory::registerObject(RepresentationConverter* converter) {
     if (!util::insert_unique(converters_, converter->getConverterID(), converter))
         throw(ConverterException("Converter with supplied ID already registered", IvwContext));
+    
+    return true;
+}
+
+bool RepresentationConverterFactory::unRegisterObject(RepresentationConverter* converter) {
+    size_t removed = util::map_erase_remove_if(
+        converters_, [converter](RepMap::value_type& elem) {
+            return elem.second == converter;
+        });
+
+
+    util::map_erase_remove_if(
+        packages_, [converter](PackageMap::value_type& elem) {
+            for (auto& conv : elem.second->getConverters()) {
+                if (conv == converter) return true;
+            }
+            return false;
+        });
+
+    return removed > 0;
 }
 
 const RepresentationConverterPackage* RepresentationConverterFactory::getRepresentationConverter(

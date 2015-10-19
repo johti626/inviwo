@@ -43,8 +43,7 @@ ShaderManager::ShaderManager() : FileObserver(), uniformWarnings_(nullptr) {
     openGLInfoRef_ = nullptr;
 }
 
-void ShaderManager::setUniformWarningLevel() {
-    OpenGLSettings* settings = InviwoApplication::getPtr()->getSettingsByType<OpenGLSettings>();
+void ShaderManager::setUniformWarningLevel(OpenGLSettings* settings) {
     uniformWarnings_ = &(settings->uniformWarnings_);
 
     for (auto shader : shaders_) {
@@ -174,7 +173,7 @@ void ShaderManager::addShaderSearchPath(InviwoApplication::PathType pathType, st
     if (!added){
         LogWarn("Failed to add shader search path: " << relativeShaderSearchPath);
         LogInfo("Tried with:");
-        LogInfo("\t" << InviwoApplication::getPtr()->getPath(pathType) + relativeShaderSearchPath);
+        LogInfo("\t" << InviwoApplication::getPtr()->getPath(pathType)  + "/" + relativeShaderSearchPath);
 #ifdef IVW_EXTERNAL_MODULES_PATH_COUNT
         if (pathType == InviwoApplication::PATH_MODULES){
             for (auto& elem : externalModulePaths_) {

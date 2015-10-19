@@ -38,8 +38,11 @@
 #include <modules/opengl/shader/shader.h>
 #include <inviwo/core/util/fileobserver.h>
 #include <inviwo/core/util/singleton.h>
+#include <inviwo/core/properties/optionproperty.h>
 
 namespace inviwo {
+
+class OpenGLSettings;
 
 class IVW_MODULE_OPENGL_API ShaderManager : public Singleton<ShaderManager>, public FileObserver {
 
@@ -69,7 +72,7 @@ public:
     const std::vector<Shader*> getShaders() const;
     void rebuildAllShaders();
 
-    void setUniformWarningLevel();
+    void setUniformWarningLevel(OpenGLSettings* settings);
 
 protected:
     OpenGLCapabilities* getOpenGLCapabilitiesObject();

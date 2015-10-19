@@ -24,29 +24,36 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #include <inviwo/core/common/inviwoapplication.h>
+#include <inviwo/core/common/inviwocore.h>
+#include <inviwo/core/common/inviwomodule.h>
+#include <inviwo/core/common/moduleaction.h>
 #include <inviwo/core/datastructures/representationconverterfactory.h>
+#include <inviwo/core/interaction/pickingmanager.h>
 #include <inviwo/core/io/datareaderfactory.h>
 #include <inviwo/core/io/datawriterfactory.h>
-#include <inviwo/core/interaction/pickingmanager.h>
 #include <inviwo/core/metadata/metadatafactory.h>
+#include <inviwo/core/network/processornetwork.h>
 #include <inviwo/core/network/processornetworkevaluator.h>
 #include <inviwo/core/ports/portfactory.h>
 #include <inviwo/core/ports/portinspectorfactory.h>
 #include <inviwo/core/processors/processorfactory.h>
 #include <inviwo/core/processors/processorwidgetfactory.h>
 #include <inviwo/core/properties/optionproperty.h>
+#include <inviwo/core/properties/propertyconvertermanager.h>
 #include <inviwo/core/properties/propertyfactory.h>
 #include <inviwo/core/properties/propertywidgetfactory.h>
 #include <inviwo/core/rendering/meshdrawerfactory.h>
 #include <inviwo/core/resources/resourcemanager.h>
+#include <inviwo/core/util/capabilities.h>
 #include <inviwo/core/util/dialogfactory.h>
+#include <inviwo/core/util/fileobserver.h>
 #include <inviwo/core/util/filesystem.h>
 #include <inviwo/core/util/rendercontext.h>
-#include <inviwo/core/properties/propertyconvertermanager.h>
+#include <inviwo/core/util/settings/settings.h>
 #include <inviwo/core/util/settings/systemsettings.h>
 
 namespace inviwo {
@@ -80,14 +87,7 @@ InviwoApplication::InviwoApplication(std::string displayName, std::string basePa
     : InviwoApplication(0, nullptr, displayName, basePath) {}
 
 InviwoApplication::~InviwoApplication() {
-    pool_.setSize(0);
-    processorNetworkEvaluator_.reset();
-    processorNetwork_.reset();
-
     if (initialized_) deinitialize();
-
-    modules_.clear();
-    moudleCallbackActions_.clear();
 
     SingletonBase::deleteAllSingeltons();
     DataFormatBase::cleanDataFormatBases();
@@ -95,46 +95,71 @@ InviwoApplication::~InviwoApplication() {
 
 void InviwoApplication::initialize(registerModuleFuncPtr regModuleFunc) {
     printApplicationInfo();
-    // initialize singletons 
+    // initialize singletons
     postProgress("Initializing singletons");
+
     RenderContext::init();
     ResourceManager::init();
-    DataReaderFactory::init();
-    DataWriterFactory::init();
-    DialogFactory::init();
-    MeshDrawerFactory::init();
-    MetaDataFactory::init();
     PickingManager::init();
+    
+    DataReaderFactory::init();
+    dataReaderFactory_ = DataReaderFactory::getPtr();
+    
+    DataWriterFactory::init();
+    dataWriterFactory_ = DataWriterFactory::getPtr();
+    
+    DialogFactory::init();
+    dialogFactory_ = DialogFactory::getPtr();
+    
+    MeshDrawerFactory::init();
+    meshDrawerFactory_ = MeshDrawerFactory::getPtr();
+    
+    MetaDataFactory::init();
+    metaDataFactory_ = MetaDataFactory::getPtr();
+    
     PortFactory::init();
+    portFactory_ = PortFactory::getPtr();
+    
     PortInspectorFactory::init();
+    portInspectorFactory_ = PortInspectorFactory::getPtr();
+    
     ProcessorFactory::init();
+    processorFactory_ = ProcessorFactory::getPtr();
+    
     ProcessorWidgetFactory::init();
+    processorWidgetFactory_ = ProcessorWidgetFactory::getPtr();
+    
     PropertyFactory::init();
+    propertyFactory_ = PropertyFactory::getPtr();
+    
     PropertyWidgetFactory::init();
+    propertyWidgetFactory_ = PropertyWidgetFactory::getPtr();
+    
     PropertyConverterManager::init();
+    propertyConverterManager_ = PropertyConverterManager::getPtr();
+    
     RepresentationConverterFactory::init();
+    representationConverterFactory_ = RepresentationConverterFactory::getPtr();
     
-    //Create and register core
-    InviwoCore* ivwCore = new InviwoCore();
+    // Create and register core
+    InviwoCore* ivwCore = new InviwoCore(this);
     registerModule(ivwCore);
-    
-    //Initialize core
-    ivwCore->initialize();
-    
-    //Load settings from core
+
+    // Load settings from core
     auto coreSettings = ivwCore->getSettings();
     for (auto setting : coreSettings) setting->loadFromDisk();
-    
-    //Create and register other modules
+
+    // Create and register other modules
     (*regModuleFunc)(this);
 
-    //Initialize other modules
-    for (size_t i = 1; i < modules_.size(); i++) {
-        postProgress("Initializing module: " + modules_[i]->getIdentifier());
-        modules_[i]->initialize();
+    for (auto& module : modules_) {
+        for (auto& elem : module->getCapabilities()) {
+            elem->retrieveStaticInfo();
+            elem->printInfo();
+        }
     }
 
-    //Load settings from other modules
+    // Load settings from other modules
     postProgress("Loading settings...");
     auto settings = getModuleSettings(1);
     for (auto setting : settings) setting->loadFromDisk();
@@ -150,13 +175,15 @@ void InviwoApplication::initialize(registerModuleFuncPtr regModuleFunc) {
 }
 
 void InviwoApplication::deinitialize() {
-    // Deinitialize Resource manager before modules
-    // to prevent them from using module specific 
-    // (OpenGL/OpenCL) features after their module 
-    // has been deinitialized
-    ResourceManager::deleteInstance();
-    for (auto& elem : modules_) elem->deinitialize();
+    pool_.setSize(0);
+    processorNetworkEvaluator_.reset();
+    processorNetwork_.reset();
+    ResourceManager::getPtr()->clearAllResources();
 
+    moudleCallbackActions_.clear();
+    modules_.clear();
+
+    ResourceManager::deleteInstance();
     DataReaderFactory::deleteInstance();
     DataWriterFactory::deleteInstance();
     DialogFactory::deleteInstance();
@@ -171,12 +198,25 @@ void InviwoApplication::deinitialize() {
     PropertyConverterManager::deleteInstance();
     RepresentationConverterFactory::deleteInstance();
     RenderContext::deleteInstance();
+    
+    dataReaderFactory_ = nullptr;
+    dataWriterFactory_ = nullptr;
+    dialogFactory_ = nullptr;
+    meshDrawerFactory_ = nullptr;
+    metaDataFactory_ = nullptr;
+    portFactory_ = nullptr;
+    portInspectorFactory_ = nullptr;
+    processorFactory_ = nullptr;
+    processorWidgetFactory_ = nullptr;
+    propertyFactory_ = nullptr;
+    propertyWidgetFactory_ = nullptr;
+    propertyConverterManager_ = nullptr;
+    representationConverterFactory_ = nullptr;
+    
     initialized_ = false;
 }
 
-const std::string& InviwoApplication::getBasePath() const {
-    return basePath_;
-}
+const std::string& InviwoApplication::getBasePath() const { return basePath_; }
 
 std::string InviwoApplication::getPath(PathType pathType, const std::string& suffix,
                                        const bool& createFolder) {
@@ -250,9 +290,7 @@ const std::vector<std::unique_ptr<InviwoModule>>& InviwoApplication::getModules(
     return modules_;
 }
 
-ProcessorNetwork* InviwoApplication::getProcessorNetwork() {
-    return processorNetwork_.get();
-}
+ProcessorNetwork* InviwoApplication::getProcessorNetwork() { return processorNetwork_.get(); }
 
 ProcessorNetworkEvaluator* InviwoApplication::getProcessorNetworkEvaluator() {
     return processorNetworkEvaluator_.get();
@@ -275,21 +313,18 @@ void InviwoApplication::printApplicationInfo() {
     config += " [" + std::string(CMAKE_INTDIR) + "]";
 #endif
 
-    if (config != "")
-        LogInfoCustom("InviwoInfo", "Config: " << config);
+    if (config != "") LogInfoCustom("InviwoInfo", "Config: " << config);
 }
 
 void InviwoApplication::postProgress(std::string progress) {
-    if(progressCallback_) progressCallback_(progress);
+    if (progressCallback_) progressCallback_(progress);
 }
 
 void InviwoApplication::setPostEnqueueFront(std::function<void()> func) {
     queue_.postEnqueue = std::move(func);
 }
 
-std::string InviwoApplication::getDisplayName() const {
-    return displayName_;
-}
+std::string InviwoApplication::getDisplayName() const { return displayName_; }
 
 void InviwoApplication::addCallbackAction(ModuleCallbackAction* callbackAction) {
     moudleCallbackActions_.emplace_back(callbackAction);
@@ -302,7 +337,7 @@ std::vector<std::unique_ptr<ModuleCallbackAction>>& InviwoApplication::getCallba
 std::vector<Settings*> InviwoApplication::getModuleSettings(size_t startIdx) {
     std::vector<Settings*> allModuleSettings;
 
-    for (size_t i=startIdx; i<modules_.size(); i++) {
+    for (size_t i = startIdx; i < modules_.size(); i++) {
         auto modSettings = modules_[i]->getSettings();
         allModuleSettings.insert(allModuleSettings.end(), modSettings.begin(), modSettings.end());
     }
@@ -310,20 +345,20 @@ std::vector<Settings*> InviwoApplication::getModuleSettings(size_t startIdx) {
     return allModuleSettings;
 }
 
-void InviwoApplication::addNonSupportedTags(const Tags t){
+void InviwoApplication::addNonSupportedTags(const Tags t) {
     for (auto& elem : t.tags_) {
         nonSupportedTags_.addTag(elem);
     }
 }
 
-bool InviwoApplication::checkIfAllTagsAreSupported(const Tags t) const{
+bool InviwoApplication::checkIfAllTagsAreSupported(const Tags t) const {
     return (nonSupportedTags_.getMatches(t) == 0);
 }
 
 void InviwoApplication::processFront() {
     NetworkLock netlock(processorNetwork_.get());
     std::function<void()> task;
-    while (true) {     
+    while (true) {
         {
             std::unique_lock<std::mutex> lock{queue_.mutex};
             if (queue_.tasks.empty()) return;
@@ -340,9 +375,9 @@ void InviwoApplication::setProgressCallback(std::function<void(std::string)> pro
 
 void InviwoApplication::waitForPool() {
     size_t old_size = pool_.getSize();
-    pool_.setSize(0); // This will wait until all tasks are done;
+    pool_.setSize(0);  // This will wait until all tasks are done;
     processFront();
     pool_.setSize(old_size);
 }
 
-} // namespace
+}  // namespace

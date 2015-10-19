@@ -38,23 +38,18 @@
 namespace inviwo {
 
 class IVW_MODULE_OPENGLQT_API OpenGLQtModule : public InviwoModule {
-
 public:
-    OpenGLQtModule();
+    OpenGLQtModule(InviwoApplication* app);
     virtual ~OpenGLQtModule();
 
 protected:
     template <typename T>
-    void registerProcessorWidgetAndAssociate(ProcessorWidget* processorWidget) {
-        registerProcessorWidget(T::CLASS_IDENTIFIER, processorWidget);
+    void registerProcessorWidgetAndAssociate(std::unique_ptr<ProcessorWidget> processorWidget) {
+        registerProcessorWidget(T::CLASS_IDENTIFIER, std::move(processorWidget));
     }
-
-    virtual void deinitialize();
-
 private:
-    CanvasQt* qtGLSharedCanvas_;
-    
-    OpenGLQtMenu* menu_;
+    std::unique_ptr<CanvasQt> qtGLSharedCanvas_;
+    std::unique_ptr<OpenGLQtMenu> menu_;
 };
 
 } // namespace

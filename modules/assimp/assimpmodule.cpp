@@ -33,22 +33,20 @@
 
 namespace inviwo {
 
-AssimpModule::AssimpModule() : InviwoModule() {
-    setIdentifier("assimp");
-    
+AssimpModule::AssimpModule(InviwoApplication* app) : InviwoModule(app, "assimp") {
     // Add a directory to the search path of the Shadermanager
     //ShaderManager::getPtr()->addShaderSearchPath(InviwoApplication::PATH_MODULES, "assimp/glsl");
     
     // Register objects that can be shared with the rest of inviwo here:
     
     // Processors
-    // registerProcessor(assimp);
+    // registerProcessor<assimp>();
     
     // Properties
-    // registerProperty(assimpProperty);
+    // registerProperty<assimpProperty>();
     
     // Readers and writes
-    registerDataReader(new AssimpReader());
+    registerDataReader(util::make_unique<AssimpReader>());
     // registerDataWriter(new assimpWriter());
     
     // Data converters

@@ -29,6 +29,8 @@
 
 #include <inviwo/qt/widgets/inviwoapplicationqt.h>
 #include <inviwo/core/util/settings/systemsettings.h>
+#include <inviwo/core/util/filesystem.h>
+#include <inviwo/core/util/fileobserver.h>
 #include <inviwo/qt/widgets/qtwidgetmodule.h>
 
 #include <thread>
@@ -123,11 +125,11 @@ void InviwoApplicationQt::playSound(Message message) {
         if (message == Message::Ok)
             QSound::play(QString::fromStdString(
                 InviwoApplication::getPtr()->getPath(InviwoApplication::PATH_RESOURCES) +
-                "sounds/ok.wav"));
+                "/sounds/ok.wav"));
         else if (message == Message::Error)
             QSound::play(QString::fromStdString(
                 InviwoApplication::getPtr()->getPath(InviwoApplication::PATH_RESOURCES) +
-                "sounds/error.wav"));
+                "/sounds/error.wav"));
     }
 
 #endif
@@ -137,9 +139,8 @@ void InviwoApplicationQt::initialize(registerModuleFuncPtr regModuleFunc) {
     LogInfoCustom("InviwoInfo", "Qt Version " << QT_VERSION_STR);
     InviwoApplication::initialize(regModuleFunc);
     // Since QtWidgets are not a module we have to register it our self
-    InviwoModule* module = new QtWidgetModule();
+    InviwoModule* module = new QtWidgetModule(this);
     registerModule(module);
-    module->initialize();
 }
 
 void InviwoApplicationQt::wait(int ms) {

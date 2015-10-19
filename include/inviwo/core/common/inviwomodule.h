@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #ifndef IVW_INVIWOMODULE_H
@@ -32,69 +32,58 @@
 
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/common/inviwocoredefine.h>
-#include <inviwo/core/datastructures/data.h>
-#include <inviwo/core/datastructures/datarepresentation.h>
-#include <inviwo/core/datastructures/representationconverter.h>
-#include <inviwo/core/io/datareader.h>
-#include <inviwo/core/io/datareaderdialog.h>
-#include <inviwo/core/io/datawriter.h>
-#include <inviwo/core/metadata/metadata.h>
-#include <inviwo/core/ports/port.h>
-#include <inviwo/core/ports/portfactoryobject.h>
-#include <inviwo/core/ports/portinspector.h>
-#include <inviwo/core/processors/processor.h>
-#include <inviwo/core/processors/processorfactoryobject.h>
-#include <inviwo/core/properties/property.h>
-#include <inviwo/core/properties/propertyfactoryobject.h>
-#include <inviwo/core/properties/propertywidgetfactoryobject.h>
-#include <inviwo/core/rendering/meshdrawer.h>
-#include <inviwo/core/resources/resource.h>
-#include <inviwo/core/util/capabilities.h>
-#include <inviwo/core/util/dialogfactoryobject.h>
+#include <inviwo/core/common/inviwoapplication.h>
 
-#include <inviwo/core/properties/propertyconverter.h>
-#include <inviwo/core/properties/propertyconvertermanager.h>
+#include <inviwo/core/ports/portfactory.h>
+#include <inviwo/core/ports/portfactoryobject.h>
+#include <inviwo/core/processors/processorfactory.h>
+#include <inviwo/core/processors/processorfactoryobject.h>
+#include <inviwo/core/properties/propertyfactory.h>
+#include <inviwo/core/properties/propertyfactoryobject.h>
+#include <inviwo/core/properties/propertywidgetfactory.h>
+#include <inviwo/core/properties/propertywidgetfactoryobject.h>
+#include <inviwo/core/util/dialogfactory.h>
+#include <inviwo/core/util/dialogfactoryobject.h>
 
 namespace inviwo {
 
-    class Settings;
-    class PropertyConverter;
+class Settings;
+class MetaData;
+class Capabilities;
+class Resource;
+class RepresentationConverter;
+class DataReader;
+class DataWriter;
+class PortInspectorFactoryObject;
+class MeshDrawer;
+class PropertyConverter;
 
 /**
  * \class InviwoModule
- * \brief A module class contains registrations of functionality, such as processors, ports, properties etc.
+ * \brief A module class contains registrations of functionality, such as processors, ports,
+ * properties etc.
  */
 class IVW_CORE_API InviwoModule {
 public:
-    InviwoModule();
+    /**
+     * @param identifier Name of module folder
+     */
+    InviwoModule(InviwoApplication* app, const std::string& identifier);
+    InviwoModule(const InviwoModule&) = delete;
+    InviwoModule& operator=(const InviwoModule&) = delete;
     virtual ~InviwoModule();
 
-    /** 
+    /**
      * \brief Get module identifier, i.e the module folder name.
      */
     std::string getIdentifier() const;
 
-    bool isInitialized() const;
-
-    const std::vector<Capabilities*>& getCapabilities() const;
-    const std::vector<DataReader*>& getDataReaders() const;
-    const std::vector<DataWriter*>& getDataWriters() const;
-    const std::vector<DialogFactoryObject*>& getDialogs() const;
-    const std::vector<MetaData*>& getMetaData() const;
-    const std::vector<PortFactoryObject*>& getPorts() const;
-    const std::vector<PortInspectorFactoryObject*>& getPortInspectors() const;
-    const std::vector<ProcessorFactoryObject*>& getProcessors() const;
-    const std::vector< std::pair<std::string, ProcessorWidget*> >& getProcessorWidgets() const;
-    const std::vector<PropertyFactoryObject*>& getProperties() const;
-    const std::vector<PropertyWidgetFactoryObject*>& getPropertyWidgets() const;
-    const std::vector<MeshDrawer*>& getDrawers() const;
-    const std::vector<RepresentationConverter*>& getRepresentationConverters() const;
-    const std::vector<Resource*>& getResources() const;
-    const std::vector<Settings*>& getSettings() const;
-
+    /**
+     * Override to provide a description of the module
+     */
     virtual std::string getDescription() const;
 
-    /** 
+    /**
      * Get the path to this module directory.
      * For instance: C:/inviwo/modules/mymodule/
      * @note Assumes that getIdentifier() returns the module folder name.
@@ -102,70 +91,137 @@ public:
      */
     std::string getPath() const;
 
-    virtual void initialize();
-    virtual void deinitialize();
+    const std::vector<Capabilities*> getCapabilities() const;
+    const std::vector<DataReader*> getDataReaders() const;
+    const std::vector<DataWriter*> getDataWriters() const;
+    const std::vector<DialogFactoryObject*> getDialogs() const;
+    const std::vector<MeshDrawer*> getDrawers() const;
+    const std::vector<MetaData*> getMetaData() const;
+    const std::vector<PortFactoryObject*> getPorts() const;
+    const std::vector<PortInspectorFactoryObject*> getPortInspectors() const;
+    const std::vector<ProcessorFactoryObject*> getProcessors() const;
+    const std::vector<PropertyFactoryObject*> getProperties() const;
+    const std::vector<PropertyWidgetFactoryObject*> getPropertyWidgets() const;
+    const std::vector<RepresentationConverter*> getRepresentationConverters() const;
+    const std::vector<Resource*> getResources() const;
+    const std::vector<Settings*> getSettings() const;
+    const std::vector<std::pair<std::string, ProcessorWidget*>> getProcessorWidgets() const;
 
 protected:
-    /** 
-     * \brief Set the name of the module. I.e module folder name
-     * 
-     * @param identifier Name of module folder
-     */
-    void setIdentifier(const std::string& identifier);
+    void registerCapabilities(std::unique_ptr<Capabilities> info);
+    void registerDataReader(std::unique_ptr<DataReader> reader);
+    void registerDataWriter(std::unique_ptr<DataWriter> writer);
 
-    void registerCapabilities(Capabilities* info);
-    void registerDataReader(DataReader* reader);
-    void registerDataWriter(DataWriter* writer);
-    void registerDialogObject(DialogFactoryObject* dialog);
-    void registerMetaData(MetaData* meta);
-    void registerPortObject(PortFactoryObject* port);
-    void registerPortInspectorObject(PortInspectorFactoryObject* portInspector);
-    void registerProcessorObject(ProcessorFactoryObject* processor);
-    void registerProcessorWidget(std::string processorClassName, ProcessorWidget* processorWidget);
-    void registerPropertyObject(PropertyFactoryObject* property);
-    void registerPropertyWidgetObject(PropertyWidgetFactoryObject* property);
-    void registerDrawer(MeshDrawer* drawer);
-    void registerRepresentationConverter(RepresentationConverter* representationConverter);
-    void registerResource(Resource* resource);
-    void registerSettings(Settings* settings);
+    template <typename T>
+    void registerDialog(std::string classIdentifier);
+    void registerDrawer(std::unique_ptr<MeshDrawer> drawer);
+    void registerMetaData(std::unique_ptr<MetaData> meta);
 
-    /**
-     * Initializes all settings registered by the module.
-     * @note Call InviwoModule::setupModuleSettings() if overriding this function
-     */
-    virtual void setupModuleSettings();
-    std::vector<Settings*> moduleSettings_;
+    template <typename T, typename P>
+    void registerPropertyWidget(PropertySemantics semantics);
+    template <typename T, typename P>
+    void registerPropertyWidget(std::string semantics);
+
+    template <typename T>
+    void registerProcessor();
+
+    void registerProcessorWidget(std::string processorClassName,
+                                 std::unique_ptr<ProcessorWidget> processorWidget);
+
+    void registerPortInspector(std::string portClassIdentifier, std::string inspectorPath);
+
+    template <typename T>
+    void registerPort(std::string classIdentifier);
+
+    template <typename T>
+    void registerProperty();
+
+    void registerPropertyConverter(std::unique_ptr<PropertyConverter> propertyConverter);
+    void registerRepresentationConverter(std::unique_ptr<RepresentationConverter> converter);
+    void registerResource(std::unique_ptr<Resource> resource);
+    void registerSettings(std::unique_ptr<Settings> settings);
+
+    InviwoApplication* app_;  // reference to the app that we belong to
 
 private:
-    std::string identifier_; ///< Module folder name
-    bool initialized_;
+    template <typename T>
+    std::vector<T*> uniqueToPtr(std::vector<std::unique_ptr<T>>& v) {
+        std::vector<T*> res;
+        for (auto& elem : v) res.push_back(elem.get());
+        return res;
+    }
+    template <typename T>
+    const std::vector<T*> uniqueToPtr(const std::vector<std::unique_ptr<T>>& v) const {
+        std::vector<T*> res;
+        for (auto& elem : v) res.push_back(elem.get());
+        return res;
+    }
 
-    std::vector<Capabilities*> capabilities_;
-    std::vector<DataReader*> dataReaders_;
-    std::vector<DataWriter*> dataWriters_;
-    std::vector<DialogFactoryObject*> dialogs_;
-    std::vector<MetaData*> metadata_;
-    std::vector<PortFactoryObject*> ports_;
-    std::vector<PortInspectorFactoryObject*> portInspectors_;
-    std::vector<ProcessorFactoryObject*> processors_;
-    std::vector<std::pair<std::string, ProcessorWidget*> > processorWidgets_;
-    std::vector<PropertyFactoryObject*> properties_;
-    std::vector<PropertyWidgetFactoryObject*> propertyWidgets_;
-    std::vector<MeshDrawer*> drawers_;
-    std::vector<RepresentationConverter*> representationConverters_;
-    std::vector<Resource*> resources_;
+    const std::string identifier_;  ///< Module folder name
+
+    std::vector<std::unique_ptr<Capabilities>> capabilities_;
+    std::vector<std::unique_ptr<DataReader>> dataReaders_;
+    std::vector<std::unique_ptr<DataWriter>> dataWriters_;
+    std::vector<std::unique_ptr<DialogFactoryObject>> dialogs_;
+    std::vector<std::unique_ptr<MeshDrawer>> drawers_;
+    std::vector<std::unique_ptr<MetaData>> metadata_;
+    std::vector<std::unique_ptr<PortFactoryObject>> ports_;
+    std::vector<std::unique_ptr<PortInspectorFactoryObject>> portInspectors_;
+    std::vector<std::unique_ptr<ProcessorFactoryObject>> processors_;
+    std::vector<std::unique_ptr<PropertyConverter>> propertyConverters_;
+    std::vector<std::unique_ptr<PropertyFactoryObject>> properties_;
+    std::vector<std::unique_ptr<PropertyWidgetFactoryObject>> propertyWidgets_;
+    std::vector<std::unique_ptr<RepresentationConverter>> representationConverters_;
+    std::vector<std::unique_ptr<Resource>> resources_;
+    std::vector<std::unique_ptr<Settings>> settings_;
+
+    std::vector<std::pair<std::string, std::unique_ptr<ProcessorWidget>>> processorWidgets_;
 };
 
+template <typename T>
+void InviwoModule::registerDialog(std::string classIdentifier) {
+    auto dialog = util::make_unique<DialogFactoryObjectTemplate<T>>(classIdentifier);
+    if (app_->getDialogFactory()->registerObject(dialog.get())) {
+        dialogs_.push_back(std::move(dialog));
+    }
 
-#define registerPropertyConverter(T) {PropertyConverterManager::getPtr()->registerConvert< T >();}
-#define registerProcessor(T) { registerProcessorObject(new ProcessorFactoryObjectTemplate<T>()); }
-#define registerProperty(T) { registerPropertyObject(new PropertyFactoryObjectTemplate<T>()); }
-#define registerPropertyWidget(T, P, semantics) { registerPropertyWidgetObject(new PropertyWidgetFactoryObjectTemplate<T,P>(PropertySemantics(semantics))); }
-#define registerPort(T) { registerPortObject(new PortFactoryObjectTemplate<T>(#T)); }
-#define registerDialog(P, T) { registerDialogObject(new DialogFactoryObjectTemplate<T>(P)); }
-#define registerPortInspector(P, T) { registerPortInspectorObject(new PortInspectorFactoryObject(P,T)); }
+}
 
+template <typename T>
+void InviwoModule::registerProcessor() {
+    auto processor = util::make_unique<ProcessorFactoryObjectTemplate<T>>();
+    if (app_->getProcessorFactory()->registerObject(processor.get())) {
+        processors_.push_back(std::move(processor));
+    }
+}
 
-} // namespace
+template <typename T>
+void InviwoModule::registerPort(std::string classIdentifier) {
+    auto port = util::make_unique<PortFactoryObjectTemplate<T>>(classIdentifier);
+    if (app_->getPortFactory()->registerObject(port.get())) {
+        ports_.push_back(std::move(port));
+    }
+}
 
-#endif // IVW_INVIWOMODULE_H
+template <typename T>
+void InviwoModule::registerProperty() {
+    auto property = util::make_unique<PropertyFactoryObjectTemplate<T>>();
+    if (app_->getPropertyFactory()->registerObject(property.get())) {
+        properties_.push_back(std::move(property));
+    }
+}
+template <typename T, typename P>
+void InviwoModule::registerPropertyWidget(PropertySemantics semantics) {
+    auto propertyWidget = util::make_unique<PropertyWidgetFactoryObjectTemplate<T, P>>(semantics);
+    if (app_->getPropertyWidgetFactory()->registerObject(propertyWidget.get())) {
+        propertyWidgets_.push_back(std::move(propertyWidget));
+    }
+}
+template <typename T, typename P>
+void InviwoModule::registerPropertyWidget(std::string semantics) {
+    registerPropertyWidget<T,P>(PropertySemantics(semantics));
+}
+
+}  // namespace
+
+#endif  // IVW_INVIWOMODULE_H

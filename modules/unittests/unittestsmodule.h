@@ -37,10 +37,8 @@ namespace inviwo {
 
 class IVW_MODULE_UNITTESTS_API UnitTestsModule : public InviwoModule {
 public:
-    UnitTestsModule();
+    UnitTestsModule(InviwoApplication* app);
     virtual ~UnitTestsModule();
-    virtual void initialize();
-    virtual void deinitialize();
     static int runAllTests();
 protected:
 };

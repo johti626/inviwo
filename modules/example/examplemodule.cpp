@@ -34,10 +34,9 @@
 
 namespace inviwo {
 
-ExampleModule::ExampleModule() : InviwoModule() {
-    setIdentifier("Example");
-    registerProcessor(ExampleProcessor);
-    registerProcessor(ExampleProgressBar);
+ExampleModule::ExampleModule(InviwoApplication* app) : InviwoModule(app, "Example") {
+    registerProcessor<ExampleProcessor>();
+    registerProcessor<ExampleProgressBar>();
 }
 
 } // namespace

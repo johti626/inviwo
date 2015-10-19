@@ -32,18 +32,11 @@
 
 #include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/common/inviwo.h>
-#include <inviwo/core/common/inviwocore.h>
-#include <inviwo/core/common/inviwomodule.h>
-#include <inviwo/core/common/moduleaction.h>
-#include <inviwo/core/network/processornetwork.h>
-#include <inviwo/core/util/commandlineparser.h>
-#include <inviwo/core/util/fileobserver.h>
-#include <inviwo/core/util/filesystem.h>
-#include <inviwo/core/util/vectoroperations.h>
-#include <inviwo/core/util/settings/settings.h>
+#include <inviwo/core/processors/processortags.h>
 #include <inviwo/core/util/singleton.h>
-#include <inviwo/core/util/timer.h>
 #include <inviwo/core/util/threadpool.h>
+#include <inviwo/core/util/commandlineparser.h>
+#include <inviwo/core/util/vectoroperations.h>
 
 #include <warn/push>
 #include <warn/ignore/all>
@@ -56,7 +49,28 @@
 
 namespace inviwo {
 
+class ProcessorNetwork;
 class ProcessorNetworkEvaluator;
+
+class DataReaderFactory;
+class DataWriterFactory;
+class MeshDrawerFactory;
+class MetaDataFactory;
+class ProcessorFactory;
+class PropertyConverterManager;
+class RepresentationConverterFactory;
+class ProcessorWidgetFactory;
+class DialogFactory;
+class PropertyFactory;
+class PropertyWidgetFactory;
+class PortFactory;
+class PortInspectorFactory;
+
+class Settings;
+class InviwoModule;
+class ModuleCallbackAction;
+class FileObserver;
+
 
 /**
  * \class InviwoApplication
@@ -148,12 +162,12 @@ public:
     bool checkIfAllTagsAreSupported(const Tags) const;
 
     template <class F, class... Args>
-    auto dispatchPool(F&& f, Args&&... args)
-        -> std::future<typename std::result_of<F(Args...)>::type>;
+    auto dispatchPool(F&& f,
+                      Args&&... args) -> std::future<typename std::result_of<F(Args...)>::type>;
 
     template <class F, class... Args>
-    auto dispatchFront(F&& f, Args&&... args)
-        -> std::future<typename std::result_of<F(Args...)>::type>;
+    auto dispatchFront(F&& f,
+                       Args&&... args) -> std::future<typename std::result_of<F(Args...)>::type>;
 
     virtual void processFront();
 
@@ -161,15 +175,28 @@ public:
     void setPostEnqueueFront(std::function<void()> func);
     void setProgressCallback(std::function<void(std::string)> progressCallback);
 
+    DataReaderFactory* getDataReaderFactory() const;
+    DataWriterFactory* getDataWriterFactory() const;
+    DialogFactory* getDialogFactory() const;
+    MeshDrawerFactory* getMeshDrawerFactory() const;
+    MetaDataFactory* getMetaDataFactory() const;
+    PortFactory* getPortFactory() const;
+    PortInspectorFactory* getPortInspectorFactory() const;
+    ProcessorFactory* getProcessorFactory() const;
+    PropertyConverterManager* getPropertyConverterManager() const;
+    PropertyFactory* getPropertyFactory() const;
+    PropertyWidgetFactory* getPropertyWidgetFactory() const;
+    RepresentationConverterFactory* getRepresentationConverterFactory() const;
+    ProcessorWidgetFactory* getProcessorWidgetFactory() const;
+
 protected:
     void printApplicationInfo();
     void postProgress(std::string progress);
 
-
 private:
     struct Queue {
         // Task queue
-        std::queue<std::function<void()> > tasks;
+        std::queue<std::function<void()>> tasks;
         // synchronization
         std::mutex mutex;
 
@@ -191,7 +218,22 @@ private:
     std::vector<std::unique_ptr<ModuleCallbackAction>> moudleCallbackActions_;
 
     std::unique_ptr<ProcessorNetwork> processorNetwork_;
-    std::unique_ptr<ProcessorNetworkEvaluator> processorNetworkEvaluator_;    
+    std::unique_ptr<ProcessorNetworkEvaluator> processorNetworkEvaluator_;
+
+    // Factories
+    DataReaderFactory* dataReaderFactory_;
+    DataWriterFactory* dataWriterFactory_;
+    DialogFactory* dialogFactory_;
+    MeshDrawerFactory* meshDrawerFactory_;
+    MetaDataFactory* metaDataFactory_;
+    PortFactory* portFactory_;
+    PortInspectorFactory* portInspectorFactory_;
+    ProcessorFactory* processorFactory_;
+    PropertyConverterManager* propertyConverterManager_;
+    PropertyFactory* propertyFactory_;
+    PropertyWidgetFactory* propertyWidgetFactory_;
+    RepresentationConverterFactory* representationConverterFactory_;
+    ProcessorWidgetFactory* processorWidgetFactory_;
 };
 
 template <class T>
@@ -216,7 +258,7 @@ auto InviwoApplication::dispatchFront(F&& f, Args&&... args)
     -> std::future<typename std::result_of<F(Args...)>::type> {
     using return_type = typename std::result_of<F(Args...)>::type;
 
-    auto task = std::make_shared<std::packaged_task<return_type()> >(
+    auto task = std::make_shared<std::packaged_task<return_type()>>(
         std::bind(std::forward<F>(f), std::forward<Args>(args)...));
 
     std::future<return_type> res = task->get_future();
@@ -229,8 +271,8 @@ auto InviwoApplication::dispatchFront(F&& f, Args&&... args)
     return res;
 }
 template <class F, class... Args>
-auto dispatchFront(F&& f, Args&&... args)
-    -> std::future<typename std::result_of<F(Args...)>::type> {
+auto dispatchFront(F&& f,
+                   Args&&... args) -> std::future<typename std::result_of<F(Args...)>::type> {
     return InviwoApplication::getPtr()->dispatchFront(std::forward<F>(f),
                                                       std::forward<Args>(args)...);
 }
@@ -239,23 +281,50 @@ auto dispatchPool(F&& f, Args&&... args) -> std::future<typename std::result_of<
     return InviwoApplication::getPtr()->dispatchPool(std::forward<F>(f),
                                                      std::forward<Args>(args)...);
 }
-template <class F, class... Args>
-auto dispatchPoolAndInvalidate(Processor* p, F&& f, Args&&... args)
-    -> std::future<typename std::result_of<F(Args...)>::type> {
-    using return_type = typename std::result_of<F(Args...)>::type;
-    auto task = std::make_shared<std::packaged_task<return_type()> >(
-        std::bind(std::forward<F>(f), std::forward<Args>(args)...));
 
-    std::future<return_type> res = task->get_future();
+inline DataReaderFactory* InviwoApplication::getDataReaderFactory() const {
+    return dataReaderFactory_;
+}
 
-    InviwoApplication::getPtr()->dispatchPool([task, p]() {
-        (*task)();
-        dispatchFront([p]() {
-            if (p) p->invalidate(INVALID_OUTPUT);
-        });
-    });
+inline DataWriterFactory* InviwoApplication::getDataWriterFactory() const {
+    return dataWriterFactory_;
+}
 
-    return res;
+inline DialogFactory* InviwoApplication::getDialogFactory() const { return dialogFactory_; }
+
+inline MeshDrawerFactory* InviwoApplication::getMeshDrawerFactory() const {
+    return meshDrawerFactory_;
+}
+
+inline MetaDataFactory* InviwoApplication::getMetaDataFactory() const { return metaDataFactory_; }
+
+inline PortFactory* InviwoApplication::getPortFactory() const { return portFactory_; }
+
+inline PortInspectorFactory* InviwoApplication::getPortInspectorFactory() const {
+    return portInspectorFactory_;
+}
+
+inline ProcessorFactory* InviwoApplication::getProcessorFactory() const {
+    return processorFactory_;
+}
+
+inline PropertyConverterManager* InviwoApplication::getPropertyConverterManager() const {
+    return propertyConverterManager_;
+}
+
+inline PropertyFactory* InviwoApplication::getPropertyFactory() const { return propertyFactory_; }
+
+inline PropertyWidgetFactory* InviwoApplication::getPropertyWidgetFactory() const {
+    return propertyWidgetFactory_;
+}
+
+inline RepresentationConverterFactory* InviwoApplication::getRepresentationConverterFactory()
+    const {
+    return representationConverterFactory_;
+}
+
+inline ProcessorWidgetFactory* InviwoApplication::getProcessorWidgetFactory() const {
+    return processorWidgetFactory_;
 }
 
 }  // namespace

@@ -35,6 +35,7 @@
 #include <inviwo/core/properties/boolproperty.h>
 #include <inviwo/core/properties/ordinalproperty.h>
 #include <inviwo/core/properties/buttonproperty.h>
+#include <inviwo/core/properties/compositeproperty.h>
 
 namespace inviwo {
 
@@ -42,9 +43,6 @@ class IVW_CORE_API SystemSettings : public Settings {
 
 public:
     SystemSettings();
-    virtual ~SystemSettings();
-    virtual void initialize();
-    virtual void deinitialize();
 
     UsageMode getApplicationUsageMode() const;
 
