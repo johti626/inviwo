@@ -54,6 +54,7 @@ Background::Background()
     , shader_("background.frag", false) {
     addPort(inport_);
     addPort(outport_);
+    inport_.setOptional(true);
     backgroundStyle_.addOption("linearGradient", "Linear gradient", 0);
     backgroundStyle_.addOption("uniformColor", "Uniform color", 1);
     backgroundStyle_.addOption("checkerBoard", "Checker board", 2);
@@ -75,11 +76,6 @@ void Background::switchColors() {
     vec4 tmp = color1_.get();
     color1_.set(color2_.get());
     color2_.set(tmp);
-}
-
-bool Background::isReady() const {
-    if (inport_.isConnected()) return Processor::isReady();
-    return true;
 }
 
 void Background::initializeResources() {
@@ -118,13 +114,13 @@ void Background::initializeResources() {
 void Background::process() {
     if (inport_.hasData() != hadData_) initializeResources();
     if (inport_.hasData()) {
-        utilgl::activateTargetAndCopySource(outport_, inport_, COLOR_ONLY);
+        utilgl::activateTargetAndCopySource(outport_, inport_, ImageType::ColorOnly);
     } else {
-        utilgl::activateTarget(outport_, COLOR_ONLY);
+        utilgl::activateTarget(outport_, ImageType::ColorOnly);
     }
     shader_.activate();
     TextureUnitContainer units;
-    if (inport_.hasData()) utilgl::bindAndSetUniforms(shader_, units, inport_, COLOR_ONLY);
+    if (inport_.hasData()) utilgl::bindAndSetUniforms(shader_, units, inport_, ImageType::ColorOnly);
    
     utilgl::setUniforms(shader_, outport_, color1_, color2_, checkerBoardSize_);
     utilgl::singleDrawImagePlaneRect();

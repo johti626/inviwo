@@ -29,6 +29,7 @@
 
 #include <modules/basegl/baseglmodule.h>
 #include <modules/opengl/shader/shadermanager.h>
+#include <modules/basegl/processors/axisalignedcutplane.h>
 #include <modules/basegl/processors/background.h>
 #include <modules/basegl/processors/drawlines.h>
 #include <modules/basegl/processors/drawpoints.h>
@@ -42,6 +43,7 @@
 #include <modules/basegl/processors/lightingraycaster.h>
 #include <modules/basegl/processors/lightvolumegl.h>
 #include <modules/basegl/processors/meshpicking.h>
+#include <modules/basegl/processors/mesh2drenderprocessorgl.h>
 #include <modules/basegl/processors/meshrenderprocessorgl.h>
 #include <modules/basegl/processors/multichannelraycaster.h>
 #include <modules/basegl/processors/redgreenprocessor.h>
@@ -58,6 +60,8 @@
 #include <modules/basegl/processors/imageprocessing/imagebinary.h>
 #include <modules/basegl/processors/imageprocessing/imagelowpass.h>
 #include <modules/basegl/processors/imageprocessing/imagehighpass.h>
+#include <modules/basegl/processors/imageprocessing/imagenormalizationprocessor.h>
+#include <modules/basegl/processors/tuberendering.h>
 #include <modules/basegl/processors/volumeprocessing/volumebinary.h>
 #include <modules/basegl/processors/volumeprocessing/vectormagnitudeprocessor.h>
 #include <modules/basegl/processors/volumeprocessing/volumecombiner.h>
@@ -94,12 +98,15 @@ BaseGLModule::BaseGLModule(InviwoApplication* app) : InviwoModule(app, "BaseGL")
     registerProcessor<ImageOverlayGL>();
     registerProcessor<LightingRaycaster>();
     registerProcessor<LightVolumeGL>();
+    registerProcessor<Mesh2DRenderProcessorGL>();
     registerProcessor<MeshRenderProcessorGL>();
     registerProcessor<MultichannelRaycaster>();
     registerProcessor<RedGreenProcessor>();
     registerProcessor<VolumeRaycaster>();
     registerProcessor<ISORaycaster>();
     registerProcessor<VolumeSliceGL>();
+    registerProcessor<AxisAlignedCutPlane>();
+    registerProcessor<TubeRendering>();
 
     // image processing
     registerProcessor<FindEdges>();
@@ -111,6 +118,7 @@ BaseGLModule::BaseGLModule(InviwoApplication* app) : InviwoModule(app, "BaseGL")
     registerProcessor<ImageBinary>();
     registerProcessor<ImageLowPass>();
     registerProcessor<ImageHighPass>();
+    registerProcessor<ImageNormalizationProcessor>();
 
     //volume processing
     registerProcessor<VectorMagnitudeProcessor>();

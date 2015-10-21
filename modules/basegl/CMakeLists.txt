@@ -5,6 +5,7 @@ ivw_module(BaseGL)
 #--------------------------------------------------------------------
 # Add header files
 set(HEADER_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/processors/axisalignedcutplane.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/background.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/drawlines.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/drawpoints.h
@@ -23,15 +24,18 @@ set(HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/imageprocessing/imagehighpass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/imageprocessing/imageinvert.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/imageprocessing/imagelowpass.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/processors/imageprocessing/imagenormalizationprocessor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/imageprocessing/imagemapping.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/imageprocessing/imageresample.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/isoraycaster.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/lightingraycaster.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/lightvolumegl.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/meshpicking.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/processors/mesh2drenderprocessorgl.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/meshrenderprocessorgl.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/multichannelraycaster.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/redgreenprocessor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/processors/tuberendering.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/volumeprocessing/vectormagnitudeprocessor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/volumeprocessing/volumebinary.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/volumeprocessing/volumecombiner.h
@@ -51,6 +55,7 @@ ivw_group("Header Files" ${HEADER_FILES})
 #--------------------------------------------------------------------
 # Add source files
 set(SOURCE_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/processors/axisalignedcutplane.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/background.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/drawlines.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/drawpoints.cpp
@@ -71,13 +76,16 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/imageprocessing/imagelowpass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/imageprocessing/imagemapping.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/imageprocessing/imageresample.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/processors/imageprocessing/imagenormalizationprocessor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/isoraycaster.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/lightingraycaster.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/lightvolumegl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/meshpicking.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/processors/mesh2drenderprocessorgl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/meshrenderprocessorgl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/multichannelraycaster.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/redgreenprocessor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/processors/tuberendering.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/volumeprocessing/vectormagnitudeprocessor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/volumeprocessing/volumebinary.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/volumeprocessing/volumecombiner.cpp
@@ -97,6 +105,8 @@ ivw_group("Source Files" ${SOURCE_FILES})
 #--------------------------------------------------------------------
 # Add shaders
 set(SHADER_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/glsl/axisalignedcutplaneboundingbox.frag
+    ${CMAKE_CURRENT_SOURCE_DIR}/glsl/axisalignedcutplaneslice.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/background.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/capnearclipping.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/heightfield.frag
@@ -110,6 +120,7 @@ set(SHADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/img_lowpass.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/img_mapping.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/img_mix.frag
+    ${CMAKE_CURRENT_SOURCE_DIR}/glsl/img_normalize.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/img_resample.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/lighting/lightingraycasting.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/lighting/lightpropagation.frag
@@ -118,6 +129,8 @@ set(SHADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/lighting/lightvolumeblend.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/lighting/lightvolumeblend.geom
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/lighting/lightvolumeblend.vert
+    ${CMAKE_CURRENT_SOURCE_DIR}/glsl/mesh2drendering.vert
+    ${CMAKE_CURRENT_SOURCE_DIR}/glsl/mesh2drendering.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/multichannelraycaster.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/vectormagnitudeprocessor.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/volume_binary.frag
@@ -131,6 +144,9 @@ set(SHADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/volume_mapping.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/volumegradientmagnitude.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/volumeslice.frag
+    ${CMAKE_CURRENT_SOURCE_DIR}/glsl/tuberendering.vert
+    ${CMAKE_CURRENT_SOURCE_DIR}/glsl/tuberendering.geom
+    ${CMAKE_CURRENT_SOURCE_DIR}/glsl/tuberendering.frag
 )
 ivw_group("Shader Files" ${SHADER_FILES})
 

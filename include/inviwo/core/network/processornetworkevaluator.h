@@ -32,13 +32,13 @@
 
 #include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/common/inviwo.h>
-#include <inviwo/core/interaction/events/mouseevent.h>
-#include <inviwo/core/interaction/events/resizeevent.h>
-#include <inviwo/core/network/processornetwork.h>
-
-#include <unordered_map>
+#include <inviwo/core/network/processornetworkobserver.h>
+#include <inviwo/core/processors/processorobserver.h>
 
 namespace inviwo {
+
+class Processor;
+class ProcessorNetwork;
 
 class IVW_CORE_API ProcessorNetworkEvaluator : public ProcessorNetworkObserver,
                                                public ProcessorObserver {
@@ -58,60 +58,14 @@ public:
     virtual void onProcessorNetworkEvaluateRequest() override;
     virtual void onProcessorNetworkUnlocked() override;
 
-    static ProcessorNetworkEvaluator* getProcessorNetworkEvaluatorForProcessorNetwork(
-        ProcessorNetwork* network);
-
 private:
-    using ProcessorList = std::unordered_set<Processor*>;
-
     void evaluate();
-
-    void setProcessorVisited(Processor* processor, bool visited = true);
-    bool hasBeenVisited(Processor* processor) const;
-    void setPropertyVisited(Property* property, bool visited = true);
-    bool hasBeenVisited(Property* property) const;
-    // retrieve predecessors from global processor state list (look-up)
-    const ProcessorList& getStoredPredecessors(Processor* processor) const;
-    // retrieve predecessors based on given event
-    ProcessorList getDirectPredecessors(Processor* processor) const;
-    void traversePredecessors(Processor* processor);
-    void determineProcessingOrder();
-    void updateProcessorStates();
-    void resetProcessorVisitedStates();
-
-    struct ProcessorState {
-        ProcessorState() : visited(false) {}
-        ProcessorState(const ProcessorList& predecessors) : visited(false), pred(predecessors) {}
-        bool visited;
-        ProcessorList pred;  // list of all predecessors
-    };
-
-    // map for managing processor states (predecessors, visited flags, etc.)
-    // map contains a dummy element for nullptr processor
-    using ProcMap = std::unordered_map<Processor*, ProcessorState>;
-    using ProcMapIt = ProcMap::iterator;
-    using const_ProcMapIt = ProcMap::const_iterator;
-    using ProcMapPair = std::pair<Processor*, ProcessorState>;
-
-    struct PropertyState {
-        bool visited;
-    };
-
-    // map for visited state of properties
-    using PropertyMap = std::unordered_map<Property*, PropertyState>;
-    using PropertyMapIt = PropertyMap::iterator;
-    using const_PropertyMapIt = PropertyMap::const_iterator;
-    using PropertyMapPair = std::pair<Property*, PropertyState>;
 
     ProcessorNetwork* processorNetwork_;
     // the sorted list of processors obtained through topological sorting
     std::vector<Processor*> processorsSorted_;
-    ProcMap processorStates_;
-    PropertyMap propertiesVisited_;
     bool evaulationQueued_;
     bool evaluationDisabled_;
-
-    static std::map<ProcessorNetwork*, ProcessorNetworkEvaluator*> processorNetworkEvaluators_;
     ExceptionHandler exceptionHandler_;
 };
 

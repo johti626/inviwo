@@ -77,6 +77,9 @@ MeshRenderProcessorGL::MeshRenderProcessorGL()
     addPort(inport_);
     addPort(imageInport_);
     addPort(outport_);
+
+    imageInport_.setOptional(true);
+
     addProperty(camera_);
     centerViewOnGeometry_.onChange(this, &MeshRenderProcessorGL::centerViewOnGeometry);
     addProperty(centerViewOnGeometry_);
@@ -216,7 +219,7 @@ void MeshRenderProcessorGL::process() {
         utilgl::activateTargetAndCopySource(outport_, imageInport_);
     }
     else{
-        utilgl::activateAndClearTarget(outport_, COLOR_DEPTH);
+        utilgl::activateAndClearTarget(outport_, ImageType::ColorDepth);
     }
     
     shader_.activate();
@@ -238,13 +241,6 @@ void MeshRenderProcessorGL::process() {
     utilgl::deactivateCurrentTarget();
 }
 
-bool MeshRenderProcessorGL::isReady() const {
-    if (imageInport_.isConnected()) {
-        return Processor::isReady();
-    } else {
-        return inport_.isReady();
-    }
-}
 
 void MeshRenderProcessorGL::centerViewOnGeometry() {
     if (!inport_.hasData()) return;

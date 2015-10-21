@@ -122,8 +122,10 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/metadata/processorwidgetmetadata.h
     ${IVW_INCLUDE_DIR}/inviwo/core/metadata/propertyeditorwidgetmetadata.h
     ${IVW_INCLUDE_DIR}/inviwo/core/network/networklock.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/network/networkutils.h
     ${IVW_INCLUDE_DIR}/inviwo/core/network/portconnection.h
     ${IVW_INCLUDE_DIR}/inviwo/core/network/processornetwork.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/network/processornetworkconverter.h
     ${IVW_INCLUDE_DIR}/inviwo/core/network/processornetworkevaluator.h
     ${IVW_INCLUDE_DIR}/inviwo/core/network/processornetworkobserver.h
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/bufferport.h
@@ -149,6 +151,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/processors/processorfactory.h
     ${IVW_INCLUDE_DIR}/inviwo/core/processors/processorfactoryobject.h
     ${IVW_INCLUDE_DIR}/inviwo/core/processors/processorobserver.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/processors/processorpair.h
     ${IVW_INCLUDE_DIR}/inviwo/core/processors/processorstate.h
     ${IVW_INCLUDE_DIR}/inviwo/core/processors/processortags.h
     ${IVW_INCLUDE_DIR}/inviwo/core/processors/processorwidget.h
@@ -353,8 +356,10 @@ set(SOURCE_FILES
     metadata/processorwidgetmetadata.cpp
     metadata/propertyeditorwidgetmetadata.cpp
     network/networklock.cpp
+    network/networkutils.cpp
     network/portconnection.cpp
     network/processornetwork.cpp
+    network/processornetworkconverter.cpp
     network/processornetworkevaluator.cpp
     network/processornetworkobserver.cpp
     ports/imageport.cpp
@@ -371,6 +376,7 @@ set(SOURCE_FILES
     processors/canvasprocessorwidget.cpp
     processors/processor.cpp
     processors/processorfactory.cpp
+    processors/processorpair.cpp
     processors/processortags.cpp
     processors/processorwidget.cpp
     processors/processorwidgetfactory.cpp

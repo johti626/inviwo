@@ -39,11 +39,13 @@
 #include <modules/base/processors/imagesourceseries.h>
 #include <modules/base/processors/meshclipping.h>
 #include <modules/base/processors/meshcreator.h>
+#include <modules/base/processors/noiseprocessor.h>
 #include <modules/base/processors/pixeltobufferprocessor.h>
 #include <modules/base/processors/pointlightsourceprocessor.h>
 #include <modules/base/processors/ordinalpropertyanimator.h>
 #include <modules/base/processors/spotlightsourceprocessor.h>
 #include <modules/base/processors/surfaceextraction.h>
+#include <modules/base/processors/timestepselector.h>
 #include <modules/base/processors/volumesource.h>
 #include <modules/base/processors/volumeexport.h>
 #include <modules/base/processors/volumebasistransformer.h>
@@ -53,6 +55,7 @@
 #include <modules/base/processors/volumevectorsource.h>
 
 #include <modules/base/properties/basisproperty.h>
+#include <modules/base/properties/gaussianproperty.h>
 #include <modules/base/properties/volumeinformationproperty.h>
 #include <modules/base/properties/sequencetimerproperty.h>
 
@@ -81,6 +84,7 @@ BaseModule::BaseModule(InviwoApplication* app) : InviwoModule(app, "Base") {
     registerProcessor<ImageSourceSeries>();
     registerProcessor<MeshClipping>();
     registerProcessor<MeshCreator>();
+    registerProcessor<NoiseProcessor>();
     registerProcessor<PixelToBufferProcessor>();
     registerProcessor<PointLightSourceProcessor>();
     registerProcessor<OrdinalPropertyAnimator>();
@@ -94,10 +98,16 @@ BaseModule::BaseModule(InviwoApplication* app) : InviwoModule(app, "Base") {
     registerProcessor<VolumeSubsample>();
     registerProcessor<VolumeSubset>();
     registerProcessor<VolumeVectorSource>();
+    registerProcessor<TimeStepSelector>();
+
+
 
     registerProperty<SequenceTimerProperty>();
     registerProperty<BasisProperty>();
     registerProperty<VolumeInformationProperty>();
+
+    registerProperty<Gaussian1DProperty>();
+    registerProperty<Gaussian2DProperty>();
 }
 
 } // namespace

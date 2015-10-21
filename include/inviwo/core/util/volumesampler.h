@@ -62,11 +62,12 @@ public:
     dvec4 sample(const vec3 &pos) const { return sample(dvec3(pos)); }
 
 private:
+    dvec4 getVoxel(const size3_t &pos)const;
     const VolumeRAM *vol_;
     size3_t dims_;
 };
 
-template <typename T>
+template <typename T,typename P>
 class TemplateVolumeSampler {
 public:
     TemplateVolumeSampler(const VolumeRAM *ram)
@@ -85,19 +86,24 @@ public:
         dvec3 interpolants = samplePos - dvec3(indexPos);
 
         T samples[8];
-        samples[0] = data_[ic_(indexPos)];
-        samples[1] = data_[ic_(indexPos + size3_t(1, 0, 0))];
-        samples[2] = data_[ic_(indexPos + size3_t(0, 1, 0))];
-        samples[3] = data_[ic_(indexPos + size3_t(1, 1, 0))];
-        samples[4] = data_[ic_(indexPos + size3_t(0, 0, 1))];
-        samples[5] = data_[ic_(indexPos + size3_t(1, 0, 1))];
-        samples[6] = data_[ic_(indexPos + size3_t(0, 1, 1))];
-        samples[7] = data_[ic_(indexPos + size3_t(1, 1, 1))];
+        samples[0] = getVoxel(indexPos);
+        samples[1] = getVoxel(indexPos + size3_t(1, 0, 0));
+        samples[2] = getVoxel(indexPos + size3_t(0, 1, 0));
+        samples[3] = getVoxel(indexPos + size3_t(1, 1, 0));
+        samples[4] = getVoxel(indexPos + size3_t(0, 0, 1));
+        samples[5] = getVoxel(indexPos + size3_t(1, 0, 1));
+        samples[6] = getVoxel(indexPos + size3_t(0, 1, 1));
+        samples[7] = getVoxel(indexPos + size3_t(1, 1, 1));
 
-        return Interpolation::trilinear(samples, interpolants);
+        return Interpolation<T,P>::trilinear(samples, interpolants);
     }
 
 private:
+    T getVoxel(const size3_t &pos) {
+        auto p = glm::clamp(pos, size3_t(0), dims_ - size3_t(1));
+        return  data_[ic_(p)];
+    }
+    
     const T *data_;
     size3_t dims_;
     util::IndexMapper3D ic_;

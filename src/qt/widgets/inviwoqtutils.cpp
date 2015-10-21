@@ -63,6 +63,14 @@ std::ios_base& localizeStream(std::ios_base& stream) {
     return stream;
 }
 
+QString toLocalQString(const std::string& input) {
+   return QString::fromLocal8Bit(input.c_str());
+}
+
+IVW_QTWIDGETS_API QString toQString(const std::string& input) {
+   return QString::fromUtf8(input.c_str());
+}
+
 } // namespace utilqt
 
 }  // namespace

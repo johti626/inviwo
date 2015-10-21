@@ -65,11 +65,12 @@ public:
     dvec4 sample(const vec2 &pos) const { return sample(dvec2(pos)); }
 
 private:
+    dvec4 getPixel(const size2_t &pos)const;
     const LayerRAM *layer_;
     size2_t dims_;
 };
 
-template <typename T>
+template <typename T,typename P>
 class TemplateImageSampler {
 public:
     TemplateImageSampler(const LayerRAM *ram)
@@ -89,19 +90,21 @@ public:
 
 
         T samples[4];
-        samples[0] = data_[ic_(indexPos)];
-        samples[1] = data_[ic_(indexPos + size2_t(1, 0))];
-        if (interpolants.y == 0) {
-            return Interpolation::linear(samples, interpolants.x);
+        samples[0] = getPixel(indexPos);
+        samples[1] = getPixel(indexPos + size2_t(1, 0));
 
-        }
-        samples[2] = data_[ic_(indexPos + size2_t(0, 1))];
-        samples[3] = data_[ic_(indexPos + size2_t(1, 1))];
+        samples[2] = getPixel(indexPos + size2_t(0, 1));
+        samples[3] = getPixel(indexPos + size2_t(1, 1));
 
-        return Interpolation::bilinear(samples, interpolants);
+        return Interpolation<T, P>::bilinear(samples, interpolants);
     }
 
 private:
+    T getPixel(const size2_t &pos) {
+        auto p = glm::clamp(pos, size2_t(0), dims_ - size2_t(1));
+        return data_[ic_(p)];;
+
+    }
     const T *data_;
     size2_t dims_;
     util::IndexMapper2D ic_;

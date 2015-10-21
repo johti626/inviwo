@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #ifndef IVW_CAMERAPROPERTY_H
@@ -47,30 +47,27 @@ class Inport;
 
 /**
 * \class CameraProperty
-* 
-* Besides giving access to a perspective camera in the GUI 
+*
+* Besides giving access to a perspective camera in the GUI
 * it also enables linking individual camera properties.
 * @see PerspectiveCamera
 */
 class IVW_CORE_API CameraProperty : public CompositeProperty {
-
 public:
     InviwoPropertyInfo();
 
-    CameraProperty(std::string identifier,
-                   std::string displayName,
-                   vec3 eye = vec3(0.0f, 0.0f, -2.0f),
-                   vec3 center = vec3(0.0f),
-                   vec3 lookUp = vec3(0.0f, 1.0f, 0.0f),
-                   Inport* inport = nullptr,
-                   InvalidationLevel=INVALID_RESOURCES,
+    CameraProperty(std::string identifier, std::string displayName,
+                   vec3 eye = vec3(0.0f, 0.0f, -2.0f), vec3 center = vec3(0.0f),
+                   vec3 lookUp = vec3(0.0f, 1.0f, 0.0f), Inport* inport = nullptr,
+                   InvalidationLevel = INVALID_RESOURCES,
                    PropertySemantics semantics = PropertySemantics::Default);
-    
+
     CameraProperty(const CameraProperty& rhs);
     CameraProperty& operator=(const CameraProperty& that);
     CameraProperty& operator=(const PerspectiveCamera& value);
 
-    //virtual operator PerspectiveCamera&() { return value_; }; // Do not allow user to get non-const reference since no notification mechanism exist.
+    // virtual operator PerspectiveCamera&() { return value_; }; // Do not allow user to get
+    // non-const reference since no notification mechanism exist.
     virtual operator const PerspectiveCamera&() const;
 
     virtual CameraProperty* clone() const override;
@@ -83,8 +80,7 @@ public:
 
     virtual void resetToDefaultState() override;
 
-
-    /** 
+    /**
      * Reset camera position, direction and field of view to default state.
      */
     void resetCamera();
@@ -117,9 +113,9 @@ public:
     vec3 getLookToMinValue() const;
     vec3 getLookToMaxValue() const;
 
-    /** 
+    /**
      * \brief Convert from normalized device coordinates (xyz in [-1 1]) to world coordinates.
-     * 
+     *
      * @param ndcCoords Coordinates in [-1 1]
      * @return World space position
      */
@@ -128,7 +124,8 @@ public:
     /**
     * \brief Convert from normalized device coordinates (xyz in [-1 1]) to clip coordinates.
     *
-    * @param ndcCoords xyz clip-coordinates in [-1 1]^3, and the clip w-coordinate used for perspective division.   
+    * @param ndcCoords xyz clip-coordinates in [-1 1]^3, and the clip w-coordinate used for
+    *perspective division.
     * @return Clip space position
     */
     vec4 getClipPosFromNormalizedDeviceCoords(const vec3& ndcCoords) const;
@@ -142,23 +139,19 @@ public:
 
     void invokeEvent(Event* event) override;
 
-    // Local camera invalidation
-    // Use lock and unlock to set several camera properties without causing evaluation,
-    // then call invalidateCamera().
-    void invalidateCamera();
-    void lockInvalidation();
-    void unlockInvalidation();
-    bool isInvalidationLocked();
-
     void setInport(Inport* inport);
     void fitWithBasis(const mat3& basis);
     void fitReset();
     void inportChanged();
 
 private:
-
-    // These functions make sure that the 
-    // template value (PerspectiveCamera) is 
+    // Call this function after a property has changed
+    // Makes sure that linking is propagated after
+    // a property has changed.
+    // Calls CompositeProperty::invalidate(INVALID_OUTPUT, this);
+    void invalidateCamera();
+    // These functions make sure that the
+    // template value (PerspectiveCamera) is
     // in sync with the property values.
     void lookFromChangedFromProperty();
     void lookToChangedFromProperty();
@@ -171,8 +164,8 @@ private:
     void updatePropertyFromValue();
 
     PerspectiveCamera value_;
-    // These properties enable linking of individual 
-    // camera properties but requires them to be synced 
+    // These properties enable linking of individual
+    // camera properties but requires them to be synced
     // with the template value_ (PerspectiveCamera).
     FloatVec3Property lookFrom_;
     FloatVec3Property lookTo_;
@@ -183,16 +176,14 @@ private:
     FloatProperty nearPlane_;
     FloatProperty farPlane_;
 
-
     BoolProperty fitToBasis_;
 
-    bool lockInvalidation_;
-
-    Inport* inport_; ///< Allows the camera to be positioned relative to new data (VolumeInport, MeshInport)
-    const SpatialEntity<3>* data_; //< non-owning reference;
+    Inport* inport_;  ///< Allows the camera to be positioned relative to new data (VolumeInport,
+                      ///MeshInport)
+    const SpatialEntity<3>* data_;  //< non-owning reference;
     mat3 oldBasis_;
 };
 
-} // namespace
+}  // namespace
 
-#endif // IVW_CAMERAPROPERTY_H
+#endif  // IVW_CAMERAPROPERTY_H

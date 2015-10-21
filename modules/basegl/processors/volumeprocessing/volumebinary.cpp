@@ -36,17 +36,22 @@ namespace inviwo {
 ProcessorClassIdentifier(VolumeBinary,  "org.inviwo.VolumeBinary")
 ProcessorDisplayName(VolumeBinary,  "Volume Binary")
 ProcessorTags(VolumeBinary, Tags::None);
-ProcessorCategory(VolumeBinary, "Undefined");
+ProcessorCategory(VolumeBinary, "Volume Operation");
 ProcessorCodeState(VolumeBinary, CODE_STATE_EXPERIMENTAL);
 
 VolumeBinary::VolumeBinary()
     : VolumeGLProcessor("volume_binary.frag")
     , threshold_("threshold", "Threshold", 0.5) {
     addProperty(threshold_);
+    this->dataFormat_ = DataUINT8::get();
 }
     
-void VolumeBinary::preProcess() {
+void VolumeBinary::preProcess(TextureUnitContainer &cont) {
     utilgl::setUniforms(shader_, threshold_);
+}
+
+void VolumeBinary::postProcess() {
+    volume_->dataMap_.dataRange = vec2(0, 255);
 }
 
 } // namespace

@@ -33,6 +33,7 @@
 #include <inviwo/core/properties/property.h>
 #include <inviwo/core/properties/propertywidgetfactory.h>
 #include <inviwo/core/properties/propertyowner.h>
+#include <inviwo/core/network/networklock.h>
 #include <inviwo/qt/widgets/inviwoapplicationqt.h>
 #include <inviwo/qt/widgets/inviwoqtutils.h>
 #include <inviwo/core/util/tooltiphelper.h>
@@ -400,11 +401,12 @@ void PropertyWidgetQt::updateContextMenu() {
 
 bool PropertyWidgetQt::event(QEvent* event) {
     if (event->type() == QEvent::ToolTip) {
-        QHelpEvent* helpEvent = static_cast<QHelpEvent*>(event);
-        QToolTip::showText(helpEvent->globalPos(), QString::fromStdString(getToolTipText()));
+        auto helpEvent = static_cast<QHelpEvent*>(event);
+        QToolTip::showText(helpEvent->globalPos(), utilqt::toLocalQString(getToolTipText()));
         return true;
+    } else {
+        return QWidget::event(event);
     }
-    return QWidget::event(event);
 }
 
 std::string PropertyWidgetQt::getToolTipText() {
@@ -467,6 +469,7 @@ void PropertyWidgetQt::setParentPropertyWidget(PropertyWidgetQt* parent, InviwoD
 void PropertyWidgetQt::copy() { copySource = property_; }
 void PropertyWidgetQt::paste() {
     if (copySource) {
+        NetworkLock lock;
         property_->set(copySource);
     }
 }
