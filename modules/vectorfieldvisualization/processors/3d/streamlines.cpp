@@ -30,7 +30,7 @@ StreamLines::StreamLines()
     , linesStripsMesh_("linesStripsMesh_")
     , numberOfSteps_("steps", "Number of Steps", 100, 1, 1000)
     , normalizeSamples_("normalizeSamples", "Normalize Samples", true)
-    , stepSize_("stepSize", "StepSize", 0.001f, 0.0001f, 1.0f)
+    , stepSize_("stepSize", "Stepsize", 0.001f, 0.0001f, 1.0f)
     , stepDirection_("stepDirection", "Step Direction")
     , integrationScheme_("integrationScheme","Integration Scheme")
     , seedPointsSpace_("seedPointsSpace", "Seed Points Space")
@@ -84,7 +84,7 @@ StreamLines::StreamLines()
 StreamLines::~StreamLines() {}
 
 void StreamLines::process() {
-    auto mesh = util::make_unique<BasicMesh>();
+    auto mesh = std::make_shared<BasicMesh>();
     mesh->setModelMatrix(volume_.getData()->getModelMatrix());
     mesh->setWorldMatrix(volume_.getData()->getWorldMatrix());
 
@@ -131,13 +131,13 @@ void StreamLines::process() {
                 position++;
                 velocity++;
             }
-            indexBuffer->add(vertices.size() - 1);
+            indexBuffer->add(static_cast<std::uint32_t>(vertices.size()-1));
         }
     }
 
     mesh->addVertices(vertices);
 
-    linesStripsMesh_.setData(mesh.release());
+    linesStripsMesh_.setData(mesh);
     maxVelocity_.set(toString(maxVelocity));
 }
 

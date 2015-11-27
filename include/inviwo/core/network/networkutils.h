@@ -40,6 +40,58 @@ namespace inviwo {
 
 namespace util {
 
+namespace detail {
+
+struct PartialConnection : public Serializable {
+    PartialConnection() {}
+    PartialConnection(std::string path, Inport* inport) : outportPath_(path), inport_(inport) {}
+    std::string outportPath_ = "";
+    Inport* inport_ = nullptr;
+
+    virtual void serialize(Serializer& s) const override {
+        s.serialize("OutPortPath", outportPath_);
+        s.serialize("InPort", inport_);
+    }
+    virtual void deserialize(Deserializer& d) override {
+        d.deserialize("OutPortPath", outportPath_);
+        d.deserialize("InPort", inport_);
+    }
+};
+struct PartialSrcLink : public Serializable {
+    PartialSrcLink() {}
+    PartialSrcLink(Property* src, std::string path) : src_(src), dstPath_(path) {}
+    Property* src_ = nullptr;
+    std::string dstPath_ = "";
+
+    virtual void serialize(Serializer& s) const override {
+        s.serialize("SourceProperty", src_);
+        s.serialize("DestinationPropertyPath", dstPath_);
+    }
+    virtual void deserialize(Deserializer& d) override {
+        d.deserialize("SourceProperty", src_);
+        d.deserialize("DestinationPropertyPath", dstPath_);
+    }
+};
+struct PartialDstLink : public Serializable {
+    PartialDstLink() {}
+    PartialDstLink(std::string path, Property* dst) : srcPath_(path), dst_(dst) {}
+    std::string srcPath_ = "";
+    Property* dst_ = nullptr;
+
+    virtual void serialize(Serializer& s) const override {
+        s.serialize("SourcePropertyPath", srcPath_);
+        s.serialize("DestinationProperty", dst_);
+    }
+    virtual void deserialize(Deserializer& d) override {
+        d.deserialize("SourcePropertyPath", srcPath_);
+        d.deserialize("DestinationProperty", dst_);
+    }
+};
+
+}  // namespace
+
+
+
 struct IVW_CORE_API ProcessorStates {
     bool hasBeenVisited(Processor* processor) const;
     void setProcessorVisited(Processor* processor);
@@ -90,6 +142,13 @@ void traverseNetwork(ProcessorStates& state, Processor* processor, Func f) {
 }
 
 IVW_CORE_API std::vector<Processor*> topologicalSort(ProcessorNetwork* network);
+
+IVW_CORE_API void serializeSelected(ProcessorNetwork* network, std::ostream& os,
+                                    const std::string& refPath);
+
+// return the appended processors.
+IVW_CORE_API std::vector<Processor*> appendDeserialized(ProcessorNetwork* network, std::istream& is,
+                                     const std::string& refPath);
 
 }  // namespace
 }  // namespace

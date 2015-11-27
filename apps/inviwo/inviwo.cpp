@@ -34,12 +34,15 @@
 #pragma comment(linker, "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
 #endif
 #endif
-
+#include <warn/push>
+#include <warn/ignore/all>
 #include <QFile>
+#include <warn/pop>
 #include <inviwo/qt/widgets/inviwoapplicationqt.h>
+#include <inviwo/core/common/defaulttohighperformancegpu.h>
 #include <inviwo/core/util/filesystem.h>
 #include <inviwo/core/util/logcentral.h>
-#include "inviwomainwindow.h"
+#include <inviwo/qt/editor/inviwomainwindow.h>
 #include "inviwosplashscreen.h"
 #include <moduleregistration.h>
 
@@ -53,11 +56,11 @@ int main(int argc, char** argv) {
     inviwoApp.setAttribute(Qt::AA_NativeWindows);
     QFile styleSheetFile(":/stylesheets/inviwo.qss");
     styleSheetFile.open(QFile::ReadOnly);
-    QString styleSheet = QLatin1String(styleSheetFile.readAll());
+    QString styleSheet = QString::fromUtf8(styleSheetFile.readAll());
     inviwoApp.setStyleSheet(styleSheet);
     styleSheetFile.close();
 
-    inviwo::InviwoMainWindow mainWin;
+    inviwo::InviwoMainWindow mainWin(&inviwoApp);
     // setup core application
     inviwoApp.setMainWindow(&mainWin);
     // initialize and show splash screen
@@ -76,7 +79,6 @@ int main(int argc, char** argv) {
     mainWin.initialize();
     inviwoApp.processEvents();
     splashScreen.showMessage("Loading workspace...");
-    mainWin.initializeWorkspace();
     inviwoApp.processEvents();
     mainWin.showWindow();
     inviwoApp.processEvents();    // Make sure the gui is done loading before loading workspace

@@ -31,12 +31,12 @@
 #define IVW_NETWORKEDITOR_H
 
 #include <inviwo/qt/editor/inviwoqteditordefine.h>
+#include <inviwo/qt/editor/networkeditorobserver.h>
 #include <inviwo/core/network/processornetworkevaluator.h>
-#include <inviwo/core/util/singleton.h>
 #include <inviwo/core/util/observer.h>
 #include <inviwo/core/processors/processorwidgetobserver.h>
 #include <inviwo/core/processors/processorpair.h>
-
+#include <inviwo/core/interaction/events/keyboardevent.h>
 #include <warn/push>
 #include <warn/ignore/all>
 #include <QGraphicsScene>
@@ -45,6 +45,7 @@
 #include <QThread>
 #include <QPointF>
 #include <QGraphicsSceneHelpEvent>
+#include <QMimeData>
 #include <warn/pop>
 
 namespace inviwo {
@@ -61,14 +62,8 @@ class ConnectionGraphicsItem;
 class ConnectionDragGraphicsItem;
 class LinkConnectionGraphicsItem;
 class LinkConnectionDragGraphicsItem;
-class PropertyListWidget;
 class LinkDialog;
-
-class NetworkEditorObserver : public Observer {
-public:
-    virtual void onNetworkEditorFileChanged(const std::string& newFilename) = 0;
-    virtual void onModifiedStatusChanged(const bool& newStatus) = 0;
-};
+class InviwoMainWindow;
 
 /**
  * The NetworkEditor supports interactive editing of a ProcessorNetwork. Processors can be added
@@ -78,7 +73,6 @@ public:
  * - inspector networks
  */
 class IVW_QTEDITOR_API NetworkEditor : public QGraphicsScene,
-                                       public Singleton<NetworkEditor>,
                                        public Observable<NetworkEditorObserver>,
                                        public ProcessorNetworkObserver {
 #include <warn/push>
@@ -86,7 +80,7 @@ class IVW_QTEDITOR_API NetworkEditor : public QGraphicsScene,
     Q_OBJECT
 #include <warn/pop>
 public:
-    NetworkEditor();
+    NetworkEditor(InviwoMainWindow* mainwindow);
     virtual ~NetworkEditor();
 
     void clearNetwork();
@@ -110,6 +104,12 @@ public:
      */
     bool loadNetwork(std::istream& stream, const std::string& path);
     bool loadNetwork(std::string fileName);
+
+    QByteArray copy() const;
+    QByteArray cut();
+    void paste(QByteArray data);
+    void selectAll();
+    void deleteSelection();
 
     std::string getCurrentFilename() const { return filename_; }
 
@@ -139,9 +139,6 @@ public:
 
     void updateLeds();
 
-    void setPropertyListWidget(PropertyListWidget* widget);
-    PropertyListWidget* getPropertyListWidget() const;
-
     // Overrides for ProcessorNetworkObserver
     virtual void onProcessorNetworkChange() override;
 
@@ -155,15 +152,7 @@ public:
     virtual void onProcessorNetworkDidRemoveLink(PropertyLink* propertyLink) override;
 
 public slots:
-    void contextMenuRenameProcessor(EditorGraphicsItem*);
     void contextMenuShowInspector(EditorGraphicsItem*);
-    void contextMenuDeleteProcessor(EditorGraphicsItem*);
-    void contextMenuShowHideWidget(EditorGraphicsItem*);
-    void contextMenuDeleteConnection(EditorGraphicsItem*);
-    void contextMenuDeleteLink(EditorGraphicsItem*);
-    void contextMenuEditLink(EditorGraphicsItem*);
-    void contextMenuResetTimeMeasurements(EditorGraphicsItem*);
-
     void resetAllTimeMeasurements();
 
 protected:
@@ -173,6 +162,10 @@ protected:
     virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* e) override;
 
     virtual void keyPressEvent(QKeyEvent* keyEvent) override;
+
+    void progagateEventToSelecedProcessors(KeyboardEvent &pressKeyEvent);
+
+
     virtual void keyReleaseEvent(QKeyEvent* keyEvent) override;
     virtual void contextMenuEvent(QGraphicsSceneContextMenuEvent* e) override;
 
@@ -190,18 +183,16 @@ protected:
     virtual bool event(QEvent* e) override;
 
 private:
+
     enum NetworkEditorFlags { None = 0, CanvasHidden = 1, UseOriginalCanvasSize = 1 << 2 };
 
     friend class ProcessorGraphicsItem;
     friend class ConnectionGraphicsItem;
 
     // Processors
-    ProcessorGraphicsItem* addProcessorRepresentations(Processor* processor, QPointF pos,
-                                                       bool showProcessor = true,
-                                                       bool selectProcessor = true);
+    ProcessorGraphicsItem* addProcessorRepresentations(Processor* processor);
     void removeProcessorRepresentations(Processor* processor);
-    ProcessorGraphicsItem* addProcessorGraphicsItem(Processor* processor, QPointF pos,
-                                                    bool visible = true, bool selected = true);
+    ProcessorGraphicsItem* addProcessorGraphicsItem(Processor* processor);
     void removeProcessorGraphicsItem(Processor* processor);
 
     // Connections
@@ -238,6 +229,8 @@ private:
 
     void drawBackground(QPainter* painter, const QRectF& rect) override;
 
+    void deleteItems(QList<QGraphicsItem*> items);
+
     typedef std::map<Processor*, ProcessorGraphicsItem*> ProcessorMap;
     typedef std::map<PortConnection*, ConnectionGraphicsItem*> ConnectionMap;
     typedef std::map<ProcessorPair, LinkConnectionGraphicsItem*> LinkMap;
@@ -252,11 +245,14 @@ private:
     ConnectionGraphicsItem* oldConnectionTarget_;
     ProcessorGraphicsItem* oldProcessorTarget_;
 
+    QList<QGraphicsItem*> toBeDeleted_;
+
     // Connection and link state
     ConnectionDragGraphicsItem* connectionCurve_;
     LinkConnectionDragGraphicsItem* linkCurve_;
 
-    PropertyListWidget* propertyListWidget_;
+    InviwoMainWindow* mainwindow_;
+    ProcessorNetwork* network_;
 
     static const int GRID_SPACING;
     std::string filename_;
@@ -286,19 +282,19 @@ public:
 class IVW_QTEDITOR_API PortInspectorEvent : public QEvent {
     Q_GADGET
 public:
-    PortInspectorEvent(Outport* port) : QEvent(PORT_INSPECTOR_EVENT), port_(port) {}
+    PortInspectorEvent(Outport* port) : QEvent(PortInspectorEventType), port_(port) {}
 
     static QEvent::Type type() {
-        if (PORT_INSPECTOR_EVENT == QEvent::None) {
-            PORT_INSPECTOR_EVENT = static_cast<QEvent::Type>(QEvent::registerEventType());
+        if (PortInspectorEventType == QEvent::None) {
+            PortInspectorEventType = static_cast<QEvent::Type>(QEvent::registerEventType());
         }
-        return PORT_INSPECTOR_EVENT;
+        return PortInspectorEventType;
     }
 
     Outport* port_;
 
 private:
-    static QEvent::Type PORT_INSPECTOR_EVENT;
+    static QEvent::Type PortInspectorEventType;
 };
 
 class SignalMapperObject : public QObject {

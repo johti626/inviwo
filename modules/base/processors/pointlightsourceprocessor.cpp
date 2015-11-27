@@ -59,12 +59,12 @@ PointLightSourceProcessor::PointLightSourceProcessor()
     , lighting_("lighting", "Light Parameters")
     , lightPowerProp_("lightPower", "Light power (%)", 50.f, 0.f, 100.f)
     , lightSize_("lightSize", "Light radius", 1.5f, 0.0f, 3.0f)
-    , lightDiffuse_("lightDiffuse", "Color", vec4(1.0f))
+    , lightDiffuse_("lightDiffuse", "Color", vec3(1.0f))
     , lightEnabled_("lightEnabled", "Enabled", true)
     , lightScreenPosEnabled_("lightScreenPosEnabled", "Screen Pos Enabled", false)
     , lightScreenPos_("lightScreenPos", "Light Screen Pos", vec2(0.7f), vec2(0.f), vec2(1.f))
     , interactionEvents_("interactionEvents", "Interaction Events")
-    , lightInteractionHandler_(&lightPosition_.position_, &camera_, &lightScreenPosEnabled_,
+    , lightInteractionHandler_(&lightPosition_, &camera_, &lightScreenPosEnabled_,
                                &lightScreenPos_)
     , lightSource_(std::make_shared<PointLight>()) {
     addPort(outport_);
@@ -127,8 +127,7 @@ void PointLightSourceProcessor::updatePointLightSource(PointLight* lightSource) 
     lightSource->setWorldMatrix(transformationMatrix);
 
     lightSource->setSize(vec2(lightSize_.get()));
-    vec3 diffuseLight = lightDiffuse_.get().xyz();
-    lightSource->setIntensity(lightPowerProp_.get() * diffuseLight);
+    lightSource->setIntensity(lightPowerProp_.get() * lightDiffuse_.get());
     lightSource->setEnabled(lightEnabled_.get());
 }
 
@@ -141,7 +140,7 @@ void PointLightSourceProcessor::handleInteractionEventsChanged() {
     lightInteractionHandler_.setHandleEventsOptions(interactionEvents_.get());
 }
 
-PointLightInteractionHandler::PointLightInteractionHandler(FloatVec3Property* pl,
+PointLightInteractionHandler::PointLightInteractionHandler(PositionProperty* pl,
                                                            CameraProperty* cam,
                                                            BoolProperty* screenPosEnabled,
                                                            FloatVec2Property* screenPos)
@@ -153,14 +152,18 @@ PointLightInteractionHandler::PointLightInteractionHandler(FloatVec3Property* pl
     , lookUp_(camera_->getLookUp())
     , lookTo_(0.f)
     , trackball_(this)
-    , interactionEventOption_(0) {
+    , interactionEventOption_(0)
+    , lightPositionWorldSpace_(lightPosition_->get())
+{
     // static_cast<TrackballObservable*>(&trackball_)->addObserver(this);
     camera_->onChange(this, &PointLightInteractionHandler::onCameraChanged);
+    lightPosition_->position_.onChange(
+        [this]() { lightPositionWorldSpace_ = lightPosition_->get(); });
 }
 
-void PointLightInteractionHandler::serialize(IvwSerializer& s) const {}
+void PointLightInteractionHandler::serialize(Serializer& s) const {}
 
-void PointLightInteractionHandler::deserialize(IvwDeserializer& d) {}
+void PointLightInteractionHandler::deserialize(Deserializer& d) {}
 
 void PointLightInteractionHandler::invokeEvent(Event* event) {
     // if(event->hasBeenUsed())
@@ -229,6 +232,9 @@ void PointLightInteractionHandler::onCameraChanged() {
     // This makes sure that the interaction with the light source is consistent with the direction
     // of the camera
     setLookUp(camera_->getLookUp());
+
+    // Update the light position (this only changes the light position if the reference frame is in view space)
+    lightPosition_->set(lightPositionWorldSpace_);
 }
 
 PointLightTrackball::PointLightTrackball(PointLightInteractionHandler* p)

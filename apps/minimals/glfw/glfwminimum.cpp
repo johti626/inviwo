@@ -38,6 +38,7 @@
 #include <modules/opengl/inviwoopengl.h>
 #include <modules/glfw/canvasglfw.h>
 
+#include <inviwo/core/common/defaulttohighperformancegpu.h>
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/common/inviwoapplication.h>
 #include <inviwo/core/network/processornetwork.h>
@@ -82,7 +83,7 @@ int main(int argc, char** argv) {
     std::vector<std::unique_ptr<ProcessorWidget>> widgets;
     try {
         if (!workspace.empty()) {
-            IvwDeserializer xmlDeserializer(workspace);
+            Deserializer xmlDeserializer(workspace);
             inviwoApp.getProcessorNetwork()->deserialize(xmlDeserializer);
             std::vector<Processor*> processors = inviwoApp.getProcessorNetwork()->getProcessors();
 

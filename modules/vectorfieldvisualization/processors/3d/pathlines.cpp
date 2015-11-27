@@ -29,6 +29,8 @@
 
 #include "pathlines.h"
 #include <inviwo/core/util/volumevectorsampler.h>
+#include <inviwo/core/datastructures/geometry/basicmesh.h>
+#include <inviwo/core/util/imagesampler.h>
 
 namespace inviwo {
 
@@ -50,6 +52,11 @@ PathLines::PathLines()
     , volume_("vectorvolume")
     , seedPoints_("seedpoints")
     , linesStripsMesh_("linesStripsMesh_")
+
+    , startT_("startT", "Start at timestep",0,0,1)
+    , numberOfSteps_("steps", "Number of steps", 100, 1, 1000)
+    , dt_("dt", "Stepsize (dt)", 0.001f, 0.0001f, 1.0f, 0.001f)
+
 
     , stepDirection_("stepDirection", "Step Direction")
     , integrationScheme_("integrationScheme", "Integration Scheme")
@@ -82,6 +89,10 @@ PathLines::PathLines()
 
     maxVelocity_.setReadOnly(true);
 
+    addProperty(startT_);
+    addProperty(numberOfSteps_);
+    addProperty(dt_);
+
     addProperty(stepDirection_);
     addProperty(integrationScheme_);
     addProperty(seedPointsSpace_);
@@ -106,7 +117,7 @@ void PathLines::process() {
     
     auto firstVol = data->at(0);
 
-    auto mesh = util::make_unique<BasicMesh>();
+    auto mesh = std::make_shared<BasicMesh>();
     mesh->setModelMatrix(firstVol->getModelMatrix());
     mesh->setWorldMatrix(firstVol->getWorldMatrix());
 
@@ -117,18 +128,12 @@ void PathLines::process() {
 
     float maxVelocity = 0;
     PathLineTracer tracer(data, integrationScheme_.get());
-
-    float startT_ = 0;
-    int numberOfSteps_ = 100;
-    double dt_ = 0.001;
    
 
     std::vector<BasicMesh::Vertex> vertices;
     for (const auto &seeds : seedPoints_) {
         for (auto &p : (*seeds)) {
             vec4 P = m * vec4(p, 1.0f);
-            auto indexBuffer =
-                mesh->addIndexBuffer(DrawType::LINES, ConnectivityType::STRIP_ADJACENCY);
             auto line = tracer.traceFrom(vec4(P.xyz(), startT_), numberOfSteps_, dt_,stepDirection_.get());
 
             auto position = line.getPositions().begin();
@@ -137,6 +142,9 @@ void PathLines::process() {
             auto size = line.getPositions().size();
             if (size == 0) continue;
 
+
+            auto indexBuffer =
+                mesh->addIndexBuffer(DrawType::LINES, ConnectivityType::STRIP_ADJACENCY);
             indexBuffer->add(0);
 
 
@@ -156,13 +164,13 @@ void PathLines::process() {
                 position++;
                 velocity++;
             }
-            indexBuffer->add(vertices.size() - 1);
+            indexBuffer->add(static_cast<std::uint32_t>(vertices.size()-1));
         }
     }
 
     mesh->addVertices(vertices);
 
-    linesStripsMesh_.setData(mesh.release());
+    linesStripsMesh_.setData(mesh);
     maxVelocity_.set(toString(maxVelocity));
 
 

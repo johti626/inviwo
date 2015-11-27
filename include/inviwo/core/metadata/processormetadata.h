@@ -34,10 +34,18 @@
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/metadata/metadata.h>
 #include <inviwo/core/metadata/positionmetadata.h>
+#include <inviwo/core/util/observer.h>
 
 namespace inviwo {
 
-class IVW_CORE_API ProcessorMetaData : public MetaData {
+class IVW_CORE_API ProcessorMetaDataObserver : public Observer {
+public:
+    virtual void onProcessorMetaDataPositionChange() {};
+    virtual void onProcessorMetaDataVisibilityChange() {};
+    virtual void onProcessorMetaDataSelectionChange() {};
+};
+
+class IVW_CORE_API ProcessorMetaData : public MetaData, public Observable<ProcessorMetaDataObserver>{
 public:
     ProcessorMetaData();
     ProcessorMetaData(const ProcessorMetaData& rhs);
@@ -47,8 +55,8 @@ public:
     virtual std::string getClassIdentifier() const { return CLASS_IDENTIFIER; }
     virtual ProcessorMetaData* clone() const;
 
-    virtual void serialize(IvwSerializer& s) const;
-    virtual void deserialize(IvwDeserializer& d);
+    virtual void serialize(Serializer& s) const;
+    virtual void deserialize(Deserializer& d);
     virtual bool equal(const MetaData& rhs) const;
 
     void setPosition(const ivec2& pos);

@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2012-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,26 +24,43 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#ifndef IVW_SERIALIZABLE_H
-#define IVW_SERIALIZABLE_H
+#ifndef IVW_PICKINGMAPPER_H
+#define IVW_PICKINGMAPPER_H
 
 #include <inviwo/core/common/inviwocoredefine.h>
+#include <inviwo/core/common/inviwo.h>
 
 namespace inviwo {
 
-class IvwSerializer;
-class IvwDeserializer;
-class IvwSerializeBase;
+class Processor;
+class PickingObject;
 
-class IVW_CORE_API IvwSerializable {
+/**
+ * \class PickingMapper
+ * \brief RAII tool for PickingObjects
+ */
+class IVW_CORE_API PickingMapper { 
 public:
-    virtual ~IvwSerializable() {}
-    virtual void serialize(IvwSerializer& s) const=0;
-    virtual void deserialize(IvwDeserializer& d)=0;
+    PickingMapper() = default;
+    PickingMapper(Processor* p, size_t size, std::function<void(const PickingObject*)> callback);
+    PickingMapper(const PickingMapper& rhs) = delete;
+    PickingMapper& operator=(const PickingMapper& that) = delete;
+    
+    PickingMapper(PickingMapper&& rhs);
+    PickingMapper& operator=(PickingMapper&& that);
+    ~PickingMapper();
+
+    const PickingObject* getPickingObject() const;
+
+private:
+    Processor* processor_ = nullptr;
+    const PickingObject* pickingObject_ = nullptr;
 };
 
-} //namespace
-#endif
+} // namespace
+
+#endif // IVW_PICKINGMAPPER_H
+

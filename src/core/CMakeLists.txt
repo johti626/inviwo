@@ -5,6 +5,7 @@ ivw_project(inviwo-core)
 #--------------------------------------------------------------------
 # Add header files
 set(HEADER_FILES
+    ${IVW_INCLUDE_DIR}/inviwo/core/common/defaulttohighperformancegpu.h
     ${IVW_INCLUDE_DIR}/inviwo/core/common/inviwo.h
     ${IVW_INCLUDE_DIR}/inviwo/core/common/inviwoapplication.h
     ${IVW_INCLUDE_DIR}/inviwo/core/common/inviwocore.h
@@ -80,9 +81,9 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/events/resizeevent.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/events/touchevent.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/interactionhandler.h
-    ${IVW_INCLUDE_DIR}/inviwo/core/interaction/pickingcallback.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/pickingcontainer.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/pickingmanager.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/interaction/pickingmapper.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/pickingobject.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/trackball.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/bytereaderutil.h
@@ -99,12 +100,12 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/io/rawvolumeramloader.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/rawvolumereader.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/deserializationerrorhandler.h
-    ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/ivwdeserializer.h
-    ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/ivwserializable.h  
-    ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/ivwserialization.h
-    ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/ivwserializebase.h    
-    ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/ivwserializeconstants.h    
-    ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/ivwserializer.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/deserializer.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/serializable.h  
+    ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/serialization.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/serializebase.h    
+    ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/serializeconstants.h    
+    ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/serializer.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/nodedebugger.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/serializationexception.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/serialization/ticpp.h
@@ -253,8 +254,8 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/util/tooltiphelper.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/utilities.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/vectoroperations.h
-    ${IVW_INCLUDE_DIR}/inviwo/core/util/volumevectorsampler.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/volumesampler.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/util/volumevectorsampler.h
 )
 ivw_group("Header Files" ${HEADER_FILES})
 
@@ -323,6 +324,7 @@ set(SOURCE_FILES
     interaction/interactionhandler.cpp
     interaction/pickingcontainer.cpp
     interaction/pickingmanager.cpp
+    interaction/pickingmapper.cpp
     interaction/pickingobject.cpp
     io/bytereaderutil.cpp
     io/datareader.cpp
@@ -338,10 +340,10 @@ set(SOURCE_FILES
     io/rawvolumeramloader.cpp
     io/rawvolumereader.cpp
     io/serialization/deserializationerrorhandler.cpp
-    io/serialization/ivwdeserializer.cpp
-    io/serialization/ivwserializebase.cpp
-    io/serialization/ivwserializeconstants.cpp
-    io/serialization/ivwserializer.cpp
+    io/serialization/deserializer.cpp
+    io/serialization/serializebase.cpp
+    io/serialization/serializeconstants.cpp
+    io/serialization/serializer.cpp
     io/serialization/nodedebugger.cpp
     io/serialization/serializationexception.cpp
     io/serialization/versionconverter.cpp
@@ -454,8 +456,8 @@ set(SOURCE_FILES
     util/tinydirinterface.cpp
     util/tooltiphelper.cpp
     util/utilities.cpp
-    util/volumevectorsampler.cpp
     util/volumesampler.cpp
+    util/volumevectorsampler.cpp
 )
 ivw_group("Source Files" ${SOURCE_FILES})
 
@@ -479,6 +481,7 @@ set(TEST_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/unittests/urlparser-test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unittests/volume-test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unittests/image-test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unittests/picking-test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unittests/stacktrace-test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unittests/metadata-test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unittests/network-test.cpp

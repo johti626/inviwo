@@ -75,7 +75,7 @@ namespace inviwo {
 class PropertyOwner;
 
 class IVW_CORE_API Property : public PropertyObservable,
-                              public IvwSerializable,
+                              public Serializable,
                               public MetaDataOwner {
 public:
     virtual std::string getClassIdentifier() const = 0;
@@ -160,8 +160,8 @@ public:
     virtual bool isPropertyModified() const;
     virtual void set(const Property* src);
 
-    virtual void serialize(IvwSerializer& s) const override;
-    virtual void deserialize(IvwDeserializer& d) override;
+    virtual void serialize(Serializer& s) const override;
+    virtual void deserialize(Deserializer& d) override;
 
     const BaseCallBack* onChange(std::function<void()> callback);
     void removeOnChange(const BaseCallBack* callback);
@@ -181,6 +181,10 @@ public:
 
     template <typename T, typename U>
     static void setStateAsDefault(T& property, const U& state);
+
+    template <typename P>
+    void autoLinkToProperty(const std::string& propertyPath);
+    const std::vector<std::pair<std::string, std::string>>& getAutoLinkToProperty() const;
 
 protected:
     void notifyAboutChange();
@@ -204,6 +208,9 @@ private:
     std::vector<PropertyWidget*> propertyWidgets_;
 
     PropertyWidget* initiatingWidget_;
+
+    std::vector<std::pair<std::string, std::string>> autoLinkTo_;
+
 };
 
 template <typename T>
@@ -222,6 +229,11 @@ void Property::setStateAsDefault(T& property, const U& state) {
     property = state;
     property.setCurrentStateAsDefault();
     property = tmp;
+}
+
+template <typename P>
+void Property::autoLinkToProperty(const std::string& propertyPath) {
+    autoLinkTo_.push_back(std::make_pair(P::processorInfo_.classIdentifier, propertyPath));
 }
 
 }  // namespace

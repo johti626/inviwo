@@ -39,11 +39,14 @@
 #include <inviwo/core/io/datawriterfactory.h>
 #include <inviwo/core/processors/processor.h>
 
+#include <warn/push>
+#include <warn/ignore/all>
 #include <QImage>
 #include <QDockWidget>
 #include <QGraphicsItem>
 #include <QPushButton>
 #include <QSizePolicy>
+#include <warn/pop>
 
 namespace inviwo {
 
@@ -412,7 +415,7 @@ void TransferFunctionPropertyDialog::importTransferFunction() {
     if (importFileDialog.exec()) {
         QString file = importFileDialog.selectedFiles().at(0);
         // TODO: we need to check whether it is a valid itf file!
-        IvwDeserializer deserializer(file.toLocal8Bit().constData());
+        Deserializer deserializer(file.toLocal8Bit().constData());
         TransferFunction tf;
         tf.deserialize(deserializer);
         tfProperty_->set(tf);
@@ -476,7 +479,7 @@ void TransferFunctionPropertyDialog::exportTransferFunction() {
             }
         }
         else if (fileExt.extension_ == "itf") {
-            IvwSerializer serializer(file);
+            Serializer serializer(file);
             tfProperty_->get().serialize(serializer);
             serializer.writeFile();
         }

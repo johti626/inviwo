@@ -38,9 +38,12 @@
 #include <inviwo/core/properties/ordinalproperty.h>
 #include <inviwo/qt/editor/connectiongraphicsitem.h>
 
+#include <warn/push>
+#include <warn/ignore/all>
 #include <QPen>
 #include <QPainter>
 #include <QGraphicsSceneMouseEvent>
+#include <warn/pop>
 
 namespace inviwo {
 
@@ -128,7 +131,7 @@ Inport* ProcessorInportGraphicsItem::getPort() { return port_; }
 
 void ProcessorInportGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent* e) {
     if(e->buttons() == Qt::LeftButton && port_->isConnected()) {
-        NetworkEditor::getPtr()->releaseConnection(this);
+        getNetworkEditor()->releaseConnection(this);
     }
     e->accept();
 }
@@ -155,7 +158,7 @@ Outport* ProcessorOutportGraphicsItem::getPort() { return port_; }
 
 void ProcessorOutportGraphicsItem::mousePressEvent(QGraphicsSceneMouseEvent* e) {
     if(e->buttons() == Qt::LeftButton) {
-        NetworkEditor::getPtr()->initiateConnection(this);
+        getNetworkEditor()->initiateConnection(this);
     }
     e->accept();
 }

@@ -32,6 +32,9 @@
 #include <inviwo/core/util/stringconversion.h>
 #include <inviwo/core/util/filesystem.h>
 #include <inviwo/core/common/inviwoapplication.h>
+
+#include <warn/push>
+#include <warn/ignore/all>
 #include <QFrame>
 #include <QVBoxLayout>
 #include <QTextBrowser>
@@ -50,16 +53,17 @@
 #include <QImageReader>
 #include <QImageWriter>
 #endif
+#include <warn/pop>
 
 namespace inviwo {
 
 /*
  * Paths: qthelp://org.inviwo/doc/<files>
- * 
+ *
  * This to do to generate info:
  * override css ( the default one is very large and make the text browser slow... )
  * Inviwo-dev\tools\doxygen\doc-qt\html> cp ..\..\style\qt-stylesheet.css .\doxygen.css
- * 
+ *
  * generate qch (compressed help)
  * Inviwo-dev\tools\doxygen\doc-qt\html> qhelpgenerator.exe -o ..\inviwo.qch .\index.qhp
  *
@@ -70,8 +74,11 @@ namespace inviwo {
  * Inviwo\Inviwo-dev\data\help> qcollectiongenerator.exe inviwo.qhcp -o inviwo.qhc
  */
 
-HelpWidget::HelpWidget(QWidget* parent)
-    : InviwoDockWidget(tr("Help"), parent), helpBrowser_(nullptr), helpEngine_(nullptr) {
+HelpWidget::HelpWidget(InviwoMainWindow* mainwindow)
+    : InviwoDockWidget(tr("Help"), mainwindow)
+    , mainwindow_(mainwindow)
+    , helpBrowser_(nullptr)
+    , helpEngine_(nullptr) {
     setObjectName("HelpWidget");
     setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
@@ -81,7 +88,7 @@ HelpWidget::HelpWidget(QWidget* parent)
     vLayout->setContentsMargins(0, 0, 0, 0);
 
     std::string helpfile =
-        InviwoApplication::getPtr()->getPath(InviwoApplication::PATH_HELP, "/inviwo.qhc");
+        mainwindow->getInviwoApplication()->getPath(InviwoApplication::PATH_HELP, "/inviwo.qhc");
 
     helpEngine_ = new QHelpEngineCore(QString::fromStdString(helpfile), this);
 
@@ -119,16 +126,12 @@ void HelpWidget::showDocForClassName(std::string classIdentifier) {
     }
 }
 
-
-HelpWidget::HelpBrowser::HelpBrowser(QWidget* parent, QHelpEngineCore* helpEngine)
-    : QTextBrowser(parent)
-    , helpEngine_(helpEngine) {
-
+HelpWidget::HelpBrowser::HelpBrowser(HelpWidget* parent, QHelpEngineCore* helpEngine)
+    : QTextBrowser(parent), helpwidget_(parent), helpEngine_(helpEngine) {
     setReadOnly(true);
     setUndoRedoEnabled(false);
     setContextMenuPolicy(Qt::NoContextMenu);
     setAcceptRichText(false);
-    
 }
 
 HelpWidget::HelpBrowser::~HelpBrowser() {}
@@ -142,7 +145,8 @@ QVariant HelpWidget::HelpBrowser::loadResource(int type, const QUrl& name) {
     if (query.hasQueryItem("classIdentifier")) {
         QString cid = query.queryItemValue("classIdentifier");
 
-        auto imageCache = InviwoApplication::getPtr()->getPath(InviwoApplication::PATH_SETTINGS);
+        auto imageCache = helpwidget_->mainwindow_->getInviwoApplication()->getPath(
+            InviwoApplication::PATH_SETTINGS);
         imageCache += "/image-cache";
         filesystem::createDirectoryRecursively(imageCache);
 
@@ -153,6 +157,7 @@ QVariant HelpWidget::HelpBrowser::loadResource(int type, const QUrl& name) {
             return img;
         } else {
             QImage img = utilqt::generatePreview(cid);
+            if (img.isNull()) return QVariant();
             QByteArray data;
             QBuffer buffer(&data);
             buffer.open(QIODevice::WriteOnly);
@@ -168,8 +173,8 @@ QVariant HelpWidget::HelpBrowser::loadResource(int type, const QUrl& name) {
 
 #ifdef IVW_DEBUG  // Look for the html in the doc-qt folder.
     if (type == QTextDocument::HtmlResource || type == QTextDocument::ImageResource) {
-        std::string docbase = InviwoApplication::getPtr()->getPath(InviwoApplication::PATH_DATA,
-                                                                   "/../tools/doxygen/doc-qt/html");
+        std::string docbase = helpwidget_->mainwindow_->getInviwoApplication()->getPath(
+            InviwoApplication::PATH_DATA, "/../tools/doxygen/doc-qt/html");
         QString file = name.toString();
         file.replace("qthelp://org.inviwo/doc", QString::fromStdString(docbase));
         QFile newfile(file);

@@ -31,10 +31,12 @@
 #include <inviwo/qt/editor/processorgraphicsitem.h>
 #include <inviwo/qt/editor/networkeditor.h>
 #include <inviwo/qt/editor/linkgraphicsitem.h>
-
+#include <warn/push>
+#include <warn/ignore/all>
 #include <QPen>
 #include <QPainter>
 #include <QGraphicsSceneMouseEvent>
+#include <warn/pop>
 
 namespace inviwo {
 
@@ -95,7 +97,7 @@ ProcessorLinkGraphicsItem::LinkItem::LinkItem(ProcessorLinkGraphicsItem* parent,
 ProcessorLinkGraphicsItem::LinkItem::~LinkItem() {}
 
 void ProcessorLinkGraphicsItem::LinkItem::mousePressEvent(QGraphicsSceneMouseEvent* e) {
-    NetworkEditor::getPtr()->initiateLink(parent_, e->scenePos());
+    getNetworkEditor()->initiateLink(parent_, e->scenePos());
     e->accept();
 }
 

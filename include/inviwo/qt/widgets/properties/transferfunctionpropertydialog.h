@@ -43,7 +43,10 @@
 #include <inviwo/qt/widgets/properties/ordinalminmaxpropertywidgetqt.h>
 #include <inviwo/qt/widgets/properties/optionpropertywidgetqt.h>
 #include <inviwo/core/properties/propertywidget.h>
+#include <inviwo/core/util/observer.h>
 
+#include <warn/push>
+#include <warn/ignore/all>
 #include <QCheckBox>
 #include <QColorDialog>
 #include <QGradientStops>
@@ -53,7 +56,8 @@
 #include <QPixmap>
 #include <QSpinBox>
 #include <QWheelEvent>
-#include <inviwo/core/util/observer.h>
+#include <warn/pop>
+
 
 namespace inviwo {
 

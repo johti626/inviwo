@@ -37,6 +37,7 @@
 #include <inviwo/core/ports/imageport.h>
 #include <inviwo/core/rendering/meshdrawer.h>
 #include <modules/opengl/shader/shader.h>
+#include <inviwo/core/properties/boolproperty.h>
 #include <vector>
 
 namespace inviwo {
@@ -77,6 +78,8 @@ protected:
     ImageInport imageInport_;
     ImageOutport outport_;
     Shader shader_;
+
+    BoolProperty enableDepthTest_;
 
 
     using DrawerMap = std::multimap<const Outport*, std::unique_ptr<MeshDrawer>>;

@@ -121,6 +121,7 @@ ProcessorGraphicsItem::ProcessorGraphicsItem(Processor* processor)
     processor_->ProcessorObservable::addObserver(this);
 
     processorMeta_ = processor->getMetaData<ProcessorMetaData>(ProcessorMetaData::CLASS_IDENTIFIER);
+    processorMeta_->addObserver(this);
 
     linkItem_ = new ProcessorLinkGraphicsItem(this);
 
@@ -163,6 +164,10 @@ ProcessorGraphicsItem::ProcessorGraphicsItem(Processor* processor)
     countLabel_->setFont(classFont);
     countLabel_->setTextWidth(width - 2*labelHeight);
     #endif
+
+    setVisible(processorMeta_->isVisible());
+    setSelected(processorMeta_->isSelected());
+    setPos(QPointF(processorMeta_->getPosition().x, processorMeta_->getPosition().y));
 }
 
 
@@ -177,6 +182,25 @@ void ProcessorGraphicsItem::addOutport(Outport *port){
     outportX += (25 / 2.0);
 }
 
+void ProcessorGraphicsItem::onProcessorMetaDataPositionChange() {
+    auto ipos = processorMeta_->getPosition();
+    auto qpos = QPointF(ipos.x, ipos.y);
+    if (qpos != pos()) {
+        setPos(qpos);
+    }
+}
+
+void ProcessorGraphicsItem::onProcessorMetaDataVisibilityChange() {
+    if (processorMeta_->isVisible() != isVisible()) {
+        setVisible(processorMeta_->isVisible());
+    }
+}
+
+void ProcessorGraphicsItem::onProcessorMetaDataSelectionChange() {
+    if (processorMeta_->isSelected() != isSelected()) {
+        setSelected(processorMeta_->isSelected());
+    }
+}
 
 ProcessorInportGraphicsItem* ProcessorGraphicsItem::getInportGraphicsItem(Inport* port) {
     return inportItems_[port];
@@ -295,8 +319,8 @@ void ProcessorGraphicsItem::snapToGrid() {
 }
 
 QVariant ProcessorGraphicsItem::itemChange(GraphicsItemChange change, const QVariant& value) {
-    #include <warn/push>
-    #include <warn/ignore/switch-enum>
+#include <warn/push>
+#include <warn/ignore/switch-enum>
     switch (change) {
         case QGraphicsItem::ItemPositionHasChanged:
             if (processorMeta_) processorMeta_->setPosition(ivec2(x(), y()));
@@ -304,10 +328,16 @@ QVariant ProcessorGraphicsItem::itemChange(GraphicsItemChange change, const QVar
         case QGraphicsItem::ItemSelectedHasChanged:
             if (isSelected()) {
                 setZValue(SELECTED_PROCESSORGRAPHICSITEM_DEPTH);
-                if (!highlight_) NetworkEditor::getPtr()->addPropertyWidgets(getProcessor());
+                if (!highlight_) {
+                    if (auto editor = getNetworkEditor()) {
+                        editor->addPropertyWidgets(getProcessor());
+                    }
+                }
             } else {
                 setZValue(PROCESSORGRAPHICSITEM_DEPTH);
-                NetworkEditor::getPtr()->removePropertyWidgets(getProcessor());
+                if (auto editor = getNetworkEditor()) {
+                    editor->removePropertyWidgets(getProcessor());
+                }
             }
             if (!highlight_ && processorMeta_) processorMeta_->setSelected(isSelected());
             break;
@@ -317,7 +347,7 @@ QVariant ProcessorGraphicsItem::itemChange(GraphicsItemChange change, const QVar
         default:
             break;
     }
-    #include <warn/pop>
+#include <warn/pop>
     return QGraphicsItem::itemChange(change, value);
 }
 

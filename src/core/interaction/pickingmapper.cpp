@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2013-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,74 +24,44 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#ifndef IVW_PICKINGCALLBACK_H
-#define IVW_PICKINGCALLBACK_H
-
-#include <inviwo/core/common/inviwo.h>
+#include <inviwo/core/interaction/pickingmapper.h>
+#include <inviwo/core/interaction/pickingobject.h>
+#include <inviwo/core/interaction/pickingmanager.h>
 
 namespace inviwo {
 
-class PickingObject;
+PickingMapper::PickingMapper(Processor* processor, size_t size,
+                             std::function<void(const PickingObject*)> callback)
+    : processor_(processor)
+    , pickingObject_(PickingManager::getPtr()->registerPickingCallback(callback, size)) {}
 
-class BasePickingCallBack {
-public:
-    BasePickingCallBack() {}
-    virtual ~BasePickingCallBack() {}
-    virtual void invoke(const PickingObject*) const=0;
-};
+PickingMapper::PickingMapper(PickingMapper&& rhs)
+    : processor_(rhs.processor_), pickingObject_(rhs.pickingObject_) {
+    rhs.processor_ = nullptr;
+    rhs.pickingObject_ = nullptr;
+}
 
-template <typename T>
-class MemberFunctionPickingCallback : public BasePickingCallBack {
-public:
-    MemberFunctionPickingCallback() {}
-    virtual ~MemberFunctionPickingCallback() {}
+PickingMapper& PickingMapper::operator=(PickingMapper&& that) {
+    if (this != &that) {
+        std::swap(that.processor_, processor_);
+        std::swap(that.pickingObject_, pickingObject_);
 
-    typedef void (T::*fPointerPicking)(const PickingObject*);
-
-    MemberFunctionPickingCallback(T* obj, fPointerPicking functionPtr)
-        : functionPtr_(functionPtr)
-        , obj_(obj) {}
-
-    void invoke(const PickingObject* p) const {
-        if (functionPtr_)(*obj_.*functionPtr_)(p);
+        that.processor_ = nullptr;
+        PickingManager::getPtr()->unregisterPickingObject(that.pickingObject_);
     }
+    return *this;
+}
 
-private:
-    fPointerPicking functionPtr_;
-    T* obj_;
-};
-
-class PickingCallback {
-public:
-    PickingCallback() : callBack_(nullptr) {}
-    virtual ~PickingCallback() {
-        deleteCallback();
+PickingMapper::~PickingMapper() {
+    if (pickingObject_) {
+        PickingManager::getPtr()->unregisterPickingObject(pickingObject_);
     }
+}
 
-    void invoke(const PickingObject* p) const {
-        if (callBack_)
-            callBack_->invoke(p);
-    }
-
-    template <typename T>
-    void addMemberFunction(T* o, void (T::*m)(const PickingObject*)) {
-        deleteCallback();
-        callBack_ = new MemberFunctionPickingCallback<T>(o,m);
-    }
-
-    void deleteCallback() {
-        delete callBack_;
-        callBack_ = nullptr;
-    }
-
-private:
-    BasePickingCallBack* callBack_;
-};
-
+const PickingObject* PickingMapper::getPickingObject() const { return pickingObject_; }
 
 } // namespace
 
-#endif // IVW_PICKINGCALLBACK_H

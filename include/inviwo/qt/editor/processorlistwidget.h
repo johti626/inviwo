@@ -65,18 +65,20 @@ private:
 };
 
 class IVW_QTEDITOR_API ProcessorTreeWidget : public InviwoDockWidget {
+#include <warn/push>
+#include <warn/ignore/all>
     Q_OBJECT
+#include <warn/pop>
 public:
     ProcessorTreeWidget(QWidget* parent, HelpWidget* helpWidget);
     ~ProcessorTreeWidget();
 
     void focusSearch();
+    void addSelectedProcessor();
 
 protected:
     bool processorFits(ProcessorFactoryObject* processor, const QString& filter);
     const QIcon* getCodeStateIcon(CodeState) const;
-
-    virtual void keyPressEvent(QKeyEvent *) override;
 
 private slots:
     void addProcessorsToTree();
@@ -84,6 +86,8 @@ private slots:
     void currentItemChanged(QTreeWidgetItem* current, QTreeWidgetItem* previous);
 
 private:
+    void addProcessor(std::string className);
+    
     
     QTreeWidgetItem* addToplevelItemTo(QString title);
     QTreeWidgetItem* addProcessorItemTo(QTreeWidgetItem* item,

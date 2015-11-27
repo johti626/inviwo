@@ -29,8 +29,10 @@
 
 #include <inviwo/qt/widgets/properties/stringmultilinepropertywidgetqt.h>
 #include <inviwo/qt/widgets/properties/compositepropertywidgetqt.h>
-
+#include <warn/push>
+#include <warn/ignore/all>
 #include <QFontMetrics>
+#include <warn/pop>
 
 namespace inviwo {
 
@@ -150,7 +152,7 @@ void MultilineTextEdit::adjustHeight() {
         glm::clamp(static_cast<int>(document()->size().height()), minLineCount_, maxLineCount_) *
         lineHeight_;
     QMargins margins(contentsMargins());
-    setFixedHeight(textHeight + margins.top() + margins.bottom());
+    setFixedHeight(static_cast<int>(textHeight + margins.top() + margins.bottom()));
 }
 
 }  // namespace

@@ -31,6 +31,7 @@
 #pragma comment(linker, "/SUBSYSTEM:CONSOLE")
 #endif
 
+#include <inviwo/core/common/defaulttohighperformancegpu.h>
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/network/processornetwork.h>
 #include <inviwo/core/network/processornetworkevaluator.h>
@@ -83,7 +84,7 @@ int main(int argc, char** argv) {
     try
     {
         if (!workspace.empty()) {
-            IvwDeserializer xmlDeserializer(workspace);
+            Deserializer xmlDeserializer(workspace);
             inviwoApp.getProcessorNetwork()->deserialize(xmlDeserializer);
             std::vector<Processor*> processors = inviwoApp.getProcessorNetwork()->getProcessors();
 
