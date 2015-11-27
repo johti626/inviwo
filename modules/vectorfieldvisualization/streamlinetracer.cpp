@@ -35,10 +35,10 @@
 namespace inviwo {
 
 StreamLineTracer::StreamLineTracer(const Volume *vol, IntegrationScheme integrationScheme)
-    : volumeSampler_(vol->getRepresentation<VolumeRAM>())
+    : IntegralLineTracer(integrationScheme)
+    , volumeSampler_(vol->getRepresentation<VolumeRAM>())
     , invBasis_(dmat3(glm::inverse(vol->getBasis())))
     , dimensions_(vol->getDimensions())
-    , integrationScheme_(integrationScheme)
 {}
 
 StreamLineTracer::~StreamLineTracer() {}
@@ -64,7 +64,7 @@ inviwo::IntegralLine StreamLineTracer::traceFrom(const dvec3 &p, int steps, doub
     }
 
     if (bwd) {
-        step(steps, p, line, -stepSize / (both ? 2 : 1), normalzieSample);
+        step(steps / (both ? 2 : 1), p, line, -stepSize , normalzieSample);
     }
     if (both && !line.positions_.empty()) {
         std::reverse(line.positions_.begin(),
@@ -76,7 +76,7 @@ inviwo::IntegralLine StreamLineTracer::traceFrom(const dvec3 &p, int steps, doub
         }
     }
     if (fwd) {
-        step(steps, p, line, stepSize / (both ? 2 : 1), normalzieSample);
+        step(steps / (both ? 2 : 1), p, line, stepSize, normalzieSample);
     }
 
     return line;

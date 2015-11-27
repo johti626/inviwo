@@ -33,17 +33,22 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(SpotLightSourceProcessor, "org.inviwo.Spotlightsource");
-ProcessorDisplayName(SpotLightSourceProcessor,  "Spot light source");
-ProcessorTags(SpotLightSourceProcessor, Tags::CPU);
-ProcessorCategory(SpotLightSourceProcessor, "Light source");
-ProcessorCodeState(SpotLightSourceProcessor, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo SpotLightSourceProcessor::processorInfo_{
+    "org.inviwo.Spotlightsource",  // Class identifier
+    "Spot light source",           // Display name
+    "Light source",                // Category
+    CodeState::Experimental,       // Code state
+    Tags::CPU,                     // Tags
+};
+const ProcessorInfo SpotLightSourceProcessor::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 SpotLightSourceProcessor::SpotLightSourceProcessor()
     : Processor()
     , outport_("SpotLightSource")
     , camera_("camera", "Camera", vec3(0.0f, 0.0f, -2.0f), vec3(0.0f, 0.0f, 0.0f),
-    vec3(0.0f, 1.0f, 0.0f), nullptr, VALID)
+    vec3(0.0f, 1.0f, 0.0f), nullptr, InvalidationLevel::Valid)
     , lightPosition_("lightPosition", "Light Source Position",
     FloatVec3Property("position", "Position", vec3(100.f), vec3(-100.f), vec3(100.f)), &camera_.get())
     , lighting_("lighting", "Light Parameters")
@@ -98,3 +103,4 @@ void SpotLightSourceProcessor::updateSpotLightSource(SpotLight* lightSource) {
 }
 
 } // namespace
+

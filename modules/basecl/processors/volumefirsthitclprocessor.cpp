@@ -37,11 +37,16 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(VolumeFirstHitCLProcessor, "org.inviwo.VolumeFirstHitCL");
-ProcessorDisplayName(VolumeFirstHitCLProcessor,  "Volume First Hit");
-ProcessorTags(VolumeFirstHitCLProcessor, Tags::CL);
-ProcessorCategory(VolumeFirstHitCLProcessor, "Volume Rendering");
-ProcessorCodeState(VolumeFirstHitCLProcessor, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo VolumeFirstHitCLProcessor::processorInfo_{
+    "org.inviwo.VolumeFirstHitCL",  // Class identifier
+    "Volume First Hit",             // Display name
+    "Volume Rendering",             // Category
+    CodeState::Experimental,        // Code state
+    Tags::CL,                       // Tags
+};
+const ProcessorInfo VolumeFirstHitCLProcessor::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 VolumeFirstHitCLProcessor::VolumeFirstHitCLProcessor()
     : Processor()
@@ -49,7 +54,7 @@ VolumeFirstHitCLProcessor::VolumeFirstHitCLProcessor()
     , volumePort_("volume")
     , entryPort_("entry-points")
     , exitPort_("exit-points")
-    , outport_("outport", DataVec4FLOAT32::get())
+    , outport_("outport", DataVec4Float32::get())
     , samplingRate_("samplingRate", "Sampling rate", 1.0f, 1.0f, 15.0f)
     , transferFunction_("transferFunction", "Transfer function", TransferFunction())
     , workGroupSize_("wgsize", "Work group size", ivec2(8, 8), ivec2(0), ivec2(256))
@@ -159,3 +164,4 @@ void VolumeFirstHitCLProcessor::firstHit(const cl::Image& volumeCL, const cl::Im
 }
 
 }  // namespace
+

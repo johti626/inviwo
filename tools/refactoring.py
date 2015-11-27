@@ -1,8 +1,8 @@
 import fnmatch
 import os
-import fileinput
 import re
 import codecs
+import sys
 
 try:
 	import colorama
@@ -38,39 +38,47 @@ def find_files(paths, extensions, excludes=[""]):
 	return matches
 
 def find_matches(files, expr):
-	r = re.compile(r"(" + expr +")")
+	r = re.compile(expr)
 	matches = []
 	for file in files:
 		match_in_file = False
-		with fileinput.input(file) as f:
-			for (i,line) in enumerate(f):
-				if r.search(line):
-					if not match_in_file: 
-						print_warn("Match in: " + file)
-						match_in_file = True
-					matched = r.sub(colorama.Fore.YELLOW+ r"\1"+ colorama.Style.RESET_ALL, line.rstrip())
-					print("{0:5d} {1:s}".format(i,matched))
+		with codecs.open(file, 'r', encoding="UTF-8") as f:
+			try:
+				for (i,line) in enumerate(f):
+					match = r.search(line) 
+					if match:
+						if not match_in_file: 
+							print_warn("Match in: " + file)
+							match_in_file = True
+						matched = colorama.Fore.YELLOW + match.group(0) + colorama.Style.RESET_ALL
+						print("{0:5d} {1:s}".format(i,matched))
+			except UnicodeDecodeError:
+				sys.exit("Encoding error: " + file)
+
 		if match_in_file:
 			matches.append(file)
 	return matches
 
-
 def replace_matches(files, expr, repl, dummy=False):
-	r = re.compile(r"(" + expr +")")
+	r = re.compile(expr)
 	for file in files:
 		match_in_file = False
 		
 		with open(file, "r") as f:
-			lines = f.readlines()
-		
+			try: 
+				lines = f.readlines()
+			except UnicodeDecodeError:
+				sys.exit("Encoding error: " + file) 
+
 		if not dummy:
 			with open(file, "w") as f:
 				for (i,line) in enumerate(lines):
-					if r.search(line):
+					match = r.search(line)
+					if match:
 						if not match_in_file: 
 							print_warn("Match in: " + file)
 							match_in_file = True
-						matched = r.sub(colorama.Fore.YELLOW+ r"\1"+ colorama.Style.RESET_ALL, line.rstrip())
+						matched = colorama.Fore.YELLOW + match.group(0) + colorama.Style.RESET_ALL
 						replaced = r.sub(colorama.Fore.RED + repl + colorama.Style.RESET_ALL, line.rstrip())
 						f.write(r.sub(repl, line))
 						print("- {0:5d} {1:s}".format(i,matched))
@@ -79,11 +87,12 @@ def replace_matches(files, expr, repl, dummy=False):
 						f.write(line)
 		else: 
 			for (i,line) in enumerate(lines):
-				if r.search(line):
+				match = r.search(line)
+				if match:
 					if not match_in_file: 
 						print_warn("Match in: " + file)
 						match_in_file = True
-					matched = r.sub(colorama.Fore.YELLOW+ r"\1"+ colorama.Style.RESET_ALL, line.rstrip())
+					matched = colorama.Fore.YELLOW + match.group(0) + colorama.Style.RESET_ALL
 					replaced = r.sub(colorama.Fore.RED + repl + colorama.Style.RESET_ALL, line.rstrip())
 					print("- {0:5d} {1:s}".format(i,matched))
 					print("+ {0:5d} {1:s}".format(i,replaced))
@@ -97,7 +106,7 @@ def check_file_type(files, enc):
 			fh.readlines()
 			fh.seek(0)
 		except UnicodeDecodeError:
-			print(f)
+			print_warn("Encoding error: " + f)
 			matches.append(f)
 
 	return matches
@@ -109,8 +118,7 @@ def convert_file(file, enc):
 	with open(file, 'w') as f:
 		f.write(text)
 
-
-source_extensions = ('*.cpp', '*.h')
+source_extensions = ['*.cpp', '*.h']
 
 # examples
 # in ipython "run tools/replace-in-files.py"

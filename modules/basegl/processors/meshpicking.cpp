@@ -37,11 +37,16 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(MeshPicking, "org.inviwo.GeometryPicking");
-ProcessorDisplayName(MeshPicking, "Mesh Picking");
-ProcessorTags(MeshPicking, Tags::GL);
-ProcessorCategory(MeshPicking, "Geometry Rendering");
-ProcessorCodeState(MeshPicking, CODE_STATE_STABLE);
+const ProcessorInfo MeshPicking::processorInfo_{
+    "org.inviwo.GeometryPicking",  // Class identifier
+    "Mesh Picking",                // Display name
+    "Geometry Rendering",          // Category
+    CodeState::Stable,             // Code state
+    Tags::GL,                      // Tags
+};
+const ProcessorInfo MeshPicking::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 MeshPicking::MeshPicking()
     : CompositeProcessorGL()
@@ -71,7 +76,7 @@ MeshPicking::MeshPicking()
     addProperty(camera_);
     addProperty(trackball_);
 
-    shader_.onReload([this]() { invalidate(INVALID_RESOURCES); });
+    shader_.onReload([this]() { invalidate(InvalidationLevel::InvalidResources); });
 
     widgetPickingObject_ = PickingManager::getPtr()->registerPickingCallback(
         this, &MeshPicking::updateWidgetPositionFromPicking);
@@ -93,7 +98,7 @@ void MeshPicking::updateWidgetPositionFromPicking(const PickingObject* p) {
     vec3 startWorld = camera_.getWorldPosFromNormalizedDeviceCoords(startNdc);
     vec3 endWorld = camera_.getWorldPosFromNormalizedDeviceCoords(endNdc);
     position_.set(position_.get() + (endWorld - startWorld));
-    invalidate(INVALID_OUTPUT);
+    invalidate(InvalidationLevel::InvalidOutput);
 }
 
 void MeshPicking::process() {
@@ -123,3 +128,4 @@ void MeshPicking::process() {
 }
 
 }  // namespace
+

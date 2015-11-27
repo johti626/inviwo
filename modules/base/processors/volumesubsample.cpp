@@ -33,11 +33,16 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(VolumeSubsample, "org.inviwo.VolumeSubsample");
-ProcessorDisplayName(VolumeSubsample, "Volume Subsample");
-ProcessorTags(VolumeSubsample, Tags::CPU);
-ProcessorCategory(VolumeSubsample, "Volume Operation");
-ProcessorCodeState(VolumeSubsample, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo VolumeSubsample::processorInfo_{
+    "org.inviwo.VolumeSubsample",  // Class identifier
+    "Volume Subsample",            // Display name
+    "Volume Operation",            // Category
+    CodeState::Experimental,       // Code state
+    Tags::CPU,                     // Tags
+};
+const ProcessorInfo VolumeSubsample::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 VolumeSubsample::VolumeSubsample()
     : Processor()
@@ -74,7 +79,7 @@ void VolumeSubsample::process() {
                         auto sample = subsample(volume, f);
                         dispatchFront([this]() {
                             dirty_ = true;
-                            invalidate(INVALID_OUTPUT);
+                            invalidate(InvalidationLevel::InvalidOutput);
                         });
                         return sample;
                     },
@@ -106,10 +111,11 @@ void VolumeSubsample::invalidate(InvalidationLevel invalidationLevel, Property* 
     PropertyOwner::invalidate(invalidationLevel, modifiedProperty);
 
     if (dirty_ || inport_.isChanged() || !enabled_.get()) {
-        outport_.invalidate(INVALID_OUTPUT);
+        outport_.invalidate(InvalidationLevel::InvalidOutput);
     }
 
     notifyObserversInvalidationEnd(this);
 }
 
 }  // inviwo namespace
+

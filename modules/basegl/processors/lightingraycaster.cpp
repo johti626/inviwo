@@ -41,11 +41,16 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(LightingRaycaster, "org.inviwo.LightingRaycaster");
-ProcessorDisplayName(LightingRaycaster,  "Lighting Raycaster");
-ProcessorTags(LightingRaycaster, Tags::GL);
-ProcessorCategory(LightingRaycaster, "Volume Rendering");
-ProcessorCodeState(LightingRaycaster, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo LightingRaycaster::processorInfo_{
+    "org.inviwo.LightingRaycaster",  // Class identifier
+    "Lighting Raycaster",            // Display name
+    "Volume Rendering",              // Category
+    CodeState::Experimental,         // Code state
+    Tags::GL,                        // Tags
+};
+const ProcessorInfo LightingRaycaster::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 LightingRaycaster::LightingRaycaster()
     : Processor()
@@ -56,14 +61,14 @@ LightingRaycaster::LightingRaycaster()
     , lightVolumePort_("lightVolume")
     , outport_("outport")
     , enableLightColor_("supportColoredLight", "Enable Light Color", false,
-                        INVALID_RESOURCES)
+                        InvalidationLevel::InvalidResources)
     , transferFunction_("transferFunction", "Transfer function", TransferFunction(), &volumePort_)
     , channel_("channel", "Render Channel")
     , raycasting_("raycaster", "Raycasting")
     , camera_("camera", "Camera")
     , lighting_("lighting", "Lighting") {
 
-    shader_.onReload([this]() { invalidate(INVALID_RESOURCES); });
+    shader_.onReload([this]() { invalidate(InvalidationLevel::InvalidResources); });
 
     addPort(volumePort_);
     addPort(entryPort_, "ImagePortGroup1");
@@ -145,3 +150,4 @@ void LightingRaycaster::deserialize(IvwDeserializer& d) {
 }
 
 } // namespace
+

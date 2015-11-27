@@ -39,11 +39,16 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(MultichannelRaycaster, "org.inviwo.MultichannelRaycaster");
-ProcessorDisplayName(MultichannelRaycaster,  "Multichannel Raycaster");
-ProcessorTags(MultichannelRaycaster, Tags::GL);
-ProcessorCategory(MultichannelRaycaster, "Volume Rendering");
-ProcessorCodeState(MultichannelRaycaster, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo MultichannelRaycaster::processorInfo_{
+    "org.inviwo.MultichannelRaycaster",  // Class identifier
+    "Multichannel Raycaster",            // Display name
+    "Volume Rendering",                  // Category
+    CodeState::Experimental,             // Code state
+    Tags::GL,                            // Tags
+};
+const ProcessorInfo MultichannelRaycaster::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 MultichannelRaycaster::MultichannelRaycaster()
     : Processor()
@@ -66,7 +71,7 @@ MultichannelRaycaster::MultichannelRaycaster()
     transferFunctions_.addProperty(new TransferFunctionProperty(
         "transferFunction4", "Channel 4", TransferFunction(), &volumePort_), false);
 
-    shader_.onReload([this]() { invalidate(INVALID_RESOURCES); });
+    shader_.onReload([this]() { invalidate(InvalidationLevel::InvalidResources); });
 
     addPort(volumePort_, "VolumePortGroup");
     addPort(entryPort_, "ImagePortGroup1");
@@ -159,3 +164,4 @@ void MultichannelRaycaster::deserialize(IvwDeserializer& d) {
 }
 
 }  // namespace
+

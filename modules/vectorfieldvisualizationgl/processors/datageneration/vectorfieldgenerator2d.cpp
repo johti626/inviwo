@@ -37,20 +37,25 @@
 
 namespace inviwo {
 
-    ProcessorClassIdentifier(VectorFieldGenerator2D, "org.inviwo.VectorFieldGenerator2D");
-    ProcessorDisplayName(VectorFieldGenerator2D, "Vector Field Generator 2D");
-    ProcessorTags(VectorFieldGenerator2D, "GL");
-    ProcessorCategory(VectorFieldGenerator2D, "Data Creation");
-    ProcessorCodeState(VectorFieldGenerator2D, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo VectorFieldGenerator2D::processorInfo_{
+    "org.inviwo.VectorFieldGenerator2D",  // Class identifier
+    "Vector Field Generator 2D",          // Display name
+    "Data Creation",                      // Category
+    CodeState::Experimental,              // Code state
+    "GL",                                 // Tags
+};
+const ProcessorInfo VectorFieldGenerator2D::getProcessorInfo() const {
+    return processorInfo_;
+}
 
     VectorFieldGenerator2D::VectorFieldGenerator2D()
         : Processor()
-        , outport_("outport", DataVec4FLOAT32::get(),false)
+        , outport_("outport", DataVec4Float32::get(),false)
         , shader_("vectorfieldgenerator2d.frag", false)
         , fbo_()
         , size_("size", "Volume size", ivec2(16), ivec2(1), ivec2(1024))
-        , xValue_("x", "X", "-x", INVALID_RESOURCES)
-        , yValue_("y", "Y", "y", INVALID_RESOURCES)
+        , xValue_("x", "X", "-x", InvalidationLevel::InvalidResources)
+        , yValue_("y", "Y", "y", InvalidationLevel::InvalidResources)
         , xRange_("xRange", "X Range", -1, 1, -10, 10)
         , yRange_("yRange", "Y Range", -1, 1, -10, 10)
     {
@@ -78,7 +83,7 @@ void VectorFieldGenerator2D::initializeResources() {
 
 void VectorFieldGenerator2D::process() {
 
-    image_ = std::make_shared<Image>(size_.get(), DataVec4FLOAT32::get());
+    image_ = std::make_shared<Image>(size_.get(), DataVec4Float32::get());
 
     utilgl::activateAndClearTarget(*(image_.get()), ImageType::ColorOnly);
 
@@ -97,4 +102,5 @@ void VectorFieldGenerator2D::process() {
 }
 
 } // namespace
+
 

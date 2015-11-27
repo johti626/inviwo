@@ -41,6 +41,8 @@
 #include <inviwo/core/properties/optionproperty.h>
 #include <inviwo/core/properties/boolproperty.h>
 
+#include <modules/vectorfieldvisualization/ports/seedpointsport.h>
+
 namespace inviwo {
 
 /** \docpage{<classIdentifier>, StreamRibbons}
@@ -66,7 +68,8 @@ namespace inviwo {
  */
 class IVW_MODULE_VECTORFIELDVISUALIZATION_API StreamRibbons : public Processor {
 public:
-    InviwoProcessorInfo();
+    virtual const ProcessorInfo getProcessorInfo() const override;
+    static const ProcessorInfo processorInfo_;
     StreamRibbons();
     virtual ~StreamRibbons() {}
 
@@ -76,7 +79,7 @@ protected:
 private:
     VolumeInport vectorVolume_;
     VolumeInport vorticityVolume_;
-    DataInport<std::vector<vec3>, 0> seedPoints_;
+    SeedPointsInport seedPoints_;
 
     IntProperty numberOfSteps_;
     FloatProperty stepSize_;

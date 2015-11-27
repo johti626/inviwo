@@ -35,11 +35,16 @@
 namespace inviwo {
 
 // The Class Identifier has to be globally unique. Use a reverse DNS naming scheme
-ProcessorClassIdentifier(PixelToBufferProcessor, "org.inviwo.PixelToBufferProcessor");
-ProcessorDisplayName(PixelToBufferProcessor, "Pixel to buffer");
-ProcessorTags(PixelToBufferProcessor, Tags::CPU);
-ProcessorCategory(PixelToBufferProcessor, "Image Operation");
-ProcessorCodeState(PixelToBufferProcessor, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo PixelToBufferProcessor::processorInfo_{
+    "org.inviwo.PixelToBufferProcessor",  // Class identifier
+    "Pixel to buffer",                    // Display name
+    "Image Operation",                    // Category
+    CodeState::Experimental,              // Code state
+    Tags::CPU,                            // Tags
+};
+const ProcessorInfo PixelToBufferProcessor::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 PixelToBufferProcessor::PixelToBufferProcessor()
     : Processor()
@@ -48,7 +53,7 @@ PixelToBufferProcessor::PixelToBufferProcessor()
     , pixelValues_("pixelValues")
     , fromPixel_("fromPixel", "From pixel", ivec2(0), ivec2(0), ivec2(1))
     , channel_("channel", "Channel", 0, 0, 3)
-    , clearValues_("clearValues", "Clear collected values", VALID)
+    , clearValues_("clearValues", "Clear collected values", InvalidationLevel::Valid)
     , handleInteractionEvents_("handleEvents", "Enable picking", false)
     , values_(std::make_shared<PosBuffer>()) {
 
@@ -88,7 +93,7 @@ void PixelToBufferProcessor::setPixelToCollectFrom(const ivec2& xy) { fromPixel_
 
 void PixelToBufferProcessor::clearOutput() {
     values_->getEditableRepresentation<BufferRAMPrecision<double>>()->setSize(0);
-    invalidate(INVALID_OUTPUT);
+    invalidate(InvalidationLevel::InvalidOutput);
 }
 
 void PixelToBufferProcessor::handleInteractionEventsChanged() {
@@ -116,3 +121,4 @@ void PixelToBufferProcessor::invokeEvent(Event* event) {
 }
 
 }  // namespace
+

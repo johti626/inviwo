@@ -39,11 +39,16 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(SurfaceExtraction, "org.inviwo.SurfaceExtraction");
-ProcessorDisplayName(SurfaceExtraction, "Surface Extraction");
-ProcessorTags(SurfaceExtraction, Tags::CPU);
-ProcessorCategory(SurfaceExtraction, "Geometry Creation");
-ProcessorCodeState(SurfaceExtraction, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo SurfaceExtraction::processorInfo_{
+    "org.inviwo.SurfaceExtraction",  // Class identifier
+    "Surface Extraction",            // Display name
+    "Geometry Creation",             // Category
+    CodeState::Experimental,         // Code state
+    Tags::CPU,                       // Tags
+};
+const ProcessorInfo SurfaceExtraction::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 // TODO make changing color not rerun extraction but only change the color, (and run only
 // extraction when volume change or iso change)
@@ -119,7 +124,7 @@ void SurfaceExtraction::process() {
 
                             dispatchFront([this]() {
                                 dirty_ = true;
-                                invalidate(INVALID_OUTPUT);
+                                invalidate(InvalidationLevel::InvalidOutput);
                             });
 
                             return m;
@@ -194,7 +199,7 @@ void SurfaceExtraction::invalidate(InvalidationLevel invalidationLevel,
     notifyObserversInvalidationBegin(this);
     PropertyOwner::invalidate(invalidationLevel, modifiedProperty);
 
-    if (dirty_ || volume_.isChanged()) outport_.invalidate(INVALID_OUTPUT);
+    if (dirty_ || volume_.isChanged()) outport_.invalidate(InvalidationLevel::InvalidOutput);
 
     notifyObserversInvalidationEnd(this);
 }
@@ -227,3 +232,4 @@ SurfaceExtraction::task& SurfaceExtraction::task::operator=(task&& that) {
 }
 
 }  // namespace
+

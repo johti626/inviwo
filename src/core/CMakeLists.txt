@@ -150,10 +150,12 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/processors/processor.h
     ${IVW_INCLUDE_DIR}/inviwo/core/processors/processorfactory.h
     ${IVW_INCLUDE_DIR}/inviwo/core/processors/processorfactoryobject.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/processors/processorinfo.h
     ${IVW_INCLUDE_DIR}/inviwo/core/processors/processorobserver.h
     ${IVW_INCLUDE_DIR}/inviwo/core/processors/processorpair.h
     ${IVW_INCLUDE_DIR}/inviwo/core/processors/processorstate.h
     ${IVW_INCLUDE_DIR}/inviwo/core/processors/processortags.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/processors/processortraits.h
     ${IVW_INCLUDE_DIR}/inviwo/core/processors/processorwidget.h
     ${IVW_INCLUDE_DIR}/inviwo/core/processors/processorwidgetfactory.h
     ${IVW_INCLUDE_DIR}/inviwo/core/processors/processorwidgetobserver.h
@@ -251,6 +253,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/util/tooltiphelper.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/utilities.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/vectoroperations.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/util/volumevectorsampler.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/volumesampler.h
 )
 ivw_group("Header Files" ${HEADER_FILES})
@@ -321,7 +324,6 @@ set(SOURCE_FILES
     interaction/pickingcontainer.cpp
     interaction/pickingmanager.cpp
     interaction/pickingobject.cpp
-    interaction/trackball.cpp
     io/bytereaderutil.cpp
     io/datareader.cpp
     io/datareaderdialog.cpp
@@ -376,6 +378,7 @@ set(SOURCE_FILES
     processors/canvasprocessorwidget.cpp
     processors/processor.cpp
     processors/processorfactory.cpp
+    processors/processorinfo.cpp
     processors/processorpair.cpp
     processors/processortags.cpp
     processors/processorwidget.cpp
@@ -451,6 +454,7 @@ set(SOURCE_FILES
     util/tinydirinterface.cpp
     util/tooltiphelper.cpp
     util/utilities.cpp
+    util/volumevectorsampler.cpp
     util/volumesampler.cpp
 )
 ivw_group("Source Files" ${SOURCE_FILES})

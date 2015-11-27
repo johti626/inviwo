@@ -37,11 +37,16 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(ImageLayoutGL, "org.inviwo.ImageLayoutGL");
-ProcessorDisplayName(ImageLayoutGL, "Image Layout");
-ProcessorTags(ImageLayoutGL, Tags::GL);
-ProcessorCategory(ImageLayoutGL, "Image Operation");
-ProcessorCodeState(ImageLayoutGL, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo ImageLayoutGL::processorInfo_{
+    "org.inviwo.ImageLayoutGL",  // Class identifier
+    "Image Layout",              // Display name
+    "Image Operation",           // Category
+    CodeState::Experimental,     // Code state
+    Tags::GL,                    // Tags
+};
+const ProcessorInfo ImageLayoutGL::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 ImageLayoutGL::ImageLayoutGL()
     : Processor()
@@ -59,7 +64,7 @@ ImageLayoutGL::ImageLayoutGL()
     , currentLayout_(Layout::CrossSplit)
     , currentDim_(0u, 0u) {
     
-    shader_.onReload([this]() { invalidate(INVALID_RESOURCES); });
+    shader_.onReload([this]() { invalidate(InvalidationLevel::InvalidResources); });
 
     addPort(multiinport_);
     
@@ -302,3 +307,4 @@ void ImageLayoutGL::updateViewports(ivec2 dim, bool force) {
 
 
 }  // namespace
+

@@ -36,18 +36,23 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(ImageExport, "org.inviwo.ImageExport");
-ProcessorDisplayName(ImageExport,  "Image Export");
-ProcessorTags(ImageExport, Tags::CPU);
-ProcessorCategory(ImageExport, "Data Output");
-ProcessorCodeState(ImageExport, CODE_STATE_STABLE);
+const ProcessorInfo ImageExport::processorInfo_{
+    "org.inviwo.ImageExport",  // Class identifier
+    "Image Export",            // Display name
+    "Data Output",             // Category
+    CodeState::Stable,         // Code state
+    Tags::CPU,                 // Tags
+};
+const ProcessorInfo ImageExport::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 ImageExport::ImageExport()
     : Processor()
     , imagePort_("image")
     , imageFile_("imageFileName", "Image file name",
                   InviwoApplication::getPtr()->getPath(InviwoApplication::PATH_IMAGES, "/newimage.png") , "image")
-    , exportImageButton_("snapshot", "Export Image", VALID)
+    , exportImageButton_("snapshot", "Export Image", InvalidationLevel::Valid)
     , overwrite_("overwrite", "Overwrite", false)
     , exportQueued_(false){
     std::vector<FileExtension> ext = DataWriterFactory::getPtr()->getExtensionsForType<Image>();
@@ -68,14 +73,6 @@ ImageExport::ImageExport()
 }
 
 ImageExport::~ImageExport() {}
-
-void ImageExport::initialize() {
-    Processor::initialize();
-}
-
-void ImageExport::deinitialize() {
-    Processor::deinitialize();
-}
 
 void ImageExport::exportImage() {
     if(!isValid()){
@@ -124,3 +121,4 @@ void ImageExport::processExport(){
 }
 
 }// namespace
+

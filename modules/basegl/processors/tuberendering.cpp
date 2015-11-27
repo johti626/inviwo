@@ -47,11 +47,16 @@ http://prideout.net/blog/?p=61
 namespace inviwo {
 
 // The Class Identifier has to be globally unique. Use a reverse DNS naming scheme
-ProcessorClassIdentifier(TubeRendering,  "org.inviwo.TubeRendering")
-ProcessorDisplayName(TubeRendering,  "Tube Rendering")
-ProcessorTags(TubeRendering, Tags::GL);
-ProcessorCategory(TubeRendering, "Rendering");
-ProcessorCodeState(TubeRendering, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo TubeRendering::processorInfo_{
+    "org.inviwo.TubeRendering",  // Class identifier
+    "Tube Rendering",            // Display name
+    "Rendering",                 // Category
+    CodeState::Experimental,     // Code state
+    Tags::GL,                    // Tags
+};
+const ProcessorInfo TubeRendering::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 TubeRendering::TubeRendering()
     : Processor()
@@ -81,7 +86,7 @@ TubeRendering::TubeRendering()
     
     mesh_.onChange([this]() {drawer_ = nullptr; });
 
-    shader_.onReload([this]() { invalidate(INVALID_OUTPUT); });
+    shader_.onReload([this]() { invalidate(InvalidationLevel::InvalidOutput); });
 }
     
 void TubeRendering::process() {
@@ -120,4 +125,5 @@ void TubeRendering::initializeResources()
 }
 
 } // namespace
+
 

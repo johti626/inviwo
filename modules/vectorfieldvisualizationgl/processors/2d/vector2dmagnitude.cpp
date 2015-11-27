@@ -36,16 +36,21 @@
 namespace inviwo {
 
 // The Class Identifier has to be globally unique. Use a reverse DNS naming scheme
-ProcessorClassIdentifier(Vector2DMagnitude,  "org.inviwo.Vector2DMagnitude");
-ProcessorDisplayName(Vector2DMagnitude,  "Vector 2D Magnitude");
-ProcessorTags(Vector2DMagnitude, Tags::GL);
-ProcessorCategory(Vector2DMagnitude, "Vector Field Topology");
-ProcessorCodeState(Vector2DMagnitude, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo Vector2DMagnitude::processorInfo_{
+    "org.inviwo.Vector2DMagnitude",  // Class identifier
+    "Vector 2D Magnitude",           // Display name
+    "Vector Field Topology",         // Category
+    CodeState::Experimental,         // Code state
+    Tags::GL,                        // Tags
+};
+const ProcessorInfo Vector2DMagnitude::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 Vector2DMagnitude::Vector2DMagnitude()
     : Processor()
     , inport_("inport",true)
-    , outport_("outport",DataVec4FLOAT32::get())
+    , outport_("outport",DataVec4Float32::get())
     , shader_("vector2dmagnitude.frag")
 {
     
@@ -67,4 +72,5 @@ void Vector2DMagnitude::process() {
 }
 
 } // namespace
+
 

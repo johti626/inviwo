@@ -43,6 +43,8 @@
 #include <inviwo/core/properties/minmaxproperty.h>
 #include <inviwo/core/properties/optionproperty.h>
 
+#include <modules/vectorfieldvisualization/ports/seedpointsport.h>
+
 #include <random>
 
 namespace inviwo {
@@ -70,7 +72,8 @@ namespace inviwo {
  */
 class IVW_MODULE_VECTORFIELDVISUALIZATION_API SeedPointGenerator : public Processor { 
 public:
-    InviwoProcessorInfo();
+    virtual const ProcessorInfo getProcessorInfo() const override;
+    static const ProcessorInfo processorInfo_;
     SeedPointGenerator();
     virtual ~SeedPointGenerator() = default;
      
@@ -80,8 +83,8 @@ public:
     void onGeneratorChange();
 
 private:
-    DataOutport<std::vector<vec3>> seedPoints_;
-
+    SeedPointsOutport seedPoints_;
+    
     CompositeProperty lineGroup_;
     CompositeProperty planeGroup_;
     CompositeProperty sphereGroup_;

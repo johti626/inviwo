@@ -47,7 +47,7 @@ namespace inviwo {
  * @return Default ImageFormat created by the constructor
  * if a corresponding format does not exist, otherwise an ImageFormat with corresponding channel and data type.
  */
-IVW_MODULE_OPENCL_API cl::ImageFormat dataFormatToCLImageFormat(DataFormatEnums::Id format);
+IVW_MODULE_OPENCL_API cl::ImageFormat dataFormatToCLImageFormat(DataFormatId format);
 
 /**
  * \class CLFormats
@@ -63,16 +63,16 @@ class IVW_MODULE_OPENCL_API CLFormats{
 
 public:
 
-    enum Normalization {
-        NONE,
-        NORMALIZED,
-        SIGN_NORMALIZED
+    enum class Normalization {
+        None,
+        Normalized,
+        SignNormalized,
     };
 
     struct CLFormat {
         CLFormat()
             : format(cl::ImageFormat(CL_R, CL_UNORM_INT8))
-            , normalization(NONE)
+            , normalization(Normalization::None)
             , scaling(1.f)
             , valid(false) {}
         CLFormat(const cl::ImageFormat& f, Normalization n, float sc = 1.f)
@@ -93,41 +93,41 @@ public:
 
     CLFormats() {
         //1 channel
-        CLFormatArray_[DataFormatEnums::FLOAT16]     = CLFormat(CL_R, CL_HALF_FLOAT, NONE);
-        CLFormatArray_[DataFormatEnums::FLOAT32]     = CLFormat(CL_R, CL_FLOAT, NONE);
-        CLFormatArray_[DataFormatEnums::INT8]        = CLFormat(CL_R, CL_SNORM_INT8, SIGN_NORMALIZED);
-        CLFormatArray_[DataFormatEnums::INT16]       = CLFormat(CL_R, CL_SNORM_INT16, SIGN_NORMALIZED);
-        CLFormatArray_[DataFormatEnums::INT32]       = CLFormat(CL_R, CL_SIGNED_INT32, NONE);
-        CLFormatArray_[DataFormatEnums::UINT8]       = CLFormat(CL_R, CL_UNORM_INT8, NORMALIZED);
-        CLFormatArray_[DataFormatEnums::UINT16]      = CLFormat(CL_R, CL_UNORM_INT16, NORMALIZED);
-        CLFormatArray_[DataFormatEnums::UINT32]      = CLFormat(CL_R, CL_UNSIGNED_INT32, NONE);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Float16)] = CLFormat(CL_R, CL_HALF_FLOAT, Normalization::None);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Float32)] = CLFormat(CL_R, CL_FLOAT, Normalization::None);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Int8)] = CLFormat(CL_R, CL_SNORM_INT8, Normalization::SignNormalized);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Int16)] = CLFormat(CL_R, CL_SNORM_INT16, Normalization::SignNormalized);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Int32)] = CLFormat(CL_R, CL_SIGNED_INT32, Normalization::None);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::UInt8)] = CLFormat(CL_R, CL_UNORM_INT8, Normalization::Normalized);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::UInt16)] = CLFormat(CL_R, CL_UNORM_INT16, Normalization::Normalized);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::UInt32)] = CLFormat(CL_R, CL_UNSIGNED_INT32, Normalization::None);
         //2 channels
-        CLFormatArray_[DataFormatEnums::Vec2FLOAT16] = CLFormat(CL_RG, CL_HALF_FLOAT, NONE);
-        CLFormatArray_[DataFormatEnums::Vec2FLOAT32] = CLFormat(CL_RG, CL_FLOAT, NONE);
-        CLFormatArray_[DataFormatEnums::Vec2INT8]    = CLFormat(CL_RG, CL_SNORM_INT8, SIGN_NORMALIZED);
-        CLFormatArray_[DataFormatEnums::Vec2INT16]   = CLFormat(CL_RG, CL_SNORM_INT16, SIGN_NORMALIZED);
-        CLFormatArray_[DataFormatEnums::Vec2INT32]   = CLFormat(CL_RG, CL_SIGNED_INT32, NONE);
-        CLFormatArray_[DataFormatEnums::Vec2UINT8]   = CLFormat(CL_RG, CL_UNORM_INT8, NORMALIZED);
-        CLFormatArray_[DataFormatEnums::Vec2UINT16]  = CLFormat(CL_RG, CL_UNORM_INT16, NORMALIZED);
-        CLFormatArray_[DataFormatEnums::Vec2UINT32]  = CLFormat(CL_RG, CL_UNSIGNED_INT32, NONE);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Vec2Float16)] = CLFormat(CL_RG, CL_HALF_FLOAT, Normalization::None);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Vec2Float32)] = CLFormat(CL_RG, CL_FLOAT, Normalization::None);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Vec2Int8)] = CLFormat(CL_RG, CL_SNORM_INT8, Normalization::SignNormalized);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Vec2Int16)] = CLFormat(CL_RG, CL_SNORM_INT16, Normalization::SignNormalized);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Vec2Int32)] = CLFormat(CL_RG, CL_SIGNED_INT32, Normalization::None);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Vec2UInt8)] = CLFormat(CL_RG, CL_UNORM_INT8, Normalization::Normalized);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Vec2UInt16)] = CLFormat(CL_RG, CL_UNORM_INT16, Normalization::Normalized);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Vec2UInt32)] = CLFormat(CL_RG, CL_UNSIGNED_INT32, Normalization::None);
         //3 channels
         // Not supported
 
         //4 channels
-        CLFormatArray_[DataFormatEnums::Vec4FLOAT16] = CLFormat(CL_RGBA, CL_HALF_FLOAT, NONE);
-        CLFormatArray_[DataFormatEnums::Vec4FLOAT32] = CLFormat(CL_RGBA, CL_FLOAT, NONE);
-        CLFormatArray_[DataFormatEnums::Vec4INT8]    = CLFormat(CL_RGBA, CL_SNORM_INT8, SIGN_NORMALIZED);
-        CLFormatArray_[DataFormatEnums::Vec4INT16]   = CLFormat(CL_RGBA, CL_SNORM_INT16, SIGN_NORMALIZED);
-        CLFormatArray_[DataFormatEnums::Vec4INT32]   = CLFormat(CL_RGBA, CL_SIGNED_INT32, NONE);
-        CLFormatArray_[DataFormatEnums::Vec4UINT8]   = CLFormat(CL_RGBA, CL_UNORM_INT8, NORMALIZED);
-        CLFormatArray_[DataFormatEnums::Vec4UINT16]  = CLFormat(CL_RGBA, CL_UNORM_INT16, NORMALIZED);
-        CLFormatArray_[DataFormatEnums::Vec4UINT32]  = CLFormat(CL_RGBA, CL_UNSIGNED_INT32, NONE);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Vec4Float16)] = CLFormat(CL_RGBA, CL_HALF_FLOAT, Normalization::None);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Vec4Float32)] = CLFormat(CL_RGBA, CL_FLOAT, Normalization::None);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Vec4Int8)] = CLFormat(CL_RGBA, CL_SNORM_INT8, Normalization::SignNormalized);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Vec4Int16)] = CLFormat(CL_RGBA, CL_SNORM_INT16, Normalization::SignNormalized);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Vec4Int32)] = CLFormat(CL_RGBA, CL_SIGNED_INT32, Normalization::None);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Vec4UInt8)] = CLFormat(CL_RGBA, CL_UNORM_INT8, Normalization::Normalized);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Vec4UInt16)] = CLFormat(CL_RGBA, CL_UNORM_INT16, Normalization::Normalized);
+        CLFormatArray_[static_cast<size_t>(DataFormatId::Vec4UInt32)] = CLFormat(CL_RGBA, CL_UNSIGNED_INT32, Normalization::None);
     };
 
-    CLFormat getCLFormat(DataFormatEnums::Id id) const;
+    CLFormat getCLFormat(DataFormatId id) const;
 
 private:
-    CLFormat CLFormatArray_[DataFormatEnums::NUMBER_OF_FORMATS];
+    CLFormat CLFormatArray_[static_cast<size_t>(DataFormatId::NumberOfFormats)];
 };
 
 static const CLFormats CLFormats_ = CLFormats();

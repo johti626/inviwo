@@ -37,11 +37,16 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(VolumeCombiner, "org.inviwo.VolumeCombiner");
-ProcessorDisplayName(VolumeCombiner, "Volume Combiner");
-ProcessorTags(VolumeCombiner, Tags::GL);
-ProcessorCategory(VolumeCombiner, "Volume Operation");
-ProcessorCodeState(VolumeCombiner, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo VolumeCombiner::processorInfo_{
+    "org.inviwo.VolumeCombiner",  // Class identifier
+    "Volume Combiner",            // Display name
+    "Volume Operation",           // Category
+    CodeState::Experimental,      // Code state
+    Tags::GL,                     // Tags
+};
+const ProcessorInfo VolumeCombiner::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 VolumeCombiner::VolumeCombiner()
     : Processor()
@@ -86,10 +91,7 @@ VolumeCombiner::VolumeCombiner()
             buildEquation(); 
         }
     });
-}
 
-void VolumeCombiner::initialize() {
-    Processor::initialize();
     buildEquation();
 }
 
@@ -181,3 +183,4 @@ void VolumeCombiner::process() {
 
 
 }  // namespace
+

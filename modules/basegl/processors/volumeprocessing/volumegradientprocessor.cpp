@@ -31,18 +31,23 @@
 #include "volumegradientprocessor.h"
 
 namespace inviwo {
-ProcessorClassIdentifier(VolumeGradientProcessor, "org.inviwo.VolumeGradient");
-ProcessorDisplayName(VolumeGradientProcessor, "Volume Gradient");
-ProcessorTags(VolumeGradientProcessor, Tags::GL);
-ProcessorCategory(VolumeGradientProcessor, "Volume Operation");
-ProcessorCodeState(VolumeGradientProcessor, CODE_STATE_STABLE);
+const ProcessorInfo VolumeGradientProcessor::processorInfo_{
+    "org.inviwo.VolumeGradient",  // Class identifier
+    "Volume Gradient",            // Display name
+    "Volume Operation",           // Category
+    CodeState::Stable,            // Code state
+    Tags::GL,                     // Tags
+};
+const ProcessorInfo VolumeGradientProcessor::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 VolumeGradientProcessor::VolumeGradientProcessor()
     : VolumeGLProcessor("volume_gradient.frag")
     , channel_("channel", "Render Channel")
     , dataInChannel4_("dataInChannel4_", "Stored voxel values in 4th channel", false,
-                      INVALID_RESOURCES) {
-    this->dataFormat_ = DataVec3FLOAT32::get();
+                      InvalidationLevel::InvalidResources) {
+    this->dataFormat_ = DataVec3Float32::get();
 
     channel_.addOption("Channel 1", "Channel 1", 0);
     channel_.setCurrentStateAsDefault();
@@ -66,10 +71,10 @@ void VolumeGradientProcessor::postProcess() {
 void VolumeGradientProcessor::initializeResources() {
     if (dataInChannel4_.get()) {
         shader_.getFragmentShaderObject()->addShaderDefine("ADD_DATA_CHANNEL");
-        this->dataFormat_ = DataVec4FLOAT32::get();
+        this->dataFormat_ = DataVec4Float32::get();
     } else {
         shader_.getFragmentShaderObject()->removeShaderDefine("ADD_DATA_CHANNEL");
-        this->dataFormat_ = DataVec3FLOAT32::get();
+        this->dataFormat_ = DataVec3Float32::get();
     }
     shader_.build();
     internalInvalid_ = true;
@@ -92,3 +97,4 @@ void VolumeGradientProcessor::onVolumeChange() {
 }
 
 }  // namespace
+

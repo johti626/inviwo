@@ -48,15 +48,20 @@ static inline int nextPow2(int x) {
 namespace inviwo {
 
 // The Class Identifier has to be globally unique. Use a reverse DNS naming scheme
-ProcessorClassIdentifier(NoiseProcessor, "org.inviwo.NoiseProcessor")
-ProcessorDisplayName(NoiseProcessor, "NoiseProcessor")
-ProcessorTags(NoiseProcessor, Tags::CPU);
-ProcessorCategory(NoiseProcessor, "Data Creation");
-ProcessorCodeState(NoiseProcessor, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo NoiseProcessor::processorInfo_{
+    "org.inviwo.NoiseProcessor",  // Class identifier
+    "NoiseProcessor",             // Display name
+    "Data Creation",              // Category
+    CodeState::Experimental,      // Code state
+    Tags::CPU,                    // Tags
+};
+const ProcessorInfo NoiseProcessor::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 NoiseProcessor::NoiseProcessor()
     : Processor()
-    , noise_("noise", DataFLOAT32::get(), false)
+    , noise_("noise", DataFloat32::get(), false)
     , size_("size", "Size", ivec2(256), ivec2(32), ivec2(4096))
     , type_("type", "Type")
     , range_("range_","Range" , 0.0f, 1.0f, 0.0f, 1.0f)
@@ -115,7 +120,7 @@ void NoiseProcessor::process() {
         mt_.seed(seed_.get());
     }
 
-    std::unique_ptr<Image> img = util::make_unique<Image>(size_.get(), DataFLOAT32::get());
+    std::unique_ptr<Image> img = util::make_unique<Image>(size_.get(), DataFloat32::get());
 
     switch (type_.get()) {
         case NoiseType::Random:
@@ -151,7 +156,7 @@ void NoiseProcessor::perlinNoise(Image *img) {
     float currentPersistance = 1;
     while (currentSize <= size && iterations--) {
         size2_t imgsize{static_cast<size_t>(currentSize)};
-        auto img1 = util::make_unique<Image>(imgsize, DataFLOAT32::get());
+        auto img1 = util::make_unique<Image>(imgsize, DataFloat32::get());
         randomNoise(img1.get(), -currentPersistance, currentPersistance);
         samplers.push_back(TemplateImageSampler<float,float>(img1.get()));
         levels.push_back(std::move(img1));
@@ -205,7 +210,7 @@ void NoiseProcessor::poissonDisk(Image *img) {
     auto minDist2 = minDist*minDist;
     size2_t gridSize = size2_t(1)+ size2_t(vec2(size_.get()) * (1.0f / minDist));
 
-    auto gridImg = util::make_unique<Image>(gridSize, DataVec2INT32::get());
+    auto gridImg = util::make_unique<Image>(gridSize, DataVec2Int32::get());
     auto grid = gridImg->getColorLayer()->getEditableRepresentation<LayerRAM>();
 
     auto imgData = static_cast<float*>(img->getColorLayer()->getEditableRepresentation<LayerRAM>()->getData());
@@ -280,3 +285,4 @@ void NoiseProcessor::poissonDisk(Image *img) {
 }
 
 }  // namespace
+

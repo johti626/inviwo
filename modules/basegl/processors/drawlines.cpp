@@ -36,11 +36,16 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(DrawLines, "org.inviwo.DrawLines");
-ProcessorDisplayName(DrawLines, "Draw Lines");
-ProcessorTags(DrawLines, Tags::GL);
-ProcessorCategory(DrawLines, "Drawing");
-ProcessorCodeState(DrawLines, CODE_STATE_STABLE);
+const ProcessorInfo DrawLines::processorInfo_{
+    "org.inviwo.DrawLines",  // Class identifier
+    "Draw Lines",            // Display name
+    "Drawing",               // Category
+    CodeState::Stable,       // Code state
+    Tags::GL,                // Tags
+};
+const ProcessorInfo DrawLines::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 DrawLines::DrawLines()
     : CompositeProcessorGL()
@@ -72,7 +77,7 @@ DrawLines::DrawLines()
 
     addProperty(mouseDraw_);
     addProperty(keyEnableDraw_);
-    lineShader_.onReload([this]() { invalidate(INVALID_RESOURCES); });
+    lineShader_.onReload([this]() { invalidate(InvalidationLevel::InvalidResources); });
 
     lines_.addBuffer(BufferType::POSITION_ATTRIB, std::make_shared<Buffer<vec2>>());
 
@@ -127,7 +132,7 @@ void DrawLines::eventDraw(Event* event){
     line -= 1.f;
     line.y = -line.y;
     addPoint(line);
-    invalidate(INVALID_OUTPUT);
+    invalidate(InvalidationLevel::InvalidOutput);
 }
 
 void DrawLines::eventEnableDraw(Event* event){
@@ -136,3 +141,4 @@ void DrawLines::eventEnableDraw(Event* event){
 }
 
 }  // namespace
+

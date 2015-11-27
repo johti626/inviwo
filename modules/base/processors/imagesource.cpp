@@ -38,18 +38,23 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(ImageSource, "org.inviwo.ImageSource");
-ProcessorDisplayName(ImageSource, "Image Source");
-ProcessorTags(ImageSource, Tags::CPU);
-ProcessorCategory(ImageSource, "Data Input");
-ProcessorCodeState(ImageSource, CODE_STATE_STABLE);
+const ProcessorInfo ImageSource::processorInfo_{
+    "org.inviwo.ImageSource",  // Class identifier
+    "Image Source",            // Display name
+    "Data Input",              // Category
+    CodeState::Stable,         // Code state
+    Tags::CPU,                 // Tags
+};
+const ProcessorInfo ImageSource::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 ImageSource::ImageSource()
     : Processor()
-    , outport_("image.outport", DataVec4UINT8::get(), false)
+    , outport_("image.outport", DataVec4UInt8::get(), false)
     , file_("imageFileName", "File name", "", "image")
     , imageDimension_("imageDimension_", "Dimension", ivec2(0), ivec2(0), ivec2(10000), ivec2(1),
-                      VALID, PropertySemantics("Text"))
+                      InvalidationLevel::Valid, PropertySemantics("Text"))
     , isDeserializing_(false) {
     addPort(outport_);
 
@@ -115,3 +120,4 @@ void ImageSource::deserialize(IvwDeserializer& d) {
 }
 
 }  // namespace
+

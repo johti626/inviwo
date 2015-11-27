@@ -37,11 +37,16 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(ImageOverlayGL, "org.inviwo.ImageOverlayGL");
-ProcessorDisplayName(ImageOverlayGL, "Image Overlay");
-ProcessorTags(ImageOverlayGL, Tags::GL);
-ProcessorCategory(ImageOverlayGL, "Image Operation");
-ProcessorCodeState(ImageOverlayGL, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo ImageOverlayGL::processorInfo_{
+    "org.inviwo.ImageOverlayGL",  // Class identifier
+    "Image Overlay",              // Display name
+    "Image Operation",            // Category
+    CodeState::Experimental,      // Code state
+    Tags::GL,                     // Tags
+};
+const ProcessorInfo ImageOverlayGL::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 OverlayProperty::OverlayProperty(std::string identifier, std::string displayName,
                                  InvalidationLevel invalidationLevel, PropertySemantics semantics)
@@ -88,7 +93,7 @@ ImageOverlayGL::ImageOverlayGL()
     , viewManager_()
     , currentDim_(0u, 0u) {
 
-    shader_.onReload([this]() { invalidate(INVALID_RESOURCES); });
+    shader_.onReload([this]() { invalidate(InvalidationLevel::InvalidResources); });
 
     addPort(inport_);
     addPort(overlayPort_);
@@ -195,3 +200,4 @@ void ImageOverlayGL::updateViewports(ivec2 dim, bool force) {
 }
 
 }  // namespace
+

@@ -33,17 +33,22 @@
 namespace inviwo {
 
 // The Class Identifier has to be globally unique. Use a reverse DNS naming scheme
-ProcessorClassIdentifier(VolumeBinary,  "org.inviwo.VolumeBinary")
-ProcessorDisplayName(VolumeBinary,  "Volume Binary")
-ProcessorTags(VolumeBinary, Tags::None);
-ProcessorCategory(VolumeBinary, "Volume Operation");
-ProcessorCodeState(VolumeBinary, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo VolumeBinary::processorInfo_{
+    "org.inviwo.VolumeBinary",  // Class identifier
+    "Volume Binary",            // Display name
+    "Volume Operation",         // Category
+    CodeState::Experimental,    // Code state
+    Tags::None,                 // Tags
+};
+const ProcessorInfo VolumeBinary::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 VolumeBinary::VolumeBinary()
     : VolumeGLProcessor("volume_binary.frag")
     , threshold_("threshold", "Threshold", 0.5) {
     addProperty(threshold_);
-    this->dataFormat_ = DataUINT8::get();
+    this->dataFormat_ = DataUInt8::get();
 }
     
 void VolumeBinary::preProcess(TextureUnitContainer &cont) {
@@ -55,4 +60,5 @@ void VolumeBinary::postProcess() {
 }
 
 } // namespace
+
 

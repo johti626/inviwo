@@ -65,8 +65,9 @@ bool ProcessorNetwork::addProcessor(Processor* processor) {
 
     notifyObserversProcessorNetworkWillAddProcessor(processor);
     processors_[processor->getIdentifier()] = processor;
+    processor->setNetwork(this);
     processor->ProcessorObservable::addObserver(this);
-    processor->invalidate(INVALID_RESOURCES);
+    processor->invalidate(InvalidationLevel::InvalidResources);
     modified();
     notifyObserversProcessorNetworkDidAddProcessor(processor);
     return true;
@@ -108,6 +109,7 @@ void ProcessorNetwork::removeProcessor(Processor* processor) {
     notifyObserversProcessorNetworkWillRemoveProcessor(processor);
     processors_.erase(processor->getIdentifier());
     processor->ProcessorObservable::removeObserver(this);
+    processor->setNetwork(nullptr);
     modified();
     notifyObserversProcessorNetworkDidRemoveProcessor(processor);
 }
@@ -139,6 +141,7 @@ PortConnection* ProcessorNetwork::addConnection(Outport* sourcePort, Inport* des
         notifyObserversProcessorNetworkWillAddConnection(connection);
         
         connections_[std::make_pair(sourcePort, destPort)] = connection;
+        connectionsVec_.push_back(connection);
         modified();
         destPort->connectTo(sourcePort);
         
@@ -158,6 +161,7 @@ void ProcessorNetwork::removeConnection(Outport* sourcePort, Inport* destPort) {
         modified();
         destPort->disconnectFrom(sourcePort);
         connections_.erase(itm);
+        util::erase_remove(connectionsVec_, connection);
 
         notifyObserversProcessorNetworkDidRemoveConnection(connection);
         delete connection;
@@ -173,8 +177,7 @@ PortConnection* ProcessorNetwork::getConnection(Outport* sourcePort, Inport* des
 }
 
 std::vector<PortConnection*> ProcessorNetwork::getConnections() const {
-    return util::transform(
-        connections_, [](PortConnectionMap::const_reference elem) { return elem.second; });
+    return connectionsVec_;
 }
 
 PropertyLink* ProcessorNetwork::addLink(Property* sourceProperty, Property* destinationProperty) {
@@ -341,7 +344,7 @@ void ProcessorNetwork::clear() {
     std::vector<Processor*> processors = getProcessors();
     // Invalidate inports to alert processors that they should stop their calculations.
     for (auto processor : processors) {
-        for (auto inport : processor->getInports()) inport->invalidate(INVALID_OUTPUT);
+        for (auto inport : processor->getInports()) inport->invalidate(InvalidationLevel::InvalidOutput);
     }
 
     for (auto processor : processors) {
@@ -383,14 +386,6 @@ void ProcessorNetwork::onProcessorIdentifierChange(Processor* processor) {
 
     processors_[processor->getIdentifier()] = processor;
 }
-
-Processor* ProcessorNetwork::getInvalidationInitiator() {
-    if (processorsInvalidating_.empty())
-        return nullptr;
-    else
-        return processorsInvalidating_[0];
-}
-
 
 void ProcessorNetwork::onAboutPropertyChange(Property* modifiedProperty) {
     if (modifiedProperty) linkEvaluator_.evaluateLinksFromProperty(modifiedProperty);

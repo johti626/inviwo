@@ -37,11 +37,16 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(DrawPoints, "org.inviwo.DrawPoints");
-ProcessorDisplayName(DrawPoints,  "Draw Points");
-ProcessorTags(DrawPoints, Tags::GL);
-ProcessorCategory(DrawPoints, "Drawing");
-ProcessorCodeState(DrawPoints, CODE_STATE_STABLE);
+const ProcessorInfo DrawPoints::processorInfo_{
+    "org.inviwo.DrawPoints",  // Class identifier
+    "Draw Points",            // Display name
+    "Drawing",                // Category
+    CodeState::Stable,        // Code state
+    Tags::GL,                 // Tags
+};
+const ProcessorInfo DrawPoints::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 DrawPoints::DrawPoints()
     : CompositeProcessorGL()
@@ -74,7 +79,7 @@ DrawPoints::DrawPoints()
     addProperty(mouseDraw_);
     addProperty(keyEnableDraw_);
 
-    pointShader_.onReload([this]() { invalidate(INVALID_RESOURCES); });
+    pointShader_.onReload([this]() { invalidate(InvalidationLevel::InvalidResources); });
     points_.addBuffer(BufferType::POSITION_ATTRIB, std::make_shared<Buffer<vec2>>());
 }
 
@@ -116,7 +121,7 @@ void DrawPoints::eventDraw(Event* event){
     point -= 1.f;
     point.y = -point.y;
     addPoint(point);
-    invalidate(INVALID_OUTPUT);
+    invalidate(InvalidationLevel::InvalidOutput);
 }
 
 void DrawPoints::eventEnableDraw(Event* event){
@@ -125,3 +130,4 @@ void DrawPoints::eventEnableDraw(Event* event){
 }
 
 } // inviwo namespace
+

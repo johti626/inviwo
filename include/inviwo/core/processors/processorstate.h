@@ -31,14 +31,33 @@
 #define IVW_PROCESSORSTATE_H
 
 #include <inviwo/core/common/inviwocoredefine.h>
+#include <ostream>
 
 namespace inviwo {
 
-enum IVW_CORE_API CodeState {
-    CODE_STATE_BROKEN,
-    CODE_STATE_EXPERIMENTAL,
-    CODE_STATE_STABLE
+enum class IVW_CORE_API CodeState {
+    Broken,
+    Experimental,
+    Stable
 };
+
+template <class Elem, class Traits>
+std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& ss, CodeState cs) {
+    switch (cs) {
+        case CodeState::Broken:
+            ss << "Broken";
+            break;
+        case CodeState::Experimental:
+            ss << "Experimental";
+            break;
+        case CodeState::Stable:
+            ss << "Stable";
+            break;
+        default:
+            ss << "Not specified";
+    }
+    return ss;
+}
 
 } // namespace
 

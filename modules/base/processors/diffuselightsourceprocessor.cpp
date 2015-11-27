@@ -32,17 +32,22 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(DiffuseLightSourceProcessor, "org.inviwo.Diffuselightsource");
-ProcessorDisplayName(DiffuseLightSourceProcessor, "Diffuse light source");
-ProcessorTags(DiffuseLightSourceProcessor, Tags::CPU);
-ProcessorCategory(DiffuseLightSourceProcessor, "Light source");
-ProcessorCodeState(DiffuseLightSourceProcessor, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo DiffuseLightSourceProcessor::processorInfo_{
+    "org.inviwo.Diffuselightsource",  // Class identifier
+    "Diffuse light source",           // Display name
+    "Light source",                   // Category
+    CodeState::Experimental,          // Code state
+    Tags::CPU,                        // Tags
+};
+const ProcessorInfo DiffuseLightSourceProcessor::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 DiffuseLightSourceProcessor::DiffuseLightSourceProcessor()
     : Processor()
     , outport_("DiffuseLightSource")
     , camera_("camera", "Camera", vec3(0.0f, 0.0f, -2.0f), vec3(0.0f, 0.0f, 0.0f),
-              vec3(0.0f, 1.0f, 0.0f), nullptr, VALID)
+              vec3(0.0f, 1.0f, 0.0f), nullptr, InvalidationLevel::Valid)
     , lightPosition_("lightPosition", "Light Source Position",
                      FloatVec3Property("position", "Position", vec3(1.f, 0.65f, 0.65f), vec3(-10.f),
                                        vec3(10.f)),
@@ -92,3 +97,4 @@ void DiffuseLightSourceProcessor::updateLightSource(DiffuseLight* lightSource) {
 }
 
 }  // namespace
+

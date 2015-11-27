@@ -36,11 +36,16 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(EntryExitPointsCLProcessor, "org.inviwo.EntryExitPointsCL");
-ProcessorDisplayName(EntryExitPointsCLProcessor, "Entry Exit Points");
-ProcessorTags(EntryExitPointsCLProcessor, Tags::CL);
-ProcessorCategory(EntryExitPointsCLProcessor, "Geometry Rendering");
-ProcessorCodeState(EntryExitPointsCLProcessor, CODE_STATE_STABLE);
+const ProcessorInfo EntryExitPointsCLProcessor::processorInfo_{
+    "org.inviwo.EntryExitPointsCL",  // Class identifier
+    "Entry Exit Points",             // Display name
+    "Geometry Rendering",            // Category
+    CodeState::Stable,               // Code state
+    Tags::CL,                        // Tags
+};
+const ProcessorInfo EntryExitPointsCLProcessor::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 EntryExitPointsCLProcessor::EntryExitPointsCLProcessor()
     : Processor()
@@ -48,8 +53,8 @@ EntryExitPointsCLProcessor::EntryExitPointsCLProcessor()
     , geometryPort_("geometry")
     , entryPort_(
           "entry-points",
-          DataVec4FLOAT32::get())  // Using 8-bits will create artifacts when entering the volume
-    , exitPort_("exit-points", DataVec4FLOAT32::get())
+          DataVec4Float32::get())  // Using 8-bits will create artifacts when entering the volume
+    , exitPort_("exit-points", DataVec4Float32::get())
     , camera_("camera", "Camera", vec3(0.0f, 0.0f, -2.0f), vec3(0.0f, 0.0f, 0.0f),
               vec3(0.0f, 1.0f, 0.0f), &geometryPort_)
     , workGroupSize_("wgsize", "Work group size", ivec2(8, 8), ivec2(0), ivec2(256))
@@ -96,3 +101,4 @@ void EntryExitPointsCLProcessor::process() {
 }
 
 }  // namespace
+

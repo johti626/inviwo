@@ -32,11 +32,15 @@
 
 #include <inviwo/qt/editor/inviwoqteditordefine.h>
 #include <inviwo/core/network/processornetworkobserver.h>
+
+#include <warn/push>
+#include <warn/ignore/all>
 #include <QMouseEvent>
 #include <QGraphicsSceneWheelEvent>
 #include <QGraphicsScene>
 #include <QGraphicsItem>
 #include <QGraphicsSceneMouseEvent>
+#include <warn/pop>
 
 namespace inviwo {
 
@@ -53,9 +57,13 @@ class PropertyLink;
 
 class IVW_QTEDITOR_API LinkDialogGraphicsScene : public QGraphicsScene,
                                                  public ProcessorNetworkObserver {
+#include <warn/push>
+#include <warn/ignore/all>
     Q_OBJECT
+#include <warn/pop>
 public:
-    LinkDialogGraphicsScene(QWidget* parent);
+    LinkDialogGraphicsScene(QWidget* parent, ProcessorNetwork* network, Processor* srcProcessor,
+                            Processor* dstProcessor);
     virtual ~LinkDialogGraphicsScene();
 
     template <typename T>
@@ -63,88 +71,73 @@ public:
                               const Qt::ItemSelectionMode mode = Qt::IntersectsItemShape,
                               Qt::SortOrder order = Qt::DescendingOrder) const;
 
-    void setNetwork(ProcessorNetwork* network);
-    ProcessorNetwork* getNetwork();
+    ProcessorNetwork* getNetwork() const;
 
-    void initScene(Processor* srcProcessor, Processor* dstProcessor);
-    void clearSceneRepresentations();
-
-    void removeCurrentPropertyLinks();
     void removeAllPropertyLinks();
-
     void addPropertyLink(Property* srcProperty, Property* dstProperty, bool bidirectional);
-    int currentLinkItemsCount();
-    void setExpandProperties(bool expand);
-    void expandOrCollapseLinkedProcessorItems(
-        LinkDialogProcessorGraphicsItem* processorGraphicsItem, bool expand);
 
-    void expandOrCollapseLinkedPropertyItems(LinkDialogPropertyGraphicsItem* propertyItem,
-                                             bool expand);
+    void toggleExpand();
+    bool isPropertyExpanded(Property* property) const;
 
-    bool isPropertyExpanded(Property* property);
+    void wheelAction(float offset);
 
-    virtual void onProcessorNetworkDidAddLink(PropertyLink* propertyLink);
-    virtual void onProcessorNetworkDidRemoveLink(PropertyLink* propertyLink);
-    virtual void onProcessorNetworkWillRemoveProcessor(Processor* processor);
+    virtual void onProcessorNetworkDidAddLink(PropertyLink* propertyLink) override;
+    virtual void onProcessorNetworkDidRemoveLink(PropertyLink* propertyLink) override;
+    virtual void onProcessorNetworkWillRemoveProcessor(Processor* processor) override;
+
+    void makePropertyLinkBidirectional(DialogConnectionGraphicsItem* propertyLink,
+                                       bool isBidirectional);
+    void switchPropertyLinkDirection(DialogConnectionGraphicsItem* propertyLink);
 
 signals:
     void closeDialog();
 
 protected:
     // Overload qt events
-    virtual void mousePressEvent(QGraphicsSceneMouseEvent* e);
-    virtual void mouseMoveEvent(QGraphicsSceneMouseEvent* e);
-    virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent* e);
-    virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* e);
-    virtual void keyPressEvent(QKeyEvent* keyEvent);
-    virtual void wheelEvent(QGraphicsSceneWheelEvent* e);
-    virtual void contextMenuEvent(QGraphicsSceneContextMenuEvent* e);
+    virtual void mousePressEvent(QGraphicsSceneMouseEvent* e) override;
+    virtual void mouseMoveEvent(QGraphicsSceneMouseEvent* e) override;
+    virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent* e) override;
+    virtual void keyPressEvent(QKeyEvent* keyEvent) override;
 
+    virtual void contextMenuEvent(QGraphicsSceneContextMenuEvent* e) override;
+    // Override for tooltips
+    virtual void helpEvent(QGraphicsSceneHelpEvent* helpEvent) override;
 
     void removePropertyLink(DialogConnectionGraphicsItem* propertyLink);
 
     void cleanupAfterRemoveLink(DialogConnectionGraphicsItem* propertyLink);
 
-    bool isPropertyLinkBidirectional(DialogConnectionGraphicsItem* propertyLink);
-    void makePropertyLinkBidirectional(DialogConnectionGraphicsItem* propertyLink,
-                                       bool isBidirectional);
-    void switchPropertyLinkDirection(DialogConnectionGraphicsItem* propertyLink);
+    bool isPropertyLinkBidirectional(DialogConnectionGraphicsItem* propertyLink) const;
 
     DialogConnectionGraphicsItem* initializePropertyLinkRepresentation(PropertyLink* propLink);
     void removePropertyLinkRepresentation(PropertyLink* propLink);
 
-    LinkDialogProcessorGraphicsItem* addProcessorsItemsToScene(Processor* prcoessor, int xPosition,
-                                                               int yPosition);
     DialogConnectionGraphicsItem* getConnectionGraphicsItem(LinkDialogPropertyGraphicsItem*,
-                                                            LinkDialogPropertyGraphicsItem*);
+                                                            LinkDialogPropertyGraphicsItem*) const;
 
     // smooth scroll effect support
     void offsetItems(float yIncrement, bool scrollLeft);
-    int currentScrollSteps_;
+    float currentScrollSteps_;
 private slots:
     void executeTimeLine(qreal);
     void terminateTimeLine();
 
 private:
-    QGraphicsItem* getPropertyGraphicsItemOf(Property* property);
-    void addConnectionToCurrentList(DialogConnectionGraphicsItem*);
-    void removeConnectionFromCurrentList(DialogConnectionGraphicsItem*);
+    LinkDialogPropertyGraphicsItem* getPropertyGraphicsItemOf(Property* property) const;
 
     DialogCurveGraphicsItem* linkCurve_;
     LinkDialogPropertyGraphicsItem* startProperty_;
     LinkDialogPropertyGraphicsItem* endProperty_;
 
-    LinkDialogProcessorGraphicsItem* srcProcessorGraphicsItem_;
-    LinkDialogProcessorGraphicsItem* dstProcessorGraphicsItem_;
-    std::vector<DialogConnectionGraphicsItem*> connectionGraphicsItems_;
-    std::vector<DialogConnectionGraphicsItem*> currentConnectionGraphicsItems_;
-
-    ProcessorNetwork* processorNetwork_;
+    LinkDialogProcessorGraphicsItem* srcProcessor_;
+    LinkDialogProcessorGraphicsItem* dstProcessor_;
+    std::vector<DialogConnectionGraphicsItem*> connections_;
+    ProcessorNetwork* network_;
 
     bool expandProperties_;
     bool mouseOnLeftSide_;
 
-    std::map<Property*, LinkDialogPropertyGraphicsItem*> propertyGraphicsItemCache_;
+    std::map<Property*, LinkDialogPropertyGraphicsItem*> propertyMap_;
 };
 
 template <typename T>

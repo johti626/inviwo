@@ -70,14 +70,15 @@ public:
     EntryExitPointsCLProcessor();
     virtual ~EntryExitPointsCLProcessor();
 
-    InviwoProcessorInfo();
+    virtual const ProcessorInfo getProcessorInfo() const override;
+    static const ProcessorInfo processorInfo_;
 
     virtual void initialize() override;
     virtual void deinitialize() override;
 
 protected:
     virtual void process() override;
-    void onKernelCompiled( const cl::Kernel* kernel ) override { invalidate(INVALID_RESOURCES); }
+    void onKernelCompiled( const cl::Kernel* kernel ) override { invalidate(InvalidationLevel::InvalidResources); }
 
 
 

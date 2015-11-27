@@ -33,7 +33,10 @@
 #include <modules/vectorfieldvisualization/processors/datageneration/seedpointgenerator.h>
 
 #include <modules/vectorfieldvisualization/processors/3d/streamlines.h>
+#include <modules/vectorfieldvisualization/processors/3d/pathlines.h>
 #include <modules/vectorfieldvisualization/processors/3d/streamribbons.h>
+
+#include <modules/vectorfieldvisualization/ports/seedpointsport.h>
 
 namespace inviwo {
 
@@ -44,7 +47,12 @@ VectorFieldVisualizationModule::VectorFieldVisualizationModule(InviwoApplication
     registerProcessor<SeedPointGenerator>();
 
     registerProcessor<StreamLines>();
+    registerProcessor<PathLines>();
     registerProcessor<StreamRibbons>();
+
+    registerPort < SeedPointsOutport>("SeedPointsOutport");
+    registerPort < SeedPointsInport>("SeedPointsInport");
 }
+
 
 }  // namespace

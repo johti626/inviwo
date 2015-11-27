@@ -12,6 +12,8 @@
 #include <inviwo/core/properties/optionproperty.h>
 #include <inviwo/core/properties/boolproperty.h>
 
+#include <modules/vectorfieldvisualization/ports/seedpointsport.h>
+
 namespace inviwo {
 
 class SimpleMesh;
@@ -43,22 +45,22 @@ public:
     StreamLines();
     virtual ~StreamLines();
 
-    InviwoProcessorInfo();
+    virtual const ProcessorInfo getProcessorInfo() const override;
+    static const ProcessorInfo processorInfo_;
 
     virtual void process() override;
 
 protected:
     VolumeInport volume_;
-    DataInport<std::vector<vec3>, 0> seedPoints_;
+    SeedPointsInport seedPoints_;
 
     MeshOutport linesStripsMesh_;
 
     IntProperty numberOfSteps_;
     FloatProperty stepSize_;
     BoolProperty normalizeSamples_;
-    TemplateOptionProperty<StreamLineTracer::Direction> stepDirection_;
-    TemplateOptionProperty<StreamLineTracer::IntegrationScheme> integrationScheme_;
-
+    TemplateOptionProperty<IntegralLineTracer::Direction> stepDirection_;
+    TemplateOptionProperty<IntegralLineTracer::IntegrationScheme> integrationScheme_;
     TemplateOptionProperty<StructuredCoordinateTransformer<3>::Space> seedPointsSpace_;
 
     TransferFunctionProperty tf_;

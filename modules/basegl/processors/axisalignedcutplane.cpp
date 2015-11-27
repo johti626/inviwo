@@ -36,11 +36,16 @@
 namespace inviwo {
 
 // The Class Identifier has to be globally unique. Use a reverse DNS naming scheme
-ProcessorClassIdentifier(AxisAlignedCutPlane, "org.inviwo.AxisAlignedCutPlane")
-ProcessorDisplayName(AxisAlignedCutPlane, "Axis Aligned Cut Plane")
-ProcessorTags(AxisAlignedCutPlane, Tags::GL);
-ProcessorCategory(AxisAlignedCutPlane, "Volume Operation");
-ProcessorCodeState(AxisAlignedCutPlane, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo AxisAlignedCutPlane::processorInfo_{
+    "org.inviwo.AxisAlignedCutPlane",  // Class identifier
+    "Axis Aligned Cut Plane",          // Display name
+    "Volume Operation",                // Category
+    CodeState::Experimental,           // Code state
+    Tags::GL,                          // Tags
+};
+const ProcessorInfo AxisAlignedCutPlane::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 AxisAlignedCutPlane::AxisAlignedCutPlane()
     : Processor()
@@ -50,7 +55,7 @@ AxisAlignedCutPlane::AxisAlignedCutPlane()
     , xSlide_("x", "X Slide")
     , ySlide_("y", "Y Slide")
     , zSlide_("z", "Z Slide")
-    , disableTF_("disableTF", "Disable transfer function", false, INVALID_RESOURCES)
+    , disableTF_("disableTF", "Disable transfer function", false, InvalidationLevel::InvalidResources)
     , tf_("transferfunction", "Transfer function" , TransferFunction(), &volume_)
     , sliceShader_("geometryrendering.vert", "axisalignedcutplaneslice.frag", false)
     , boundingBoxShader_("geometryrendering.vert", "axisalignedcutplaneboundingbox.frag")
@@ -167,3 +172,4 @@ void AxisAlignedCutPlane::drawBoundingBox() {
 }
 
 }  // namespace
+

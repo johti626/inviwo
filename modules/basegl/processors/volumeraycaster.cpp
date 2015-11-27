@@ -43,11 +43,13 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(VolumeRaycaster, "org.inviwo.VolumeRaycaster");
-ProcessorDisplayName(VolumeRaycaster, "Volume Raycaster");
-ProcessorTags(VolumeRaycaster, Tags::GL);
-ProcessorCategory(VolumeRaycaster, "Volume Rendering");
-ProcessorCodeState(VolumeRaycaster, CODE_STATE_STABLE);
+const ProcessorInfo VolumeRaycaster::processorInfo_{
+    "org.inviwo.VolumeRaycaster",  // Class identifier
+    "Volume Raycaster",            // Display name
+    "Volume Rendering",            // Category
+    CodeState::Stable,             // Code state
+    Tags::GL                       // Tags
+};
 
 VolumeRaycaster::VolumeRaycaster()
     : Processor()
@@ -64,7 +66,7 @@ VolumeRaycaster::VolumeRaycaster()
     , positionIndicator_("positionindicator", "Position Indicator")
     , toggleShading_("toggleShading", "Toggle Shading", new KeyboardEvent('L'),
                      new Action(this, &VolumeRaycaster::toggleShading)) {
-    shader_.onReload([this]() { invalidate(INVALID_RESOURCES); });
+    shader_.onReload([this]() { invalidate(InvalidationLevel::InvalidResources); });
 
     addPort(volumePort_, "VolumePortGroup");
     addPort(entryPort_, "ImagePortGroup1");
@@ -98,6 +100,10 @@ VolumeRaycaster::VolumeRaycaster()
 }
 
 VolumeRaycaster::~VolumeRaycaster() {}
+
+const ProcessorInfo VolumeRaycaster::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 void VolumeRaycaster::initializeResources() {
     utilgl::addShaderDefines(shader_, raycasting_);
@@ -139,7 +145,7 @@ void VolumeRaycaster::process() {
                 glFlush();
                 dispatchFront([this, newVolume]() {
                     loadedVolume_ = newVolume;
-                    invalidate(INVALID_OUTPUT);
+                    invalidate(InvalidationLevel::InvalidOutput);
                 });
             });
         }

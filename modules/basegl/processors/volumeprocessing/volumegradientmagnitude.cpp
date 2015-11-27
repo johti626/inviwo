@@ -31,17 +31,22 @@
 #include "volumegradientmagnitude.h"
 
 namespace inviwo {
-ProcessorClassIdentifier(VolumeGradientMagnitude, "org.inviwo.VolumeGradientMagnitude");
-ProcessorDisplayName(VolumeGradientMagnitude, "Volume Gradient Magnitude");
-ProcessorTags(VolumeGradientMagnitude, Tags::GL);
-ProcessorCategory(VolumeGradientMagnitude, "Volume Operation");
-ProcessorCodeState(VolumeGradientMagnitude, CODE_STATE_STABLE);
+const ProcessorInfo VolumeGradientMagnitude::processorInfo_{
+    "org.inviwo.VolumeGradientMagnitude",  // Class identifier
+    "Volume Gradient Magnitude",           // Display name
+    "Volume Operation",                    // Category
+    CodeState::Stable,                     // Code state
+    Tags::GL,                              // Tags
+};
+const ProcessorInfo VolumeGradientMagnitude::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 VolumeGradientMagnitude::VolumeGradientMagnitude()
     : VolumeGLProcessor("volumegradientmagnitude.frag")
     , channel_("channel", "Render Channel")
 {
-    this->dataFormat_ = DataFLOAT32::get();
+    this->dataFormat_ = DataFloat32::get();
 
     channel_.addOption("Channel 1", "Channel 1", 0);
     channel_.setCurrentStateAsDefault();
@@ -77,3 +82,4 @@ void VolumeGradientMagnitude::afterInportChanged() {
 }
 
 }  // namespace
+

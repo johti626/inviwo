@@ -45,17 +45,19 @@ CanvasProcessor::CanvasProcessor()
     : Processor()
     , inport_("inport")
     , dimensions_("dimensions", "Canvas Size", ivec2(256, 256), ivec2(128, 128), ivec2(4096, 4096),
-                  ivec2(1, 1), VALID)
+                  ivec2(1, 1), InvalidationLevel::Valid)
     , enableCustomInputDimensions_("enableCustomInputDimensions", "Separate Image Size", false,
-                                   VALID)
+                                   InvalidationLevel::Valid)
     , customInputDimensions_("customInputDimensions", "Image Size", ivec2(256, 256),
-                             ivec2(128, 128), ivec2(4096, 4096), ivec2(1, 1), VALID)
-    , keepAspectRatio_("keepAspectRatio", "Lock Aspect Ratio", true, VALID)
-    , aspectRatioScaling_("aspectRatioScaling", "Image Scale", 1.f, 0.1f, 4.f, 0.01f, VALID)
+                             ivec2(128, 128), ivec2(4096, 4096), ivec2(1, 1),
+                             InvalidationLevel::Valid)
+    , keepAspectRatio_("keepAspectRatio", "Lock Aspect Ratio", true, InvalidationLevel::Valid)
+    , aspectRatioScaling_("aspectRatioScaling", "Image Scale", 1.f, 0.1f, 4.f, 0.01f,
+                          InvalidationLevel::Valid)
     , visibleLayer_("visibleLayer", "Visible Layer")
     , colorLayer_("colorLayer_", "Color Layer ID", 0, 0, 0)
     , saveLayerDirectory_("layerDir", "Output Directory", "", "image")
-    , saveLayerButton_("saveLayer", "Save Image Layer", VALID)
+    , saveLayerButton_("saveLayer", "Save Image Layer", InvalidationLevel::Valid)
     , inputSize_("inputSize", "Input Dimension Parameters")
     , previousImageSize_(customInputDimensions_)
     , evaluator_(nullptr)
@@ -95,26 +97,32 @@ CanvasProcessor::CanvasProcessor()
 
     colorLayer_.setSerializationMode(PropertySerializationMode::ALL);
 
-    visibleLayer_.onChange([&](){
-        if (inport_.hasData()){
+    visibleLayer_.onChange([&]() {
+        if (inport_.hasData()) {
             auto layers = inport_.getData()->getNumberOfColorLayers();
             colorLayer_.setVisible(layers > 1 && visibleLayer_.get() == LayerType::Color);
+        } else {
+            colorLayer_.setVisible(visibleLayer_.get() == LayerType::Color);
         }
-        colorLayer_.setVisible(visibleLayer_.get() == LayerType::Color);
     });
 
-    inport_.onChange([&](){
+    inport_.onChange([&]() {
         int layers = static_cast<int>(inport_.getData()->getNumberOfColorLayers());
         colorLayer_.setVisible(layers > 1 && visibleLayer_.get() == LayerType::Color);
         colorLayer_.setMaxValue(layers - 1);
     });
-
+    inport_.onConnect([&]() {
+        if (inport_.hasData()) {
+            int layers = static_cast<int>(inport_.getData()->getNumberOfColorLayers());
+            colorLayer_.setVisible(layers > 1 && visibleLayer_.get() == LayerType::Color);
+            colorLayer_.setMaxValue(layers - 1);
+        }
+    });
 
     setAllPropertiesCurrentStateAsDefault();
 }
 
 CanvasProcessor::~CanvasProcessor() {}
-
 
 void CanvasProcessor::initialize() {
     Processor::initialize();
@@ -137,15 +145,15 @@ void CanvasProcessor::deinitialize() {
 
 // Called by dimensions onChange.
 void CanvasProcessor::resizeCanvas() {
-    NetworkLock lock;
+    NetworkLock lock(this);
     if (canvasWidget_ && canvasWidget_->getDimensions() != dimensions_.get()) {
         canvasWidget_->setDimensions(dimensions_.get());
     }
-    inputSize_.invalidate(VALID, &dimensions_);
+    inputSize_.invalidate(InvalidationLevel::Valid, &dimensions_);
 }
 
 void CanvasProcessor::setCanvasSize(ivec2 dim) {
-    NetworkLock lock;
+    NetworkLock lock(this);
     dimensions_.set(dim);
     sizeChanged();
 }
@@ -156,7 +164,7 @@ bool CanvasProcessor::getUseCustomDimensions() const { return enableCustomInputD
 ivec2 CanvasProcessor::getCustomDimensions() const { return customInputDimensions_; }
 
 void CanvasProcessor::sizeChanged() {
-    NetworkLock lock;
+    NetworkLock lock(this);
 
     customInputDimensions_.setVisible(enableCustomInputDimensions_);
     customInputDimensions_.setReadOnly(keepAspectRatio_);
@@ -175,7 +183,7 @@ void CanvasProcessor::sizeChanged() {
         previousImageSize_ = dimensions_;
     }
 
-    inputSize_.invalidate(VALID, &customInputDimensions_);
+    inputSize_.invalidate(InvalidationLevel::Valid, &customInputDimensions_);
     inport_.propagateResizeEvent(&resizeEvent);
 }
 
@@ -209,10 +217,9 @@ void CanvasProcessor::saveImageLayer(std::string snapshotPath) {
     std::shared_ptr<const Image> image = inport_.getData();
     if (image) {
         const Layer* layer = nullptr;
-        if (visibleLayer_.get() == LayerType::Color){
+        if (visibleLayer_.get() == LayerType::Color) {
             layer = image->getColorLayer(colorLayer_.get());
-        }
-        else{
+        } else {
             layer = image->getLayer(visibleLayer_.get());
         }
         if (layer) {
@@ -223,8 +230,9 @@ void CanvasProcessor::saveImageLayer(std::string snapshotPath) {
                 writer = Canvas::generalLayerWriter_;
                 deleteWriter = false;
             } else {
-                writer =
-                    DataWriterFactory::getPtr()->getWriterForTypeAndExtension<Layer>(fileExtension).release();
+                writer = DataWriterFactory::getPtr()
+                             ->getWriterForTypeAndExtension<Layer>(fileExtension)
+                             .release();
             }
 
             if (writer) {
@@ -233,8 +241,7 @@ void CanvasProcessor::saveImageLayer(std::string snapshotPath) {
                     writer->writeData(layer, snapshotPath);
                     LogInfo("Canvas layer exported to disk: " << snapshotPath);
                     if (deleteWriter) delete writer;
-                }
-                catch (DataWriterException const& e) {
+                } catch (DataWriterException const& e) {
                     LogError(e.getMessage());
                 }
             } else {
@@ -251,9 +258,8 @@ void CanvasProcessor::saveImageLayer(std::string snapshotPath) {
     }
 }
 
-std::vector<unsigned char>* CanvasProcessor::getLayerAsCodedBuffer(LayerType layerType,
-                                                                   std::string& type,
-                                                                   size_t idx) {
+std::unique_ptr<std::vector<unsigned char>> CanvasProcessor::getLayerAsCodedBuffer(
+    LayerType layerType, std::string& type, size_t idx) {
     if (!inport_.hasData()) return nullptr;
     std::shared_ptr<const Image> image = inport_.getData();
     const Layer* layer = image->getLayer(layerType, idx);
@@ -276,22 +282,25 @@ std::vector<unsigned char>* CanvasProcessor::getLayerAsCodedBuffer(LayerType lay
     return nullptr;
 }
 
-std::vector<unsigned char>* CanvasProcessor::getColorLayerAsCodedBuffer(std::string& type,
-                                                                        size_t idx) {
+std::unique_ptr<std::vector<unsigned char>> CanvasProcessor::getColorLayerAsCodedBuffer(
+    std::string& type, size_t idx) {
     return getLayerAsCodedBuffer(LayerType::Color, type, idx);
 }
 
-std::vector<unsigned char>* CanvasProcessor::getDepthLayerAsCodedBuffer(std::string& type) {
+std::unique_ptr<std::vector<unsigned char>> CanvasProcessor::getDepthLayerAsCodedBuffer(
+    std::string& type) {
     return getLayerAsCodedBuffer(LayerType::Depth, type);
 }
 
-std::vector<unsigned char>* CanvasProcessor::getPickingLayerAsCodedBuffer(std::string& type) {
+std::unique_ptr<std::vector<unsigned char>> CanvasProcessor::getPickingLayerAsCodedBuffer(
+    std::string& type) {
     return getLayerAsCodedBuffer(LayerType::Picking, type);
 }
 
-std::vector<unsigned char>* CanvasProcessor::getVisibleLayerAsCodedBuffer(std::string& type) {
-    if (visibleLayer_.get() == LayerType::Color){
-        getColorLayerAsCodedBuffer(type, colorLayer_.get());
+std::unique_ptr<std::vector<unsigned char>> CanvasProcessor::getVisibleLayerAsCodedBuffer(
+    std::string& type) {
+    if (visibleLayer_.get() == LayerType::Color) {
+        return getColorLayerAsCodedBuffer(type, colorLayer_.get());
     }
     return getLayerAsCodedBuffer(visibleLayer_.get(), type);
 }
@@ -343,7 +352,7 @@ bool CanvasProcessor::isReady() const {
 
 bool CanvasProcessor::propagateResizeEvent(ResizeEvent* event, Outport* source) {
     // avoid continues evaluation when port dimensions changes
-    NetworkLock lock;
+    NetworkLock lock(this);
 
     dimensions_.set(event->size());
 
@@ -352,10 +361,10 @@ bool CanvasProcessor::propagateResizeEvent(ResizeEvent* event, Outport* source) 
     } else {
         inport_.propagateResizeEvent(event);
 
-        // Make sure this processor is invalidated. 
-        invalidate(INVALID_OUTPUT);
+        // Make sure this processor is invalidated.
+        invalidate(InvalidationLevel::InvalidOutput);
     }
-    
+
     return false;
 }
 

@@ -33,6 +33,7 @@
 #include <modules/vectorfieldvisualization/vectorfieldvisualizationmoduledefine.h>
 #include <inviwo/core/common/inviwo.h>
 #include <modules/vectorfieldvisualization/integralline.h>
+#include <modules/vectorfieldvisualization/integrallinetracer.h>
 #include <inviwo/core/util/volumesampler.h>
 
 namespace inviwo {
@@ -44,14 +45,8 @@ namespace inviwo {
  *
  * DESCRIBE_THE_CLASS
  */
-class IVW_MODULE_VECTORFIELDVISUALIZATION_API StreamLineTracer {
+class IVW_MODULE_VECTORFIELDVISUALIZATION_API StreamLineTracer : public IntegralLineTracer {
 public:
-    enum class IntegrationScheme {
-        Euler ,
-        RK4 
-    };
-
-    enum class Direction { FWD = 1, BWD = 2, BOTH = 3 };
 
     StreamLineTracer(const Volume *vol , IntegrationScheme integrationScheme = IntegrationScheme::RK4);
 
@@ -64,18 +59,16 @@ public:
     IntegralLine traceFrom(const vec3 &p, int steps, double stepSize, Direction dir,
                            bool normalzieSample);
 
-    IntegrationScheme getIntegrationScheme() const { return integrationScheme_; }
-    void setIntegrationScheme(IntegrationScheme scheme) { integrationScheme_ = scheme; }
 
 private:
     void step(int steps, dvec3 curPos, IntegralLine &line, double stepSize, bool normalzieSample);
     dvec3 euler(const dvec3 &curPos);
     dvec3 rk4(const dvec3 &curPos , double stepSize, bool normalzieSample, dmat3 m);
+
     dmat3 invBasis_;
     std::map<std::string, VolumeSampler> metaVolumes_;
     VolumeSampler volumeSampler_;
     size3_t dimensions_;
-    IntegrationScheme integrationScheme_;
     
 };
 

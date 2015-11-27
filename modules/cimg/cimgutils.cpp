@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #include <modules/cimg/cimgutils.h>
@@ -34,6 +34,8 @@
 
 #include <warn/push>
 #include <warn/ignore/all>
+#define cimg_verbosity 0 //Disable all cimg output
+#define cimg_display 0 // Do not use any gui stuff
 #include <modules/cimg/ext/cimg/CImg.h>
 #include <warn/pop>
 
@@ -41,14 +43,12 @@
 #include <warn/ignore/switch-enum>
 #include <warn/ignore/conversion>
 #if (_MSC_VER)
-# pragma warning(disable: 4146)
-# pragma warning(disable: 4197)
-# pragma warning(disable: 4297)
-# pragma warning(disable: 4267)
-# pragma warning(disable: 4293)
+#pragma warning(disable : 4146)
+#pragma warning(disable : 4197)
+#pragma warning(disable : 4297)
+#pragma warning(disable : 4267)
+#pragma warning(disable : 4293)
 #endif
-
-
 
 // Added in Cimg.h below struct type<float>...
 /*#include <limits>
@@ -61,7 +61,8 @@
 #ifdef isinf
             return (bool)isinf(val);
 #else
-            return !is_nan(val) && (val<cimg::type<half_float::half>::min() || val>cimg::type<half_float::half>::max());
+            return !is_nan(val) && (val<cimg::type<half_float::half>::min() ||
+val>cimg::type<half_float::half>::max());
 #endif
         }
         static bool is_nan(const half_float::half val) {
@@ -75,7 +76,8 @@
         static half_float::half max() { return std::numeric_limits<half_float::half>::max(); }
         static half_float::half inf() { return (half_float::half)cimg::type<double>::inf(); }
         static half_float::half nan() { return (half_float::half)cimg::type<double>::nan(); }
-        static half_float::half cut(const double val) { return val<(double)min() ? min() : val>(double)max() ? max() : (half_float::half)val; }
+        static half_float::half cut(const double val) { return val<(double)min() ? min() :
+val>(double)max() ? max() : (half_float::half)val; }
         static const char* format() { return "%.16g"; }
         static double format(const half_float::half val) { return (double)val; }
     };
@@ -85,24 +87,21 @@ using namespace cimg_library;
 
 namespace inviwo {
 
-std::unordered_map<std::string, DataFormatEnums::Id> extToBaseTypeMap_ = {
-          { "png", DataFormatEnums::UINT8 }
-        , { "jpg", DataFormatEnums::UINT8 }
-        , { "jpeg", DataFormatEnums::UINT8 }
-        , { "bmp", DataFormatEnums::UINT8 }
-        , { "exr", DataFormatEnums::FLOAT32 }
-        , { "hdr", DataFormatEnums::FLOAT32 }
-};
+std::unordered_map<std::string, DataFormatId> extToBaseTypeMap_ = {
+    {"png", DataFormatId::UInt8}, {"jpg", DataFormatId::UInt8},   {"jpeg", DataFormatId::UInt8},
+    {"bmp", DataFormatId::UInt8}, {"exr", DataFormatId::Float32}, {"hdr", DataFormatId::Float32}};
 
 ////////////////////// Templates ///////////////////////////////////////////////////
 
 // Single channel images
 template <typename T>
-struct CImgToIvwConvert {
+struct CImgToVoidConvert {
     static void* convert(void* dst, CImg<T>* img) {
-        //Inviwo store pixels interleaved (RGBRGBRGB), CImg stores pixels in a planer format (RRRRGGGGBBBB). 
-        //Permute from planer to interleaved format, does we need to specify cxyz as input instead of xyzc
-        if (img->spectrum() > 1){
+        // Inviwo store pixels interleaved (RGBRGBRGB), CImg stores pixels in a planer format
+        // (RRRRGGGGBBBB).
+        // Permute from planer to interleaved format, does we need to specify cxyz as input instead
+        // of xyzc
+        if (img->spectrum() > 1) {
             img->permute_axes("cxyz");
         }
 
@@ -112,7 +111,7 @@ struct CImgToIvwConvert {
         }
         const void* src = static_cast<const void*>(img->data());
 
-        std::memcpy(dst, src, img->size()*sizeof(T));
+        std::memcpy(dst, src, img->size() * sizeof(T));
 
         return dst;
     }
@@ -121,10 +120,11 @@ struct CImgToIvwConvert {
 // Single channel images
 template <typename T>
 struct LayerToCImg {
-    static CImg<T>* convert(const LayerRAM* inputLayerRAM, bool permute = true) {
-        //Single channel means we can do xyzc, as no permutation is needed
-        CImg<T>* img = new CImg<T>(static_cast<const T*>(inputLayerRAM->getData()),
-            inputLayerRAM->getDimensions().x, inputLayerRAM->getDimensions().y, 1, 1, false);
+    static std::unique_ptr<CImg<T>> convert(const LayerRAM* inputLayerRAM, bool permute = true) {
+        // Single channel means we can do xyzc, as no permutation is needed
+        auto img = util::make_unique<CImg<T>>(static_cast<const T*>(inputLayerRAM->getData()),
+                                              inputLayerRAM->getDimensions().x,
+                                              inputLayerRAM->getDimensions().y, 1, 1, false);
 
         return img;
     }
@@ -133,36 +133,35 @@ struct LayerToCImg {
 // Multiple channel images
 template <typename T, template <typename, glm::precision> class G>
 struct LayerToCImg<G<T, glm::defaultp>> {
-    static CImg<T>* convert(const LayerRAM* inputLayerRAM, bool permute = true) {
-        const DataFormatBase* dataFormat = inputLayerRAM->getDataFormat();
-        const G<T, glm::defaultp>* typedDataPtr = static_cast<const G<T, glm::defaultp>*>(inputLayerRAM->getData());
+    static std::unique_ptr<CImg<T>> convert(const LayerRAM* inputLayerRAM, bool permute = true) {
+        auto dataFormat = inputLayerRAM->getDataFormat();
+        auto typedDataPtr = static_cast<const G<T, glm::defaultp>*>(inputLayerRAM->getData());
 
-        //Inviwo store pixels interleaved (RGBRGBRGB), CImg stores pixels in a planer format (RRRRGGGGBBBB). 
-        //Permute from interleaved to planer format, does we need to specify yzcx as input instead of cxyz
-        CImg<T>* img = new CImg<T>(glm::value_ptr(*typedDataPtr),
-            dataFormat->getComponents(), inputLayerRAM->getDimensions().x, inputLayerRAM->getDimensions().y, 1, false);
-        
-        if (permute)
-            img->permute_axes("yzcx");
+        // Inviwo store pixels interleaved (RGBRGBRGB), CImg stores pixels in a planer format
+        // (RRRRGGGGBBBB).
+        // Permute from interleaved to planer format, does we need to specify yzcx as input instead
+        // of cxyz
+        auto img = util::make_unique<CImg<T>>(
+            glm::value_ptr(*typedDataPtr), dataFormat->getComponents(),
+            inputLayerRAM->getDimensions().x, inputLayerRAM->getDimensions().y, 1, false);
+
+        if (permute) img->permute_axes("yzcx");
 
         return img;
     }
 };
 
 struct CImgNormalizedLayerDispatcher {
-    using type = std::vector<unsigned char>*;
+    using type = std::unique_ptr<std::vector<unsigned char>>;
     template <typename T>
-    std::vector<unsigned char>* dispatch(const LayerRAM* inputLayer) {
-        CImg<typename T::primitive>* img = LayerToCImg<typename T::type>::convert(inputLayer, false);
+    std::unique_ptr<std::vector<unsigned char>> dispatch(const LayerRAM* inputLayer) {
+        auto img{LayerToCImg<typename T::type>::convert(inputLayer, false)};
 
         CImg<unsigned char> normalizedImg = img->get_normalize(0, 255);
-
         normalizedImg.mirror('z');
 
-        std::vector<unsigned char>* data =
-            new std::vector<unsigned char>(&normalizedImg[0], &normalizedImg[normalizedImg.size()]);
-
-        delete img;
+        auto data = util::make_unique<std::vector<unsigned char>>(
+            &normalizedImg[0], &normalizedImg[normalizedImg.size()]);
 
         return data;
     }
@@ -171,28 +170,31 @@ struct CImgNormalizedLayerDispatcher {
 struct CImgLoadLayerDispatcher {
     using type = void*;
     template <typename T>
-    void* dispatch(void* dst, const char* filePath, uvec2& dimensions, DataFormatEnums::Id& formatId, const DataFormatBase* dataFormat, bool rescaleToDim) {
-        CImg<typename T::primitive> img(filePath);
+    void* dispatch(void* dst, const char* filePath, uvec2& dimensions, DataFormatId& formatId,
+                   const DataFormatBase* dataFormat, bool rescaleToDim) {
+        using P = typename T::primitive;
 
+        CImg<P> img(filePath);
         size_t components = static_cast<size_t>(img.spectrum());
 
         if (rescaleToDim) {
-            img.resize(dimensions.x, dimensions.y);
-        }
-        else{
+            img.resize(dimensions.x, dimensions.y, -100, -100, 3);
+        } else {
             dimensions = uvec2(img.width(), img.height());
         }
 
-        const DataFormatBase* loadedDataFormat = DataFormatBase::get(dataFormat->getNumericType(), components, sizeof(typename T::primitive)*8);
-        if (loadedDataFormat)
+        auto loadedDataFormat = DataFormatBase::get(
+            dataFormat->getNumericType(), components, sizeof(P) * 8);
+        if (loadedDataFormat) {
             formatId = loadedDataFormat->getId();
-        else
+        } else {
             throw Exception("CImgLoadLayerDispatcher, could not find proper data type");
+        }
 
-        //Image is up-side-down
+        // Image is up-side-down
         img.mirror('y');
 
-        return CImgToIvwConvert<typename T::primitive>::convert(dst, &img);
+        return CImgToVoidConvert<P>::convert(dst, &img);
     }
 };
 
@@ -200,27 +202,52 @@ struct CImgSaveLayerDispatcher {
     using type = void;
     template <typename T>
     void dispatch(const char* filePath, const LayerRAM* inputLayer) {
-        CImg<typename T::primitive>* img = LayerToCImg<typename T::type>::convert(inputLayer);
+        auto img = LayerToCImg<typename T::type>::convert(inputLayer);
 
-        //Single channel format of the incoming format.
-        const DataFormatBase* inFormat = DataFormatBase::get(inputLayer->getDataFormat()->getNumericType(), 1, 
-            (inputLayer->getDataFormat()->getSize() / inputLayer->getDataFormat()->getComponents())*8);
-
-        //Should normalize based on output format i.e. PNG/JPG is 0-255, HDR different.
-        const DataFormatBase* outFormat = DataFLOAT32::get();
+        // Should rescale values based on output format i.e. PNG/JPG is 0-255, HDR different.
+        const DataFormatBase* outFormat = DataFloat32::get();
         std::string fileExtension = filesystem::getFileExtension(filePath);
         if (extToBaseTypeMap_.find(fileExtension) != extToBaseTypeMap_.end()) {
             outFormat = DataFormatBase::get(extToBaseTypeMap_[fileExtension]);
         }
 
-        //Image is up-side-down
+        // Image is up-side-down
         img->mirror('y');
 
-        if (inFormat != outFormat)
-            img->normalize(static_cast<typename T::primitive>(outFormat->getMin()), static_cast<typename T::primitive>(outFormat->getMax()));
+        const DataFormatBase* inFormat = inputLayer->getDataFormat();
+        double inMin = inFormat->getMin();
+        double inMax = inFormat->getMax();
+        double outMin = outFormat->getMin();
+        double outMax = outFormat->getMax();
 
-        img->save(filePath);
-        delete img;
+        // Special treatment for float data types:
+        // For float input images, we assume that the range is [0,1] (which is the same as rendered
+        // in a Canvas)
+        // For float output images, we normalize to [0,1]
+        // Note that no normalization is performed if both input and output are float images
+        if (inFormat->getNumericType() == NumericType::Float) {
+            inMin = 0.0;
+            inMax = 1.0;
+        }
+        if (outFormat->getNumericType() == NumericType::Float) {
+            outMin = 0.0;
+            outMax = 1.0;
+        }
+
+        // The image values should be rescaled if the ranges of the input and output are different
+        if (inMin != outMin || inMax != outMax) {
+            typename T::primitive* data = img->data();
+            double scale = (outMax - outMin) / (inMax - inMin);
+            for (size_t i = 0; i < img->size(); i++) {
+                auto dataValue = glm::clamp(static_cast<double>(data[i]), inMin, inMax);
+                data[i] = static_cast<typename T::primitive>((dataValue - inMin) * scale + outMin);
+            }
+        }
+        try {
+            img->save(filePath);
+        } catch (CImgIOException& e) {
+            throw DataWriterException("Failed to save image to: " + std::string(filePath), IvwContext);
+        }
     }
 };
 
@@ -228,46 +255,47 @@ struct CImgRescaleLayerDispatcher {
     using type = void*;
     template <typename T>
     void* dispatch(const LayerRAM* inputLayerRAM, uvec2 dst_dim) {
-        auto img = std::unique_ptr<CImg<typename T::primitive>>(LayerToCImg<typename T::type>::convert(inputLayerRAM));
+        auto img{LayerToCImg<typename T::type>::convert(inputLayerRAM)};
 
-        img->resize(dst_dim.x, dst_dim.y);
+        img->resize(dst_dim.x, dst_dim.y, -100, -100, 3);
 
-        return CImgToIvwConvert<typename T::primitive>::convert(nullptr, img.get());
+        return CImgToVoidConvert<typename T::primitive>::convert(nullptr, img.get());
     }
 };
 
 struct CImgLoadVolumeDispatcher {
     using type = void*;
     template <typename T>
-    void* dispatch(void* dst, const char* filePath, size3_t& dimensions, DataFormatEnums::Id& formatId, const DataFormatBase* dataFormat) {
+    void* dispatch(void* dst, const char* filePath, size3_t& dimensions, DataFormatId& formatId,
+                   const DataFormatBase* dataFormat) {
         CImg<typename T::primitive> img(filePath);
 
         size_t components = static_cast<size_t>(img.spectrum());
         dimensions = size3_t(img.width(), img.height(), img.depth());
 
-        const DataFormatBase* loadedDataFormat = DataFormatBase::get(dataFormat->getNumericType(), components, sizeof(typename T::primitive) * 8);
+        const DataFormatBase* loadedDataFormat = DataFormatBase::get(
+            dataFormat->getNumericType(), components, sizeof(typename T::primitive) * 8);
         if (loadedDataFormat)
             formatId = loadedDataFormat->getId();
         else
             throw Exception("CImgLoadVolumeDispatcher, could not find proper data type");
 
-        //Image is up-side-down
+        // Image is up-side-down
         img.mirror('y');
 
-        return CImgToIvwConvert<typename T::primitive>::convert(dst, &img);
+        return CImgToVoidConvert<typename T::primitive>::convert(dst, &img);
     }
 };
-
 
 ////////////////////// CImgUtils ///////////////////////////////////////////////////
 
 void* CImgUtils::loadLayerData(void* dst, const std::string& filePath, uvec2& dimensions,
-                               DataFormatEnums::Id& formatId, bool rescaleToDim) {
+                               DataFormatId& formatId, bool rescaleToDim) {
     std::string fileExtension = filesystem::getFileExtension(filePath);
     if (extToBaseTypeMap_.find(fileExtension) != extToBaseTypeMap_.end()) {
         formatId = extToBaseTypeMap_[fileExtension];
     } else {
-        formatId = DataFormatEnums::FLOAT32;
+        formatId = DataFormatId::Float32;
     }
     const DataFormatBase* dataFormat = DataFormatBase::get(formatId);
 
@@ -277,12 +305,12 @@ void* CImgUtils::loadLayerData(void* dst, const std::string& filePath, uvec2& di
 }
 
 void* CImgUtils::loadVolumeData(void* dst, const std::string& filePath, size3_t& dimensions,
-                                DataFormatEnums::Id& formatId) {
+                                DataFormatId& formatId) {
     std::string fileExtension = filesystem::getFileExtension(filePath);
     if (extToBaseTypeMap_.find(fileExtension) != extToBaseTypeMap_.end()) {
         formatId = extToBaseTypeMap_[fileExtension];
     } else {
-        formatId = DataFormatEnums::FLOAT32;
+        formatId = DataFormatId::Float32;
     }
     const DataFormatBase* dataFormat = DataFormatBase::get(formatId);
 
@@ -296,11 +324,12 @@ void CImgUtils::saveLayer(const std::string& filePath, const Layer* inputLayer) 
     inputLayer->getDataFormat()->dispatch(disp, filePath.c_str(), inputLayerRam);
 }
 
-std::vector<unsigned char>* CImgUtils::saveLayerToBuffer(std::string& fileType, const Layer* inputLayer) {
+std::unique_ptr<std::vector<unsigned char>> CImgUtils::saveLayerToBuffer(std::string& fileType,
+                                                                         const Layer* inputLayer) {
+    const LayerRAM* inputLayerRam = inputLayer->getRepresentation<LayerRAM>();  
+    fileType = "raw";  // Can only produce raw output
+
     CImgNormalizedLayerDispatcher disp;
-    const LayerRAM* inputLayerRam = inputLayer->getRepresentation<LayerRAM>();
-    // Can only produce raw output
-    fileType = "raw";
     return inputLayer->getDataFormat()->dispatch(disp, inputLayerRam);
 }
 
@@ -317,4 +346,3 @@ void* CImgUtils::rescaleLayerRAM(const LayerRAM* srcLayerRam, uvec2 dst_dim) {
 }  // namespace
 
 #include <warn/pop>
-

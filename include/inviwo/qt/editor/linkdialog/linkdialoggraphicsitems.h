@@ -24,11 +24,11 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#ifndef  IVW_LINKDIALOG_GRAPHICSITEMS_H
-#define  IVW_LINKDIALOG_GRAPHICSITEMS_H
+#ifndef IVW_LINKDIALOG_GRAPHICSITEMS_H
+#define IVW_LINKDIALOG_GRAPHICSITEMS_H
 
 #include <inviwo/qt/editor/inviwoqteditordefine.h>
 #include <inviwo/core/properties/property.h>
@@ -52,52 +52,75 @@
 #include <QEventLoop>
 #include <QCheckBox>
 #include <QTimeLine>
+#include <QToolTip>
 #include <warn/pop>
-
 
 namespace inviwo {
 
 namespace linkdialog {
-static const qreal linkdialogProcessorGraphicsitemDepth = 1.0f;
-static const qreal linkdialogPropertyGraphicsitemDepth = 2.0f;
-static const qreal linkdialogConnectionGraphicsitemDepth = 3.0f;
+static const qreal connectionDepth = 1.0f;
+static const qreal processorDepth = 2.0f;
+static const qreal propertyDepth = 3.0f;
+static const qreal connectionDragDepth = 4.0f;
 
-static const int processorItemWidth = 250; //all other parameters depends on processor width.
-static const int processorItemHeight = 50;
-static const int processorRoundedCorners = 9;
-static const int processorLabelHeight = 8;
+static const int offset = 2;
 
-static const int linkDialogWidth = processorItemWidth*4;
-static const int linkDialogHeight = processorItemHeight*12;
+static const int processorWidth = 250;  // all other parameters depends on processor width.
+static const int processorHeight = 40;
+static const int processorRoundedCorners = 5;
+static const int processorLabelHeight = 12;
 
-static const int propertyLabelHeight = 8;
-static const int propertyItemWidth = processorItemWidth*3/4;
-static const int propertyItemHeight = processorItemHeight*3/4 + 2*propertyLabelHeight;
-static const int propertyRoundedCorners = 0;
+static const int dialogWidth = processorWidth * 3;
+static const int dialogHeight = processorHeight * 12;
+
+static const int propertyLabelHeight = 12;
+static const int propertyWidth = processorWidth * 7 / 8;
+static const int propertyHeight = processorHeight;
+static const int propertyRoundedCorners = 3;
 
 static const int propertyExpandCollapseButtonSize = 8;
 static const int propertyExpandCollapseOffset = 16;
 
-static const int arrowDimensionWidth = propertyItemWidth/15;
-static const int arrowDimensionHeight = arrowDimensionWidth/2;
+static const int arrowWidth = propertyWidth / 15;
+static const int arrowHeight = arrowWidth / 2;
 }
 
 enum IVW_QTEDITOR_API InviwoLinkUserGraphicsItemType {
+    LinkDialogCurveGraphicsItemType = 3,
     LinkDialogProcessorGraphicsItemType = 4,
     LinkDialogPropertyGraphicsItemType = 5,
-    LinkDialogCurveGraphicsItemType = 6
+    LinkDialogDragCurveGraphicsItemType = 6,
+};
+
+
+class IVW_QTEDITOR_API LinkDialogParent {
+public:
+    enum class Side { Left, Right };
+    virtual int getLevel() const = 0;
+    virtual Side getSide() const = 0;
+    virtual void updatePositions() = 0;
 };
 
 template <typename T>
-class IVW_QTEDITOR_API GraphicsItemData : public QGraphicsRectItem {
+class GraphicsItemData : public QGraphicsRectItem, public LinkDialogParent {
 public:
-    GraphicsItemData(T* item=0) : QGraphicsRectItem() {item_ = item;}
-    T* getItem() {return item_;}
-    void setItem(T* item) {item_ = item;}
-private:
+    GraphicsItemData(Side side, T* item) : QGraphicsRectItem(), item_(item), side_(side) {}
+    T* getItem() { return item_; }
+    void setItem(T* item) { item_ = item; }
+    LinkDialogParent::Side getSide() const { return side_; }
+
+    void showToolTipHelper(QGraphicsSceneHelpEvent* e, QString string) const {
+        QGraphicsView* v = scene()->views().first();
+        QRectF rect = this->mapRectToScene(this->rect());
+        QRect viewRect = v->mapFromScene(rect).boundingRect();
+        QToolTip::showText(e->screenPos(), string, v, viewRect);
+    }
+
+protected:
     T* item_;
+    const Side side_;
 };
 
-} //namespace
+}  // namespace
 
-#endif //IVW_LINKDIALOG_GRAPHICSITEMS_H
+#endif  // IVW_LINKDIALOG_GRAPHICSITEMS_H

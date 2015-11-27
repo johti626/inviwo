@@ -33,11 +33,16 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(MeshCreator, "org.inviwo.MeshCreator");
-ProcessorDisplayName(MeshCreator, "Mesh Creator");
-ProcessorTags(MeshCreator, Tags::CPU);
-ProcessorCategory(MeshCreator, "Geometry Creation");
-ProcessorCodeState(MeshCreator, CODE_STATE_STABLE);
+const ProcessorInfo MeshCreator::processorInfo_{
+    "org.inviwo.MeshCreator",  // Class identifier
+    "Mesh Creator",            // Display name
+    "Geometry Creation",       // Category
+    CodeState::Stable,         // Code state
+    Tags::CPU,                 // Tags
+};
+const ProcessorInfo MeshCreator::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 MeshCreator::MeshCreator()
     : Processor()
@@ -46,7 +51,7 @@ MeshCreator::MeshCreator()
     , position2_("position2", "Stop Position", vec3(1.0f, 0.0f, 0.0f), vec3(-50.0f), vec3(50.0f))
     , normal_("normal", "Normal", vec3(0.0f, 0.0f, 1.0f), vec3(-50.0f), vec3(50.0f))
     , color_("color", "Color", vec4(1.0f, 1.0f, 1.0f, 1.0f), vec4(0.0f), vec4(1.0f), vec4(0.01f),
-             INVALID_OUTPUT, PropertySemantics::Color)
+             InvalidationLevel::InvalidOutput, PropertySemantics::Color)
     , meshScale_("scale", "Size scaling", 1.f, 0.01f, 10.f)
     , meshRes_("res", "Mesh resolution", vec2(16), vec2(1), vec2(1024))
     , meshType_("meshType", "Mesh Type") {
@@ -77,10 +82,6 @@ MeshCreator::MeshCreator()
 }
 
 MeshCreator::~MeshCreator() {}
-
-void MeshCreator::initialize() { Processor::initialize(); }
-
-void MeshCreator::deinitialize() { Processor::deinitialize(); }
 
 std::shared_ptr<Mesh> MeshCreator::createMesh() {
     switch (meshType_.getSelectedIndex()) {
@@ -134,3 +135,4 @@ std::shared_ptr<Mesh> MeshCreator::createMesh() {
 void MeshCreator::process() { outport_.setData(createMesh()); }
 
 }  // namespace
+

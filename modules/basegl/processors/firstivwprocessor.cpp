@@ -33,11 +33,16 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(FirstIvwProcessor, "org.inviwo.FirstIVWProcessor");
-ProcessorDisplayName(FirstIvwProcessor,  "First Processor");
-ProcessorTags(FirstIvwProcessor, Tags::GL);
-ProcessorCategory(FirstIvwProcessor, "Various");
-ProcessorCodeState(FirstIvwProcessor, CODE_STATE_STABLE);
+const ProcessorInfo FirstIvwProcessor::processorInfo_{
+    "org.inviwo.FirstIVWProcessor",  // Class identifier
+    "First Processor",               // Display name
+    "Various",                       // Category
+    CodeState::Stable,               // Code state
+    Tags::GL,                        // Tags
+};
+const ProcessorInfo FirstIvwProcessor::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 
 FirstIvwProcessor::FirstIvwProcessor()
@@ -46,20 +51,16 @@ FirstIvwProcessor::FirstIvwProcessor()
     , outport_("outport")
     , shader_("minimal.vert", "img_color.frag") {
 
-    shader_.onReload([this]() { invalidate(INVALID_RESOURCES); });
+    shader_.onReload([this]() { invalidate(InvalidationLevel::InvalidResources); });
 
     addProperty(color_);
     addPort(outport_);
-}
-
-void FirstIvwProcessor::initialize() {
-    Processor::initialize();
 
     quad_ = util::makeBuffer<vec2>(
-        {{-1.0f, -1.0f}, {1.0f, -1.0f}, {-1.0f, 1.0f}, {1.0f, 1.0f}});
+    { {-1.0f, -1.0f}, {1.0f, -1.0f}, {-1.0f, 1.0f}, {1.0f, 1.0f} });
 
     triangle_ = util::makeBuffer<vec2>(
-        {{0.0f, 1.0f}, {-1.0f, -1.0f}, {1.0f, -1.0f}});
+    { {0.0f, 1.0f}, {-1.0f, -1.0f}, {1.0f, -1.0f} });
 
     quadGL_ = quad_->getRepresentation<BufferGL>();
     triangleGL_ = triangle_->getRepresentation<BufferGL>();
@@ -86,3 +87,4 @@ void FirstIvwProcessor::process() {
 }
 
 } // namespace
+

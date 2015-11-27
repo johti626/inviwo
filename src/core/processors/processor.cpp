@@ -42,12 +42,6 @@ namespace inviwo {
 
 std::unordered_set<std::string> Processor::usedIdentifiers_;
 
-ProcessorClassIdentifier(Processor, "org.inviwo.Processor");
-ProcessorDisplayName(Processor, "Processor");
-ProcessorTags(Processor, Tags::None);
-ProcessorCategory(Processor, "undefined");
-ProcessorCodeState(Processor, CODE_STATE_EXPERIMENTAL);
-
 Processor::Processor()
     : PropertyOwner()
     , ProcessorObservable()
@@ -55,7 +49,8 @@ Processor::Processor()
     , identifier_("")
     , initialized_(false)
     , invalidationEnabled_(true)
-    , invalidationRequestLevel_(VALID) {
+    , invalidationRequestLevel_(InvalidationLevel::Valid) 
+    , network_(nullptr) {
     createMetaData<ProcessorMetaData>(ProcessorMetaData::CLASS_IDENTIFIER);
 }
 
@@ -126,6 +121,10 @@ ProcessorWidget* Processor::getProcessorWidget() const { return processorWidget_
 
 bool Processor::hasProcessorWidget() const { return (processorWidget_ != nullptr); }
 
+void Processor::setNetwork(ProcessorNetwork* network) { network_ = network; }
+
+ProcessorNetwork* Processor::getNetwork() const { return network_; }
+
 Port* Processor::getPort(const std::string& identifier) const {
     for (auto port : inports_) if (port->getIdentifier() == identifier) return port;
     for (auto port : outports_) if (port->getIdentifier() == identifier) return port;
@@ -178,7 +177,7 @@ void Processor::invalidate(InvalidationLevel invalidationLevel, Property* modifi
     notifyObserversInvalidationBegin(this);
     PropertyOwner::invalidate(invalidationLevel, modifiedProperty);
     if (!isValid()) {
-        for (auto& port : outports_) port->invalidate(INVALID_OUTPUT);
+        for (auto& port : outports_) port->invalidate(InvalidationLevel::InvalidOutput);
     }
     notifyObserversInvalidationEnd(this);
 
@@ -272,14 +271,14 @@ void Processor::setValid() {
 
 void Processor::enableInvalidation() {
     invalidationEnabled_ = true;
-    if (invalidationRequestLevel_ > VALID) {
+    if (invalidationRequestLevel_ > InvalidationLevel::Valid) {
         invalidate(invalidationRequestLevel_);
-        invalidationRequestLevel_ = VALID;
+        invalidationRequestLevel_ = InvalidationLevel::Valid;
     }
 }
 
 void Processor::disableInvalidation() {
-    invalidationRequestLevel_ = VALID;
+    invalidationRequestLevel_ = InvalidationLevel::Valid;
     invalidationEnabled_ = false;
 }
 
@@ -296,16 +295,9 @@ void Processor::propagateEvent(Event* event) {
 }
 
 const std::string Processor::getCodeStateString(CodeState state) {
-    switch (state) {
-        case CODE_STATE_STABLE:
-            return "Stable";
-        case CODE_STATE_BROKEN:
-            return "Broken";
-        case CODE_STATE_EXPERIMENTAL:
-            return "Experimental";
-        default:
-            return "Unknown";
-    }
+    std::stringstream ss;
+    ss << state;
+    return ss.str();
 }
 
 std::vector<std::string> Processor::getPath() const {

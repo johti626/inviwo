@@ -12,6 +12,7 @@ set(HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/2d/vector2dmagnitude.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/3d/vector3dcurl.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/3d/vector3ddivergence.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/processors/4d/tmip.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/datageneration/lorenzsystem.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/datageneration/vectorfieldgenerator2d.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/datageneration/vectorfieldgenerator3d.h
@@ -28,6 +29,7 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/2d/vector2dmagnitude.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/3d/vector3dcurl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/3d/vector3ddivergence.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/processors/4d/tmip.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/datageneration/lorenzsystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/datageneration/vectorfieldgenerator2d.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/datageneration/vectorfieldgenerator3d.cpp
@@ -50,6 +52,7 @@ set(SHADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/vector3ddivergence.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/vectorfieldgenerator2d.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/vectorfieldgenerator3d.frag
+    ${CMAKE_CURRENT_SOURCE_DIR}/glsl/tmip.frag
 )
 ivw_group("Shader Files" ${SHADER_FILES})
 
@@ -58,5 +61,13 @@ ivw_group("Shader Files" ${SHADER_FILES})
 ivw_create_module(${SOURCE_FILES} ${HEADER_FILES} ${SHADER_FILES})
 
 #--------------------------------------------------------------------
+# Handle external resources
+if(IVW_USE_GENERATED_RESOURCES)
+#--------------------------------------------------------------------
+# Generate shader resource (if GENERATE_SHADER_RESOURCES is checked)
+ivw_generate_shader_resource(${CMAKE_CURRENT_SOURCE_DIR}/glsl ${SHADER_FILES})
+else()
+#--------------------------------------------------------------------
 # Add shader directory to pack
 ivw_add_to_module_pack(${CMAKE_CURRENT_SOURCE_DIR}/glsl)
+endif()

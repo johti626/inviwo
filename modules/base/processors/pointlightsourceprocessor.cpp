@@ -36,17 +36,22 @@ namespace inviwo {
 
 PropertyClassIdentifier(PointLightTrackball, "org.inviwo.PointLightTrackball");
 
-ProcessorClassIdentifier(PointLightSourceProcessor, "org.inviwo.Pointlightsource");
-ProcessorDisplayName(PointLightSourceProcessor, "Point light source");
-ProcessorTags(PointLightSourceProcessor, Tags::CPU);
-ProcessorCategory(PointLightSourceProcessor, "Light source");
-ProcessorCodeState(PointLightSourceProcessor, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo PointLightSourceProcessor::processorInfo_{
+    "org.inviwo.Pointlightsource",  // Class identifier
+    "Point light source",           // Display name
+    "Light source",                 // Category
+    CodeState::Experimental,        // Code state
+    Tags::CPU,                      // Tags
+};
+const ProcessorInfo PointLightSourceProcessor::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 PointLightSourceProcessor::PointLightSourceProcessor()
     : Processor()
     , outport_("PointLightSource")
     , camera_("camera", "Camera", vec3(0.0f, 0.0f, -2.0f), vec3(0.0f, 0.0f, 0.0f),
-              vec3(0.0f, 1.0f, 0.0f), nullptr, VALID)
+              vec3(0.0f, 1.0f, 0.0f), nullptr, InvalidationLevel::Valid)
     , lightPosition_("lightPosition", "Light Source Position",
                      FloatVec3Property("position", "Position", vec3(-2.f, -50.f, 90.f),
                                        vec3(-100.f), vec3(100.f)),
@@ -230,3 +235,4 @@ PointLightTrackball::PointLightTrackball(PointLightInteractionHandler* p)
     : Trackball<PointLightInteractionHandler>(p, &(p->getCamera())) {}
 
 }  // namespace
+

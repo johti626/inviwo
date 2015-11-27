@@ -41,17 +41,22 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(EntryExitPoints, "org.inviwo.EntryExitPoints");
-ProcessorDisplayName(EntryExitPoints, "Entry Exit Points");
-ProcessorTags(EntryExitPoints, Tags::GL);
-ProcessorCategory(EntryExitPoints, "Geometry Rendering");
-ProcessorCodeState(EntryExitPoints, CODE_STATE_STABLE);
+const ProcessorInfo EntryExitPoints::processorInfo_{
+    "org.inviwo.EntryExitPoints",  // Class identifier
+    "Entry Exit Points",           // Display name
+    "Geometry Rendering",          // Category
+    CodeState::Stable,             // Code state
+    Tags::GL,                      // Tags
+};
+const ProcessorInfo EntryExitPoints::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 EntryExitPoints::EntryExitPoints()
     : Processor()
     , inport_("geometry")
-    , entryPort_("entry", DataVec4UINT16::get())
-    , exitPort_("exit", DataVec4UINT16::get())
+    , entryPort_("entry", DataVec4UInt16::get())
+    , exitPort_("exit", DataVec4UInt16::get())
     , camera_("camera", "Camera", vec3(0.0f, 0.0f, -2.0f), vec3(0.0f, 0.0f, 0.0f),
               vec3(0.0f, 1.0f, 0.0f), &inport_)
     , capNearClipping_("capNearClipping", "Cap near plane clipping", true)
@@ -68,8 +73,8 @@ EntryExitPoints::EntryExitPoints()
     addProperty(trackball_);
     entryPort_.addResizeEventListener(&camera_);
 
-    shader_.onReload([this]() { invalidate(INVALID_RESOURCES); });
-    clipping_.onReload([this]() { invalidate(INVALID_RESOURCES); });
+    shader_.onReload([this]() { invalidate(InvalidationLevel::InvalidResources); });
+    clipping_.onReload([this]() { invalidate(InvalidationLevel::InvalidResources); });
 }
 
 EntryExitPoints::~EntryExitPoints() {}
@@ -144,3 +149,4 @@ void EntryExitPoints::deserialize(IvwDeserializer& d) {
 }
 
 }  // namespace
+

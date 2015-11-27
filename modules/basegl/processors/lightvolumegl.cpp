@@ -37,11 +37,16 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(LightVolumeGL, "org.inviwo.LightVolumeGL");
-ProcessorDisplayName(LightVolumeGL,  "Light Volume");
-ProcessorTags(LightVolumeGL, Tags::GL);
-ProcessorCategory(LightVolumeGL, "Illumination");
-ProcessorCodeState(LightVolumeGL, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo LightVolumeGL::processorInfo_{
+    "org.inviwo.LightVolumeGL",  // Class identifier
+    "Light Volume",              // Display name
+    "Illumination",              // Category
+    CodeState::Experimental,     // Code state
+    Tags::GL,                    // Tags
+};
+const ProcessorInfo LightVolumeGL::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 GLfloat borderColor_[4] = {
     1.f, 1.f, 1.f, 1.f
@@ -141,8 +146,8 @@ LightVolumeGL::LightVolumeGL()
     floatPrecision_.onChange(this, &LightVolumeGL::floatPrecisionChanged);
     addProperty(floatPrecision_);
 
-    propagationShader_.onReload([this]() { invalidate(INVALID_RESOURCES); });
-    mergeShader_.onReload([this]() { invalidate(INVALID_RESOURCES); });
+    propagationShader_.onReload([this]() { invalidate(InvalidationLevel::InvalidResources); });
+    mergeShader_.onReload([this]() { invalidate(InvalidationLevel::InvalidResources); });
 }
 
 void LightVolumeGL::initialize() {
@@ -346,14 +351,14 @@ bool LightVolumeGL::volumeChanged(bool lightColorChanged) {
 
         if (supportColoredLight_.get()) {
             if (floatPrecision_.get())
-                format = DataVec4FLOAT32::get();
+                format = DataVec4Float32::get();
             else
-                format = DataVec4UINT8::get();
+                format = DataVec4UInt8::get();
         } else {
             if (floatPrecision_.get())
-                format = DataFLOAT32::get();
+                format = DataFloat32::get();
             else
-                format = DataUINT8::get();
+                format = DataUInt8::get();
         }
 
         for (auto& elem : propParams_) {
@@ -473,3 +478,4 @@ void LightVolumeGL::updatePermuationMatrices(const vec3& lightDir, PropagationPa
 
 
 } // namespace
+

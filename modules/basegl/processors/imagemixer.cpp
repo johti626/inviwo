@@ -34,22 +34,27 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(ImageMixer, "org.inviwo.ImageMixer");
-ProcessorDisplayName(ImageMixer, "Image Mixer");
-ProcessorTags(ImageMixer, Tags::GL);
-ProcessorCategory(ImageMixer, "Image Operation");
-ProcessorCodeState(ImageMixer, CODE_STATE_STABLE);
+const ProcessorInfo ImageMixer::processorInfo_{
+    "org.inviwo.ImageMixer",  // Class identifier
+    "Image Mixer",            // Display name
+    "Image Operation",        // Category
+    CodeState::Stable,        // Code state
+    Tags::GL,                 // Tags
+};
+const ProcessorInfo ImageMixer::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 ImageMixer::ImageMixer()
     : Processor()
     , inport0_("inport0")
     , inport1_("inport1")
     , outport_("outport")
-    , blendingMode_("blendMode", "Blend Mode", INVALID_RESOURCES)
+    , blendingMode_("blendMode", "Blend Mode", InvalidationLevel::InvalidResources)
     , weight_("weight", "Weight", 0.5f, 0.0f, 1.0f)
     , shader_("img_mix.frag", false) {
     
-    shader_.onReload([this]() { invalidate(INVALID_RESOURCES); });
+    shader_.onReload([this]() { invalidate(InvalidationLevel::InvalidResources); });
 
     addPort(inport0_);
     addPort(inport1_);
@@ -150,3 +155,4 @@ void ImageMixer::initializeResources() {
 }
 
 }  // namespace
+

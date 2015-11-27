@@ -32,17 +32,22 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(DirectionalLightSourceProcessor, "org.inviwo.Directionallightsource");
-ProcessorDisplayName(DirectionalLightSourceProcessor, "Directional light source");
-ProcessorTags(DirectionalLightSourceProcessor, Tags::CPU);
-ProcessorCategory(DirectionalLightSourceProcessor, "Light source");
-ProcessorCodeState(DirectionalLightSourceProcessor, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo DirectionalLightSourceProcessor::processorInfo_{
+    "org.inviwo.Directionallightsource",  // Class identifier
+    "Directional light source",           // Display name
+    "Light source",                       // Category
+    CodeState::Experimental,              // Code state
+    Tags::CPU,                            // Tags
+};
+const ProcessorInfo DirectionalLightSourceProcessor::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 DirectionalLightSourceProcessor::DirectionalLightSourceProcessor()
     : Processor()
     , outport_("DirectionalLightSource")
     , camera_("camera", "Camera", vec3(0.0f, 0.0f, -2.0f), vec3(0.0f, 0.0f, 0.0f),
-              vec3(0.0f, 1.0f, 0.0f), nullptr, VALID)
+              vec3(0.0f, 1.0f, 0.0f), nullptr, InvalidationLevel::Valid)
     , lightPosition_(
           "lightPosition", "Light Source Position",
           FloatVec3Property("position", "Position", vec3(100.f), vec3(-100.f), vec3(100.f)),
@@ -95,3 +100,4 @@ void DirectionalLightSourceProcessor::updateDirectionalLightSource(DirectionalLi
 }
 
 }  // namespace
+

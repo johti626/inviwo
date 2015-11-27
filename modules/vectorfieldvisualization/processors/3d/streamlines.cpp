@@ -12,11 +12,16 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(StreamLines, "org.inviwo.StreamLines")
-ProcessorDisplayName(StreamLines, "Stream Lines")
-ProcessorTags(StreamLines, Tags::CPU);
-ProcessorCategory(StreamLines, "Vector Field Visualization");
-ProcessorCodeState(StreamLines, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo StreamLines::processorInfo_{
+    "org.inviwo.StreamLines",      // Class identifier
+    "Stream Lines",                // Display name
+    "Vector Field Visualization",  // Category
+    CodeState::Experimental,       // Code state
+    Tags::CPU,                     // Tags
+};
+const ProcessorInfo StreamLines::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 StreamLines::StreamLines()
     : Processor()
@@ -31,19 +36,19 @@ StreamLines::StreamLines()
     , seedPointsSpace_("seedPointsSpace", "Seed Points Space")
     , tf_("transferFunction", "Transfer Function")
     , velocityScale_("velocityScale_", "Velocity Scale (inverse)", 1, 0, 10)
-    , maxVelocity_("minMaxVelocity", "Velocity Range", "0", VALID) {
+    , maxVelocity_("minMaxVelocity", "Velocity Range", "0", InvalidationLevel::Valid) {
     addPort(volume_);
     addPort(seedPoints_);
     addPort(linesStripsMesh_);
 
     stepSize_.setIncrement(0.0001f);
-    stepDirection_.addOption("fwd", "Forward", StreamLineTracer::Direction::FWD);
-    stepDirection_.addOption("bwd", "Backwards", StreamLineTracer::Direction::BWD);
-    stepDirection_.addOption("bi", "Bi Directional", StreamLineTracer::Direction::BOTH);
+    stepDirection_.addOption("fwd", "Forward", IntegralLineTracer::Direction::FWD);
+    stepDirection_.addOption("bwd", "Backwards", IntegralLineTracer::Direction::BWD);
+    stepDirection_.addOption("bi", "Bi Directional", IntegralLineTracer::Direction::BOTH);
 
-    integrationScheme_.addOption("euler", "Euler", StreamLineTracer::IntegrationScheme::Euler);
-    integrationScheme_.addOption("rk4", "Runge-Kutta (RK4)", StreamLineTracer::IntegrationScheme::RK4);
-    integrationScheme_.setSelectedValue(StreamLineTracer::IntegrationScheme::RK4);
+    integrationScheme_.addOption("euler", "Euler", IntegralLineTracer::IntegrationScheme::Euler);
+    integrationScheme_.addOption("rk4", "Runge-Kutta (RK4)", IntegralLineTracer::IntegrationScheme::RK4);
+    integrationScheme_.setSelectedValue(IntegralLineTracer::IntegrationScheme::RK4);
 
     seedPointsSpace_.addOption("texture", "Texture",
                                StructuredCoordinateTransformer<3>::Space::Texture);
@@ -98,13 +103,17 @@ void StreamLines::process() {
             vec4 P = m * vec4(p, 1.0f);
             auto indexBuffer =
                 mesh->addIndexBuffer(DrawType::LINES, ConnectivityType::STRIP_ADJACENCY);
-            auto line = tracer.traceFrom(P.xyz(), numberOfSteps_.get() + 2, stepSize_.get(),
+            auto line = tracer.traceFrom(P.xyz(), numberOfSteps_.get(), stepSize_.get(),
                                          stepDirection_.get(), normalizeSamples_.get());
 
             auto position = line.getPositions().begin();
             auto velocity = line.getMetaData("velocity").begin();
 
             auto size = line.getPositions().size();
+            if (size == 0) continue;
+
+            indexBuffer->add(0);
+
 
             for (size_t i = 0; i < size; i++) {
                 vec3 pos(*position);
@@ -122,6 +131,7 @@ void StreamLines::process() {
                 position++;
                 velocity++;
             }
+            indexBuffer->add(vertices.size() - 1);
         }
     }
 
@@ -132,3 +142,4 @@ void StreamLines::process() {
 }
 
 }  // namespace
+

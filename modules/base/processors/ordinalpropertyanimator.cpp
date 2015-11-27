@@ -33,11 +33,16 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(OrdinalPropertyAnimator, "org.inviwo.OrdinalPropertyAnimator");
-ProcessorDisplayName(OrdinalPropertyAnimator,  "Property Animator");
-ProcessorTags(OrdinalPropertyAnimator, Tags::CPU);
-ProcessorCategory(OrdinalPropertyAnimator, "Various");
-ProcessorCodeState(OrdinalPropertyAnimator, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo OrdinalPropertyAnimator::processorInfo_{
+    "org.inviwo.OrdinalPropertyAnimator",  // Class identifier
+    "Property Animator",                   // Display name
+    "Various",                             // Category
+    CodeState::Experimental,               // Code state
+    Tags::CPU,                             // Tags
+};
+const ProcessorInfo OrdinalPropertyAnimator::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 
 OrdinalPropertyAnimator::OrdinalPropertyAnimator()
@@ -95,7 +100,7 @@ OrdinalPropertyAnimator::~OrdinalPropertyAnimator() {
     for (auto p : properties_) delete p;
 }
 
-void OrdinalPropertyAnimator::initialize() {
+void OrdinalPropertyAnimator::initializeResources() {
     changeProperty();
     updateTimerInterval();
 }
@@ -129,4 +134,5 @@ void OrdinalPropertyAnimator::changeActive() {
 }
 
 } // namespace
+
 

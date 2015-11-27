@@ -37,11 +37,16 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(MeshClipping, "org.inviwo.MeshClipping");
-ProcessorDisplayName(MeshClipping,  "Mesh Clipping");
-ProcessorTags(MeshClipping, Tags::CPU);
-ProcessorCategory(MeshClipping, "Geometry Creation");
-ProcessorCodeState(MeshClipping, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo MeshClipping::processorInfo_{
+    "org.inviwo.MeshClipping",  // Class identifier
+    "Mesh Clipping",            // Display name
+    "Geometry Creation",        // Category
+    CodeState::Experimental,    // Code state
+    Tags::CPU,                  // Tags
+};
+const ProcessorInfo MeshClipping::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 const float MeshClipping::EPSILON = 0.00001f;
 
@@ -50,15 +55,15 @@ MeshClipping::MeshClipping()
     , inport_("geometry.input")
     , outport_("geometry.output")
     , clippingEnabled_("clippingEnabled", "Enable clipping", false)
-    , movePointAlongNormal_("movePointAlongNormal", "Move Plane Point Along Normal", false, VALID)
-    , moveCameraAlongNormal_("moveCameraAlongNormal", "Move Camera Along Normal", true, VALID)
+    , movePointAlongNormal_("movePointAlongNormal", "Move Plane Point Along Normal", false, InvalidationLevel::Valid)
+    , moveCameraAlongNormal_("moveCameraAlongNormal", "Move Camera Along Normal", true, InvalidationLevel::Valid)
     , pointPlaneMove_("pointPlaneMove", "Plane Point Along Normal Move", 0.f, -2.f, 2.f, 0.01f)
     , planePoint_("planePoint", "Plane Point", vec3(0.0f), vec3(-10.0f), vec3(10.0f), vec3(0.1f))
     , planeNormal_("planeNormal", "Plane Normal", vec3(0.0f, 0.0f, -1.0f), vec3(-1.0f), vec3(1.0f), vec3(0.1f))
-    , alignPlaneNormalToCameraNormal_("alignPlaneNormalToCameraNormal", "Align Plane Normal To Camera Normal", VALID)
+    , alignPlaneNormalToCameraNormal_("alignPlaneNormalToCameraNormal", "Align Plane Normal To Camera Normal", InvalidationLevel::Valid)
     , renderAsPoints_("renderAsPoints", "Render As Points by Default", false)
     , camera_("camera", "Camera", vec3(0.0f, 0.0f, -2.0f), vec3(0.0f, 0.0f, 0.0f),
-    vec3(0.0f, 1.0f, 0.0f), nullptr, VALID){
+    vec3(0.0f, 1.0f, 0.0f), nullptr, InvalidationLevel::Valid){
     addPort(inport_);
     addPort(outport_);
     addProperty(clippingEnabled_);
@@ -76,19 +81,11 @@ MeshClipping::MeshClipping()
     addProperty(renderAsPoints_);
 
     addProperty(camera_);
-}
-
-MeshClipping::~MeshClipping() {}
-
-void MeshClipping::initialize() {
-    Processor::initialize();
 
     onMovePointAlongNormalToggled();
 }
 
-void MeshClipping::deinitialize() {
-    Processor::deinitialize();
-}
+MeshClipping::~MeshClipping() {}
 
 void MeshClipping::process() {
     /* Processor overview

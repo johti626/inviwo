@@ -41,15 +41,20 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(RBFVectorFieldGenerator2D, "org.inviwo.RBFVectorFieldGenerator2D");
-ProcessorDisplayName(RBFVectorFieldGenerator2D, "RBF Based 2D Vector Field Generator");
-ProcessorTags(RBFVectorFieldGenerator2D, Tags::CPU);
-ProcessorCategory(RBFVectorFieldGenerator2D, "Data Creation");
-ProcessorCodeState(RBFVectorFieldGenerator2D, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo RBFVectorFieldGenerator2D::processorInfo_{
+    "org.inviwo.RBFVectorFieldGenerator2D",  // Class identifier
+    "RBF Based 2D Vector Field Generator",   // Display name
+    "Data Creation",                         // Category
+    CodeState::Experimental,                 // Code state
+    Tags::CPU,                               // Tags
+};
+const ProcessorInfo RBFVectorFieldGenerator2D::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 RBFVectorFieldGenerator2D::RBFVectorFieldGenerator2D()
     : Processor()
-    , vectorField_("vectorField", DataVec4FLOAT32::get(), false)
+    , vectorField_("vectorField", DataVec4Float32::get(), false)
     , size_("size", "Volume size", ivec2(700, 700), ivec2(1, 1), ivec2(1024, 1024))
     , seeds_("seeds", "Number of seeds", 9, 1, 100)
     , shape_("shape", "Shape Parameter", 1.2f, 0.0001f, 10.0f, 0.0001f)
@@ -112,7 +117,7 @@ void RBFVectorFieldGenerator2D::process() {
         LogError("Fuck, didn't work" << (testX ? "1" : "0") << (testY ? "1" : "0"));
     }
 
-    auto img = std::make_shared<Image>(size_.get(), DataVec4FLOAT32::get());
+    auto img = std::make_shared<Image>(size_.get(), DataVec4Float32::get());
 
     vec4 *data =
         static_cast<vec4 *>(img->getColorLayer()->getEditableRepresentation<LayerRAM>()->getData());
@@ -149,3 +154,4 @@ dvec2 RBFVectorFieldGenerator2D::randomVector() {
 }
 
 }  // namespace
+

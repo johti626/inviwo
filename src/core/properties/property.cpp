@@ -35,9 +35,7 @@
 
 namespace inviwo {
 
-PropertyClassIdentifier(Property, "org.inviwo.undefined");
-
-Property::Property(const std::string& identifier, const std::string& displayName,
+ Property::Property(const std::string& identifier, const std::string& displayName,
                    InvalidationLevel invalidationLevel, PropertySemantics semantics)
     : PropertyObservable()
     , IvwSerializable()
@@ -47,7 +45,7 @@ Property::Property(const std::string& identifier, const std::string& displayName
     , displayName_("displayName", displayName)
     , readOnly_("readonly", false)
     , semantics_("semantics", semantics)
-    , usageMode_("usageMode", APPLICATION)
+    , usageMode_("usageMode", UsageMode::Application)
     , visible_("visible", true)
     , propertyModified_(false)
     , invalidationLevel_(invalidationLevel)
@@ -92,7 +90,7 @@ Property& Property::operator=(const Property& that) {
 }
 
 Property* Property::clone() const {
-    return new Property(*this);
+    return nullptr; // See ticket #642 //make abstract...
 }
 
 Property::~Property() {}
@@ -185,7 +183,7 @@ bool Property::hasWidgets() const {
 }
 
 void Property::propertyModified() {
-    NetworkLock lock;
+    NetworkLock lock(this);
     onChangeCallback_.invokeAll();
     setPropertyModified(true);
 
@@ -197,7 +195,7 @@ void Property::propertyModified() {
         }
 
         // Invalidate Owner
-        if (getInvalidationLevel() > VALID) {
+        if (getInvalidationLevel() > InvalidationLevel::Valid) {
             owner->invalidate(getInvalidationLevel(), this);        
         }
     }
@@ -239,7 +237,7 @@ void Property::deserialize(IvwDeserializer& d) {
     semantics_.deserialize(d);
     notifyObserversOnSetSemantics(semantics_);
 
-    int mode = usageMode_;
+    int mode = static_cast<int>(usageMode_.value);
     d.deserialize(usageMode_.name, mode);
     usageMode_ = static_cast<UsageMode>(mode);
     notifyObserversOnSetUsageMode(usageMode_);

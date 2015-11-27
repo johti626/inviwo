@@ -60,9 +60,8 @@ public:
     FirstIvwProcessor();
     virtual ~FirstIvwProcessor() = default;
     
-    InviwoProcessorInfo();
-
-    void initialize() override;
+    virtual const ProcessorInfo getProcessorInfo() const override;
+    static const ProcessorInfo processorInfo_;
 
 protected:
     virtual void process() override;

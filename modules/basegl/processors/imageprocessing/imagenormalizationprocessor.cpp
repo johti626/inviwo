@@ -34,11 +34,16 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(ImageNormalizationProcessor, "org.inviwo.ImageNormalization");
-ProcessorDisplayName(ImageNormalizationProcessor,  "Image Normalization");
-ProcessorTags(ImageNormalizationProcessor, Tags::GL);
-ProcessorCategory(ImageNormalizationProcessor, "Image Operation");
-ProcessorCodeState(ImageNormalizationProcessor, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo ImageNormalizationProcessor::processorInfo_{
+    "org.inviwo.ImageNormalization",  // Class identifier
+    "Image Normalization",            // Display name
+    "Image Operation",                // Category
+    CodeState::Experimental,          // Code state
+    Tags::GL,                         // Tags
+};
+const ProcessorInfo ImageNormalizationProcessor::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 ImageNormalizationProcessor::ImageNormalizationProcessor()
     : ImageGLProcessor("img_normalize.frag")
@@ -51,8 +56,8 @@ ImageNormalizationProcessor::ImageNormalizationProcessor()
     , max_(1.0)
 {
 
-    minS_.setInvalidationLevel(VALID);
-    maxS_.setInvalidationLevel(VALID);
+    minS_.setInvalidationLevel(InvalidationLevel::Valid);
+    maxS_.setInvalidationLevel(InvalidationLevel::Valid);
     minS_.setReadOnly(true);
     maxS_.setReadOnly(true);
 
@@ -119,4 +124,5 @@ void ImageNormalizationProcessor::invalidateMinMax() {
 }
 
 } // namespace
+
 

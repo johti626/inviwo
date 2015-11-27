@@ -35,22 +35,27 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(Background, "org.inviwo.Background");
-ProcessorDisplayName(Background, "Background");
-ProcessorTags(Background, Tags::GL);
-ProcessorCategory(Background, "Image Operation");
-ProcessorCodeState(Background, CODE_STATE_STABLE);
+const ProcessorInfo Background::processorInfo_{
+    "org.inviwo.Background",  // Class identifier
+    "Background",             // Display name
+    "Image Operation",        // Category
+    CodeState::Stable,        // Code state
+    Tags::GL,                 // Tags
+};
+const ProcessorInfo Background::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 Background::Background()
     : Processor()
     , inport_("inport")
     , outport_("outport")
-    , backgroundStyle_("backgroundStyle", "Style", INVALID_RESOURCES)
+    , backgroundStyle_("backgroundStyle", "Style", InvalidationLevel::InvalidResources)
     , color1_("color1", "Color 1", vec4(0.0f, 0.0f, 0.0f, 1.0f))
     , color2_("color2", "Color 2", vec4(1.0f))
     , checkerBoardSize_("checkerBoardSize", "Checker Board Size", ivec2(10, 10), ivec2(1, 1),
                         ivec2(256, 256))
-    , switchColors_("Switch colors", "switch colors", VALID)
+    , switchColors_("Switch colors", "switch colors", InvalidationLevel::Valid)
     , shader_("background.frag", false) {
     addPort(inport_);
     addPort(outport_);
@@ -67,7 +72,7 @@ Background::Background()
     addProperty(checkerBoardSize_);
     addProperty(switchColors_);
     switchColors_.onChange(this, &Background::switchColors);
-    shader_.onReload([this]() { invalidate(INVALID_RESOURCES); });
+    shader_.onReload([this]() { invalidate(InvalidationLevel::InvalidResources); });
 }
 
 Background::~Background() {}
@@ -129,3 +134,4 @@ void Background::process() {
 }
 
 }  // namespace
+

@@ -37,11 +37,16 @@
 
 namespace inviwo {
 
-    ProcessorClassIdentifier(VectorFieldGenerator3D, "org.inviwo.VectorFieldGenerator3D");
-    ProcessorDisplayName(VectorFieldGenerator3D, "Vector Field Generator 3D");
-    ProcessorTags(VectorFieldGenerator3D, "GL");
-    ProcessorCategory(VectorFieldGenerator3D, "Data Creation");
-    ProcessorCodeState(VectorFieldGenerator3D, CODE_STATE_EXPERIMENTAL);
+const ProcessorInfo VectorFieldGenerator3D::processorInfo_{
+    "org.inviwo.VectorFieldGenerator3D",  // Class identifier
+    "Vector Field Generator 3D",          // Display name
+    "Data Creation",                      // Category
+    CodeState::Experimental,              // Code state
+    "GL",                                 // Tags
+};
+const ProcessorInfo VectorFieldGenerator3D::getProcessorInfo() const {
+    return processorInfo_;
+}
 
     VectorFieldGenerator3D::VectorFieldGenerator3D()
         : Processor()
@@ -49,9 +54,9 @@ namespace inviwo {
         , shader_("volume_gpu.vert", "volume_gpu.geom", "vectorfieldgenerator3d.frag", false)
         , fbo_()
         , size_("size", "Volume size", size3_t(16), size3_t(1), size3_t(1024))
-        , xValue_("x", "X", "-y", INVALID_RESOURCES)
-        , yValue_("y", "Y", "x", INVALID_RESOURCES)
-        , zValue_("z", "Z", "(1-sqrt(x*x+y*y))*0.4", INVALID_RESOURCES)
+        , xValue_("x", "X", "-y", InvalidationLevel::InvalidResources)
+        , yValue_("y", "Y", "x", InvalidationLevel::InvalidResources)
+        , zValue_("z", "Z", "(1-sqrt(x*x+y*y))*0.4", InvalidationLevel::InvalidResources)
         , xRange_("xRange", "X Range", -1, 1, -10, 10)
         , yRange_("yRange", "Y Range", -1, 1, -10, 10)
         , zRange_("zRange", "Z Range", -1, 1, -10, 10)
@@ -83,7 +88,7 @@ void VectorFieldGenerator3D::initializeResources() {
 
 void VectorFieldGenerator3D::process() {
 
-    volume_ = std::make_shared<Volume>(size_.get(), DataVec4FLOAT32::get());
+    volume_ = std::make_shared<Volume>(size_.get(), DataVec4Float32::get());
     volume_->dataMap_.dataRange = vec2(0, 1);
     volume_->dataMap_.valueRange = vec2(-1, 1);
     outport_.setData(volume_);
@@ -131,4 +136,5 @@ void VectorFieldGenerator3D::process() {
 }
 
 } // namespace
+
 

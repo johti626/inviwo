@@ -35,11 +35,16 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(HeightFieldProcessor, "org.inviwo.HeightFieldRenderGL");
-ProcessorDisplayName(HeightFieldProcessor,  "Height Field Renderer");
-ProcessorTags(HeightFieldProcessor, Tags::GL); 
-ProcessorCategory(HeightFieldProcessor, "Heightfield");
-ProcessorCodeState(HeightFieldProcessor, CODE_STATE_EXPERIMENTAL); 
+const ProcessorInfo HeightFieldProcessor::processorInfo_{
+    "org.inviwo.HeightFieldRenderGL",  // Class identifier
+    "Height Field Renderer",           // Display name
+    "Heightfield",                     // Category
+    CodeState::Experimental,           // Code state
+    Tags::GL,                          // Tags
+};
+const ProcessorInfo HeightFieldProcessor::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 HeightFieldProcessor::HeightFieldProcessor()
     : MeshRenderProcessorGL()
@@ -50,7 +55,7 @@ HeightFieldProcessor::HeightFieldProcessor()
     , terrainShadingMode_("terrainShadingMode", "Terrain Shading")
 {
     shader_ = Shader("heightfield.vert", "heightfield.frag", false);
-    shader_.onReload([this]() { invalidate(INVALID_RESOURCES); });
+    shader_.onReload([this]() { invalidate(InvalidationLevel::InvalidResources); });
 
     inportHeightfield_.onChange(this, &HeightFieldProcessor::heightfieldChanged);
     addPort(inportHeightfield_);
@@ -131,3 +136,4 @@ void HeightFieldProcessor::heightfieldChanged() {
 }
 
 } // namespace
+

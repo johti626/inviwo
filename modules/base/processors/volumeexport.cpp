@@ -37,18 +37,23 @@
 
 namespace inviwo {
 
-ProcessorClassIdentifier(VolumeExport, "org.inviwo.VolumeExport");
-ProcessorDisplayName(VolumeExport,  "Volume Export");
-ProcessorTags(VolumeExport, Tags::CPU);
-ProcessorCategory(VolumeExport, "Data Output");
-ProcessorCodeState(VolumeExport, CODE_STATE_STABLE);
+const ProcessorInfo VolumeExport::processorInfo_{
+    "org.inviwo.VolumeExport",  // Class identifier
+    "Volume Export",            // Display name
+    "Data Output",              // Category
+    CodeState::Stable,          // Code state
+    Tags::CPU,                  // Tags
+};
+const ProcessorInfo VolumeExport::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 VolumeExport::VolumeExport()
     : Processor()
     , volumePort_("volume")
     , volumeFile_("volumeFileName", "Volume file name",
                   InviwoApplication::getPtr()->getPath(InviwoApplication::PATH_VOLUMES, "/newvolume.dat") , "volume")
-    , exportVolumeButton_("snapshot", "Export Volume", VALID)
+    , exportVolumeButton_("snapshot", "Export Volume", InvalidationLevel::Valid)
     , overwrite_("overwrite", "Overwrite", false) {
     std::vector<FileExtension> ext = DataWriterFactory::getPtr()->getExtensionsForType<Volume>();
 
@@ -68,14 +73,6 @@ VolumeExport::VolumeExport()
 }
 
 VolumeExport::~VolumeExport() {}
-
-void VolumeExport::initialize() {
-    Processor::initialize();
-}
-
-void VolumeExport::deinitialize() {
-    Processor::deinitialize();
-}
 
 void VolumeExport::exportVolume() {
     auto volume = volumePort_.getData();
@@ -106,3 +103,4 @@ void VolumeExport::exportVolume() {
 void VolumeExport::process() {}
 
 } // namespace
+

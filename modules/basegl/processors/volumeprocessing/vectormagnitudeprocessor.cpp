@@ -30,15 +30,20 @@
 #include "vectormagnitudeprocessor.h"
 
 namespace inviwo {
-ProcessorClassIdentifier(VectorMagnitudeProcessor, "org.inviwo.VectorMagnitude");
-ProcessorDisplayName(VectorMagnitudeProcessor, "Vector Magnitude");
-ProcessorTags(VectorMagnitudeProcessor, Tags::GL);
-ProcessorCategory(VectorMagnitudeProcessor, "Volume Operation");
-ProcessorCodeState(VectorMagnitudeProcessor, CODE_STATE_STABLE);
+const ProcessorInfo VectorMagnitudeProcessor::processorInfo_{
+    "org.inviwo.VectorMagnitude",  // Class identifier
+    "Vector Magnitude",            // Display name
+    "Volume Operation",            // Category
+    CodeState::Stable,             // Code state
+    Tags::GL,                      // Tags
+};
+const ProcessorInfo VectorMagnitudeProcessor::getProcessorInfo() const {
+    return processorInfo_;
+}
 
 VectorMagnitudeProcessor::VectorMagnitudeProcessor()
     : VolumeGLProcessor("vectormagnitudeprocessor.frag") {
-    this->dataFormat_ = DataFLOAT32::get();
+    this->dataFormat_ = DataFloat32::get();
 }
 
 VectorMagnitudeProcessor::~VectorMagnitudeProcessor() {}
@@ -48,3 +53,4 @@ void VectorMagnitudeProcessor::postProcess() {
 }
 
 }  // namespace
+
