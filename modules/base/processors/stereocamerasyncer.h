@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2013-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,36 +24,59 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
+ * 
  *********************************************************************************/
 
-#include <inviwo/core/common/inviwoapplication.h>
-#include <inviwo/core/common/inviwomodule.h>
-#include <inviwo/core/processors/processorwidgetfactory.h>
+#ifndef IVW_STEREOCAMERASYNCER_H
+#define IVW_STEREOCAMERASYNCER_H
+
+#include <modules/base/basemoduledefine.h>
+#include <inviwo/core/common/inviwo.h>
+#include <inviwo/core/processors/processor.h>
+#include <inviwo/core/properties/cameraproperty.h>
+#include <inviwo/core/properties/ordinalproperty.h>
 
 namespace inviwo {
 
-bool ProcessorWidgetFactory::registerObject(ProcessorWidgetFactoryObject* widget) {
-    if (util::insert_unique(map_, widget->getProcessorClassIdentifier(), widget)) {
-        return true;
-    } else {
-        LogWarn("Processor Widget for class name: " << widget->getProcessorClassIdentifier()
-                                                    << " is already registered");
-        return false;
-    }
-}
+/** \docpage{org.inviwo.StereoCameraSyncer, Stereo Camera Syncer}
+ * ![](org.inviwo.StereoCameraSyncer.png?classIdentifier=org.inviwo.StereoCameraSyncer)
+ * A processor linking a left and right camera.
+ *
+ * 
+ * ### Properties
+ *   * __master__ Master Camera
+ *   * __left__ Left Camera
+ *   * __right__ Right Camera
+ *   * __seperation__ Eye separation
+ */
 
-std::unique_ptr<ProcessorWidget> ProcessorWidgetFactory::create(const std::string& key) const {
-    return std::unique_ptr<ProcessorWidget>(util::map_find_or_null(
-        map_, key, [](ProcessorWidgetFactoryObject* o) { return o->create(); }));
-}
 
-std::unique_ptr<ProcessorWidget> ProcessorWidgetFactory::create(Processor* processor) const {
-    return ProcessorWidgetFactory::create(processor->getClassIdentifier());
-}
+/**
+ * \class StereoCameraSyncer
+ * \brief A processor linking a left and right camera.
+ */
+class IVW_MODULE_BASE_API StereoCameraSyncer : public Processor { 
+public:
+    StereoCameraSyncer();
 
-bool ProcessorWidgetFactory::hasKey(const std::string& processorClassName) const {
-    return util::has_key(map_, processorClassName);
-}
 
-}  // namespace
+    virtual ~StereoCameraSyncer() = default;
+     
+    virtual void process() override;
+
+    virtual const ProcessorInfo getProcessorInfo() const override;
+    static const ProcessorInfo processorInfo_;
+private:
+    void pushMaster();
+    FloatProperty separation_;
+    CameraProperty master_;
+    CameraProperty left_;
+    CameraProperty right_;
+
+    bool isChanging = false;
+};
+
+} // namespace
+
+#endif // IVW_STEREOCAMERASYNCER_H
+

@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2013-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,33 +27,37 @@
  *
  *********************************************************************************/
 
-#include <inviwo/core/common/inviwoapplication.h>
-#include <inviwo/core/common/inviwomodule.h>
-#include <inviwo/core/processors/processorwidgetfactory.h>
+#include "imagecontourprocessor.h"
 
 namespace inviwo {
 
-bool ProcessorWidgetFactory::registerObject(ProcessorWidgetFactoryObject* widget) {
-    if (util::insert_unique(map_, widget->getProcessorClassIdentifier(), widget)) {
-        return true;
-    } else {
-        LogWarn("Processor Widget for class name: " << widget->getProcessorClassIdentifier()
-                                                    << " is already registered");
-        return false;
-    }
+// The Class Identifier has to be globally unique. Use a reverse DNS naming scheme
+const ProcessorInfo ImageContourProcessor::processorInfo_{
+    "org.inviwo.ImageContourProcessor",  // Class identifier
+    "Image Contour",                     // Display name
+    "Undefined",                         // Category
+    CodeState::Experimental,             // Code state
+    Tags::None,                          // Tags
+};
+const ProcessorInfo ImageContourProcessor::getProcessorInfo() const { return processorInfo_; }
+
+ImageContourProcessor::ImageContourProcessor()
+    : Processor()
+    , image_("image")
+    , mesh_("mesh")
+    , isoValue_("iso", "ISO Value", 0.5, 0, 1)
+    , color_("color", "Color", vec4(1.0)) {
+    addPort(image_);
+    addPort(mesh_);
+    addProperty(isoValue_);
+    addProperty(color_);
+    color_.setSemantics(PropertySemantics::Color);
+    color_.setCurrentStateAsDefault();
 }
 
-std::unique_ptr<ProcessorWidget> ProcessorWidgetFactory::create(const std::string& key) const {
-    return std::unique_ptr<ProcessorWidget>(util::map_find_or_null(
-        map_, key, [](ProcessorWidgetFactoryObject* o) { return o->create(); }));
-}
-
-std::unique_ptr<ProcessorWidget> ProcessorWidgetFactory::create(Processor* processor) const {
-    return ProcessorWidgetFactory::create(processor->getClassIdentifier());
-}
-
-bool ProcessorWidgetFactory::hasKey(const std::string& processorClassName) const {
-    return util::has_key(map_, processorClassName);
+void ImageContourProcessor::process() {
+    mesh_.setData(ImageContour::apply(
+        image_.getData()->getColorLayer()->getRepresentation<LayerRAM>(), isoValue_, color_));
 }
 
 }  // namespace

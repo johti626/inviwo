@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2013-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,33 +27,20 @@
  *
  *********************************************************************************/
 
-#include <inviwo/core/common/inviwoapplication.h>
-#include <inviwo/core/common/inviwomodule.h>
-#include <inviwo/core/processors/processorwidgetfactory.h>
+#include "imagecontour.h"
 
 namespace inviwo {
 
-bool ProcessorWidgetFactory::registerObject(ProcessorWidgetFactoryObject* widget) {
-    if (util::insert_unique(map_, widget->getProcessorClassIdentifier(), widget)) {
-        return true;
-    } else {
-        LogWarn("Processor Widget for class name: " << widget->getProcessorClassIdentifier()
-                                                    << " is already registered");
-        return false;
+std::shared_ptr<Mesh> ImageContour::apply(const LayerRepresentation *in, double isoValue,
+                                          vec4 color) {
+    detail::ImageContourDispatcher disp;
+    auto df = in->getDataFormat();
+    if (df->getNumericType() != NumericType::Float) {
+        isoValue =
+            static_cast<double>(df->getMin()) +
+            isoValue * (static_cast<double>(df->getMax()) - static_cast<double>(df->getMin()));
     }
-}
-
-std::unique_ptr<ProcessorWidget> ProcessorWidgetFactory::create(const std::string& key) const {
-    return std::unique_ptr<ProcessorWidget>(util::map_find_or_null(
-        map_, key, [](ProcessorWidgetFactoryObject* o) { return o->create(); }));
-}
-
-std::unique_ptr<ProcessorWidget> ProcessorWidgetFactory::create(Processor* processor) const {
-    return ProcessorWidgetFactory::create(processor->getClassIdentifier());
-}
-
-bool ProcessorWidgetFactory::hasKey(const std::string& processorClassName) const {
-    return util::has_key(map_, processorClassName);
+    return df->dispatch(disp, in, isoValue , color);
 }
 
 }  // namespace

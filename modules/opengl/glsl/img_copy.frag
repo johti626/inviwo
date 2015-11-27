@@ -26,7 +26,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * 
  *********************************************************************************/
-#ifdef ADDITIONAL_COLOR_LAYER_OUT_UNIFORMS
+#ifdef ADDITIONAL_COLOR_LAYERS
 ADDITIONAL_COLOR_LAYER_OUT_UNIFORMS
 #endif
 
@@ -37,9 +37,13 @@ uniform sampler2D picking_;
 in vec3 texCoord_;
 
 void main() {
+#ifdef SINGLE_CHANNEL
+    FragData0 = vec4(texture(color_, texCoord_.xy).r);
+#else
     FragData0 = texture(color_, texCoord_.xy);
+#endif
 
-#ifdef ADDITIONAL_COLOR_LAYER_WRITE
+#ifdef ADDITIONAL_COLOR_LAYERS
     ADDITIONAL_COLOR_LAYER_WRITE
 #endif
 

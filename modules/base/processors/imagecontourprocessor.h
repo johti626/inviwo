@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2013-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,33 +27,57 @@
  *
  *********************************************************************************/
 
-#include <inviwo/core/common/inviwoapplication.h>
-#include <inviwo/core/common/inviwomodule.h>
-#include <inviwo/core/processors/processorwidgetfactory.h>
+#ifndef IVW_IMAGECONTOURPROCESSOR_H
+#define IVW_IMAGECONTOURPROCESSOR_H
+
+#include <modules/base/basemoduledefine.h>
+#include <inviwo/core/common/inviwo.h>
+#include <inviwo/core/processors/processor.h>
+#include <inviwo/core/properties/ordinalproperty.h>
+#include <inviwo/core/ports/imageport.h>
+#include <inviwo/core/ports/meshport.h>
+
+#include <modules/base/algorithm/image/imagecontour.h>
 
 namespace inviwo {
 
-bool ProcessorWidgetFactory::registerObject(ProcessorWidgetFactoryObject* widget) {
-    if (util::insert_unique(map_, widget->getProcessorClassIdentifier(), widget)) {
-        return true;
-    } else {
-        LogWarn("Processor Widget for class name: " << widget->getProcessorClassIdentifier()
-                                                    << " is already registered");
-        return false;
-    }
-}
+/** \docpage{org.inviwo.ImageContourProcessor, Image Contour Processor}
+ * ![](org.inviwo.ImageContourProcessor.png?classIdentifier=org.inviwo.ImageContourProcessor)
+ * Explanation of how to use the processor.
+ *
+ * ### Inports
+ *   * __<Inport1>__ <description>.
+ *
+ * ### Outports
+ *   * __<Outport1>__ <description>.
+ *
+ * ### Properties
+ *   * __<Prop1>__ <description>.
+ *   * __<Prop2>__ <description>
+ */
 
-std::unique_ptr<ProcessorWidget> ProcessorWidgetFactory::create(const std::string& key) const {
-    return std::unique_ptr<ProcessorWidget>(util::map_find_or_null(
-        map_, key, [](ProcessorWidgetFactoryObject* o) { return o->create(); }));
-}
+/**
+ * \class ImageContourProcessor
+ * \brief <brief description>
+ * <Detailed description from a developer prespective>
+ */
+class IVW_MODULE_BASE_API ImageContourProcessor : public Processor {
+public:
+    ImageContourProcessor();
+    virtual ~ImageContourProcessor() = default;
 
-std::unique_ptr<ProcessorWidget> ProcessorWidgetFactory::create(Processor* processor) const {
-    return ProcessorWidgetFactory::create(processor->getClassIdentifier());
-}
+    virtual void process() override;
 
-bool ProcessorWidgetFactory::hasKey(const std::string& processorClassName) const {
-    return util::has_key(map_, processorClassName);
-}
+    virtual const ProcessorInfo getProcessorInfo() const override;
+    static const ProcessorInfo processorInfo_;
+
+private:
+    ImageInport image_;
+    MeshOutport mesh_;
+    DoubleProperty isoValue_;
+    FloatVec4Property color_;
+};
 
 }  // namespace
+
+#endif  // IVW_IMAGECONTOURPROCESSOR_H
