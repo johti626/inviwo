@@ -27,13 +27,6 @@
  * 
  *********************************************************************************/
 
-#ifdef _MSC_VER
-#ifdef IVW_DEBUG
-#pragma comment(linker, "/SUBSYSTEM:CONSOLE")
-#else
-#pragma comment(linker, "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
-#endif
-#endif
 #include <warn/push>
 #include <warn/ignore/all>
 #include <QFile>
@@ -51,7 +44,7 @@ int main(int argc, char** argv) {
 
     inviwo::LogCentral::init();
     inviwo::LogCentral::getPtr()->registerLogger(new inviwo::FileLogger(basePath));
-    inviwo::InviwoApplicationQt inviwoApp("Inviwo v" + IVW_VERSION, basePath, argc, argv);
+    inviwo::InviwoApplicationQt inviwoApp("Inviwo v" + IVW_VERSION, argc, argv);
     inviwoApp.setWindowIcon(QIcon(":/icons/inviwo_light.png"));
     inviwoApp.setAttribute(Qt::AA_NativeWindows);
     QFile styleSheetFile(":/stylesheets/inviwo.qss");

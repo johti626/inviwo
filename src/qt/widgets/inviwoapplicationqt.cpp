@@ -48,10 +48,10 @@
 
 namespace inviwo {
 
-InviwoApplicationQt::InviwoApplicationQt(std::string displayName, std::string basePath, int& argc,
+InviwoApplicationQt::InviwoApplicationQt(std::string displayName, int& argc,
                                          char** argv, bool movePointsOn)
     : QApplication(argc, argv)
-    , InviwoApplication(argc, argv, displayName, basePath)
+    , InviwoApplication(argc, argv, displayName)
     , movePointsOn_(movePointsOn)
     , mainWindow_(nullptr)
     , windowDecorationOffset_(0, 0) {
@@ -124,10 +124,10 @@ void InviwoApplicationQt::playSound(Message message) {
              ->get())) {
         if (message == Message::Ok)
             QSound::play(QString::fromStdString(
-                InviwoApplication::getPtr()->getPath(PathType::Resources) + "/sounds/ok.wav"));
+                filesystem::getPath(PathType::Resources) + "/sounds/ok.wav"));
         else if (message == Message::Error)
             QSound::play(QString::fromStdString(
-                InviwoApplication::getPtr()->getPath(PathType::Resources) + "/sounds/error.wav"));
+                filesystem::getPath(PathType::Resources) + "/sounds/error.wav"));
     }
 
 #endif

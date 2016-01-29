@@ -31,20 +31,23 @@
 #include <inviwo/core/util/filesystem.h>
 #include <inviwo/qt/widgets/properties/filepropertywidgetqt.h>
 #include <inviwo/qt/widgets/inviwofiledialog.h>
+#include <inviwo/core/util/tooltiphelper.h>
+#include <inviwo/core/properties/propertyowner.h>
 
 #include <warn/push>
 #include <warn/ignore/all>
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
 #include <QStandardPaths>
-#else
-#include <QDesktopServices>
 #endif
 
+#include <QDesktopServices>
 #include <QDir>
 #include <QFileDialog>
 #include <QList>
 #include <QSettings>
 #include <QUrl>
+#include <QDropEvent>
+#include <QMimeData>
 #include <warn/pop>
 
 namespace inviwo {
@@ -59,6 +62,7 @@ void FilePropertyWidgetQt::generateWidget() {
     QHBoxLayout* hLayout = new QHBoxLayout();
     setSpacingAndMargins(hLayout);
     setLayout(hLayout);
+    setAcceptDrops(true);
 
     label_ = new EditableLabelQt(this, property_);
     hLayout->addWidget(label_);
@@ -69,32 +73,52 @@ void FilePropertyWidgetQt::generateWidget() {
     widget->setLayout(hWidgetLayout);
 
     lineEdit_ = new QLineEdit(this);
-    lineEdit_->setReadOnly(true);
+    lineEdit_->installEventFilter(this);
+
+    connect(lineEdit_, &QLineEdit::returnPressed, [&]() {
+        lineEdit_->clearFocus();
+    });
 
     QSizePolicy sp = lineEdit_->sizePolicy();
     sp.setHorizontalStretch(3);
     lineEdit_->setSizePolicy(sp);
+    hWidgetLayout->addWidget(lineEdit_);
+
+    auto revealButton = new QToolButton(this);
+    revealButton->setIcon(QIcon(":/icons/reveal.png"));
+    hWidgetLayout->addWidget(revealButton);
+    connect(revealButton, &QToolButton::pressed, [&]() {
+        auto dir = filesystem::directoryExists(property_->get())
+                       ? property_->get()
+                       : filesystem::getFileDirectory(property_->get());
+
+        QDesktopServices::openUrl(
+            QUrl(QString::fromStdString("file:///" + dir), QUrl::TolerantMode));
+    });
 
     openButton_ = new QToolButton(this);
     openButton_->setIcon(QIcon(":/icons/open.png"));
-    hWidgetLayout->addWidget(lineEdit_);
     hWidgetLayout->addWidget(openButton_);
+    connect(openButton_, SIGNAL(pressed()), this, SLOT(setPropertyValue()));
 
     sp = widget->sizePolicy();
     sp.setHorizontalStretch(3);
     widget->setSizePolicy(sp);
-
     hLayout->addWidget(widget);
-    connect(openButton_, SIGNAL(pressed()), this, SLOT(setPropertyValue()));
 }
 
 void FilePropertyWidgetQt::setPropertyValue() {
-    std::string path{property_->get()};
+    std::string path{ property_->get() };
+
     if (!path.empty()) {
-        // only accept path if it exists
-        if (filesystem::directoryExists(path)) {
+        if (filesystem::directoryExists(path)) {  // if a folder is selected
             // TODO: replace with filesystem:: functionality!
             path = QDir(QString::fromStdString(path)).absolutePath().toStdString();
+        } else if (filesystem::fileExists(path)) {
+            // if a file is selected, set path the the folder, not the file
+            path = QDir(QString::fromStdString(filesystem::getFileDirectory(path)))
+                       .absolutePath()
+                       .toStdString();
         }
     }
 
@@ -152,9 +176,117 @@ void FilePropertyWidgetQt::setPropertyValue() {
     updateFromProperty();
 }
 
+void FilePropertyWidgetQt::dropEvent(QDropEvent* drop) {
+    auto data = drop->mimeData();
+    if (data->hasUrls()) {
+        if(data->urls().size()>0) {
+            auto url = data->urls().first();
+            property_->set(url.toLocalFile().toStdString());
+
+            drop->accept();
+        }
+    }
+}
+
+void FilePropertyWidgetQt::dragEnterEvent(QDragEnterEvent* event) {
+    switch (property_->getAcceptMode()) {
+        case FileProperty::AcceptMode::Save: {
+            event->ignore();
+            return;
+        }
+        case FileProperty::AcceptMode::Open: {
+            if (event->mimeData()->hasUrls()) {
+                auto data = event->mimeData();
+                if (data->hasUrls()) {
+                    if (data->urls().size() > 0) {
+                        auto url = data->urls().first();
+                        auto file = url.toLocalFile().toStdString();
+                        
+                        switch (property_->getFileMode()) {
+                            case FileProperty::FileMode::AnyFile:
+                            case FileProperty::FileMode::ExistingFile:
+                            case FileProperty::FileMode::ExistingFiles: {
+                                auto ext = toLower(filesystem::getFileExtension(file));
+                                for (const auto& filter : property_->getNameFilters()) {
+                                    if (filter.extension_ == ext) {
+                                        event->accept();
+                                        return;
+                                    }
+                                }
+                                break;
+                            }
+                        
+                            case FileProperty::FileMode::Directory:
+                            case FileProperty::FileMode::DirectoryOnly: {
+                                if(filesystem::directoryExists(file)) {
+                                    event->accept();
+                                    return;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            event->ignore();
+            return;
+        }      
+    }
+}
+
+
+void FilePropertyWidgetQt::dragMoveEvent(QDragMoveEvent *event) {
+    if(event->mimeData()->hasUrls()) event->accept();
+    else event->ignore();
+}
+
+bool FilePropertyWidgetQt::eventFilter(QObject * obj, QEvent * event) {
+    if(obj == lineEdit_ && event->type() == QEvent::FocusIn) {
+        auto path = QString::fromStdString(property_->get());
+        lineEdit_->setText(path);
+        lineEdit_->setCursorPosition(path.length());
+    } else if(obj == lineEdit_ && event->type() == QEvent::FocusOut) {
+        auto path = lineEdit_->text().toStdString();
+        property_->set(path);
+        lineEdit_->setText(QFileInfo(QString::fromStdString(path)).fileName());
+    }
+    return false; // let the event continue;
+}
+
 bool FilePropertyWidgetQt::requestFile() {
    setPropertyValue();
    return !property_->get().empty();
+}
+
+std::string FilePropertyWidgetQt::getToolTipText() {
+    if (property_) {
+        ToolTipHelper t(property_->getDisplayName());
+        t.tableTop();
+        t.row("Identifier", property_->getIdentifier());
+        t.row("Path", joinString(property_->getPath(), "."));
+        t.row("Semantics", property_->getSemantics().getString());
+        t.row("Validation Level",
+              PropertyOwner::invalidationLevelToString(property_->getInvalidationLevel()));
+
+        switch (property_->getFileMode()) {
+            case FileProperty::FileMode::AnyFile:
+            case FileProperty::FileMode::ExistingFile:
+            case FileProperty::FileMode::ExistingFiles: {
+                t.row("File", property_->get());
+                break;
+            }
+
+            case FileProperty::FileMode::Directory:
+            case FileProperty::FileMode::DirectoryOnly: {
+                t.row("Directory", property_->get());
+                break;
+            }
+        }
+        t.tableBottom();
+        return t;
+    } else {
+        return "";
+    }
 }
 
 void FilePropertyWidgetQt::updateFromProperty() {

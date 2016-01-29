@@ -34,6 +34,7 @@
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/processors/processor.h>
 #include <inviwo/core/ports/imageport.h>
+#include <inviwo/core/properties/boolproperty.h>
 #include <inviwo/core/properties/optionproperty.h>
 #include <inviwo/core/properties/ordinalproperty.h>
 #include <modules/opengl/shader/shader.h>
@@ -117,6 +118,7 @@ private:
 
     OptionPropertyInt blendingMode_; //!< blend mode from BlendModes::Mode
     FloatProperty weight_; //!< weighting factor
+    BoolProperty clamp_;
     Shader shader_;
 };
 

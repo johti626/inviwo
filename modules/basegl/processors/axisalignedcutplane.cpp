@@ -61,6 +61,8 @@ AxisAlignedCutPlane::AxisAlignedCutPlane()
     , boundingBoxShader_("geometryrendering.vert", "axisalignedcutplaneboundingbox.frag")
     , showBoundingBox_("boundingBox", "Show Bounding Box", true)
     , boundingBoxColor_("boundingBoxColor", "Bounding Box Color", vec4(0.0f, 0.0f, 0.0f, 1.0f))
+	, renderPointSize_("renderPointSize", "Point Size", 1.0f, 0.001f, 15.0f, 0.001f)
+	, renderLineWidth_("renderLineWidth", "Line Width", 1.0f, 0.001f, 15.0f, 0.001f)
     , nearestInterpolation_("nearestInterpolation", "Use nearest neighbor interpolation", false)
     , camera_("camera", "Camera")
     , trackball_(&camera_) {
@@ -74,7 +76,9 @@ AxisAlignedCutPlane::AxisAlignedCutPlane()
     addProperty(disableTF_);
     addProperty(tf_);
     addProperty(showBoundingBox_);
-    addProperty(boundingBoxColor_);
+	addProperty(boundingBoxColor_);
+	addProperty(renderPointSize_);
+	addProperty(renderLineWidth_);
 
     addProperty(camera_);
     addProperty(trackball_);
@@ -103,6 +107,9 @@ AxisAlignedCutPlane::AxisAlignedCutPlane()
         xSlide_.onVolumeChange(vol);
         ySlide_.onVolumeChange(vol);
         zSlide_.onVolumeChange(vol);
+        if (!boundingBoxMesh_) {
+            createBoundingBox();
+        }
         boundingBoxMesh_->setModelMatrix(vol->getModelMatrix());
         boundingBoxMesh_->setWorldMatrix(vol->getWorldMatrix());
     });
@@ -112,6 +119,7 @@ AxisAlignedCutPlane::AxisAlignedCutPlane()
     setAllPropertiesCurrentStateAsDefault();
 
     createBoundingBox();
+
 }
 
 void AxisAlignedCutPlane::process() {
@@ -119,6 +127,11 @@ void AxisAlignedCutPlane::process() {
         utilgl::activateTargetAndCopySource(outport_, imageInport_, ImageType::ColorDepth);
     } else {
         utilgl::activateAndClearTarget(outport_, ImageType::ColorDepth);
+    }
+    
+    if (!boundingBoxDrawer_) {
+        boundingBoxDrawer_ =
+            getNetwork()->getApplication()->getMeshDrawerFactory()->create(boundingBoxMesh_.get());
     }
 
     utilgl::GlBoolState depthTest(GL_DEPTH_TEST, true);
@@ -159,9 +172,6 @@ void AxisAlignedCutPlane::createBoundingBox() {
     boundingBoxMesh_->addVertex(vec3(1, 1, 1), vec3(1, 1, 1), boundingBoxColor_.get());
 
     boundingBoxMesh_->addIndices(1, 0, 2, 3, 7, 5, 4, 6, 2, 0, 4, 5, 1, 3, 7, 6);
-
-    boundingBoxDrawer_ =
-        InviwoApplication::getPtr()->getMeshDrawerFactory()->create(boundingBoxMesh_.get());
 }
 
 void AxisAlignedCutPlane::drawBoundingBox() {
@@ -170,6 +180,7 @@ void AxisAlignedCutPlane::drawBoundingBox() {
     utilgl::setShaderUniforms(boundingBoxShader_, camera_, "camera_");
     utilgl::setShaderUniforms(boundingBoxShader_, *boundingBoxMesh_, "geometry_");
     utilgl::setShaderUniforms(boundingBoxShader_, boundingBoxColor_);
+	utilgl::PolygonModeState polygon(GL_LINE, renderLineWidth_, renderPointSize_);
     boundingBoxDrawer_->draw();
     boundingBoxShader_.deactivate();
 }

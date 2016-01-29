@@ -52,7 +52,7 @@ ImageSourceSeries::ImageSourceSeries()
     , outport_("image.outport", DataVec4UInt8::get(), false)
     , findFilesButton_("findFiles", "Update File List")
     , imageFileDirectory_("imageFileDirectory", "Image file directory", "",
-                          InviwoApplication::getPtr()->getPath(PathType::Images, "/images"))
+                          filesystem::getPath(PathType::Images, "/images"))
     , currentImageIndex_("currentImageIndex", "Image index", 1, 1, 1, 1)
     , imageFileName_("imageFileName", "Image file name") {
     addPort(outport_);
@@ -109,7 +109,7 @@ void ImageSourceSeries::process() {
     imageFileName_.set(fileList_[currentIndex]);
 
     std::string fileExtension = filesystem::getFileExtension(currentFileName);
-    auto factory = InviwoApplication::getPtr()->getDataReaderFactory();
+    auto factory = getNetwork()->getApplication()->getDataReaderFactory();
     if (auto reader = factory->getReaderForTypeAndExtension<Layer>(fileExtension)) {
         try {
             auto outLayer = reader->readData(currentFileName);

@@ -39,10 +39,10 @@ namespace inviwo {
 GLFWModule::GLFWModule(InviwoApplication* app) : InviwoModule(app, "GLFW") {
     if (!glfwInit()) {
         LogError("GLFW could not be initialized.");
+        return;
     }
 
-    GLFWSharedCanvas_ = new CanvasGLFW(InviwoApplication::getPtr()->getDisplayName());
-    GLFWSharedCanvas_->initializeGL();
+    GLFWSharedCanvas_ = new CanvasGLFW(app->getDisplayName());
 
     RenderContext::getPtr()->setDefaultRenderContext(GLFWSharedCanvas_);
     GLFWSharedCanvas_->initializeSquare();

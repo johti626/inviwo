@@ -101,7 +101,7 @@ endfunction()
 
 #--------------------------------------------------------------------
 # Add own cmake modules
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}/")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}/modules")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_BINARY_DIR}/cmake/")
 
 #--------------------------------------------------------------------
@@ -164,12 +164,13 @@ set(IVW_EXTENSIONS_DIR          ${IVW_ROOT_DIR}/ext)
 set(IVW_BINARY_DIR              ${CMAKE_BINARY_DIR})
 set(IVW_LIBRARY_DIR             ${LIBRARY_OUTPUT_PATH})
 set(IVW_EXECUTABLE_DIR          ${EXECUTABLE_OUTPUT_PATH})
-set(IVW_CMAKE_SOURCE_MODULE_DIR ${CMAKE_CURRENT_LIST_DIR})
+set(IVW_CMAKE_SOURCE_MODULE_DIR ${CMAKE_CURRENT_LIST_DIR}/modules)
 set(IVW_CMAKE_BINARY_MODULE_DIR ${CMAKE_BINARY_DIR}/cmake)
+set(IVW_CMAKE_TEMPLATES         ${IVW_ROOT_DIR}/cmake/templates)
 
 #Generate headers
 generate_module_paths_header()
-configure_file(${IVW_CMAKE_SOURCE_MODULE_DIR}/inviwocommondefines_template.h 
+configure_file(${IVW_CMAKE_TEMPLATES}/inviwocommondefines_template.h 
                ${CMAKE_BINARY_DIR}/modules/_generated/inviwocommondefines.h 
                @ONLY IMMEDIATE)
 
@@ -261,7 +262,7 @@ if(WIN32 AND MSVC)
     add_definitions( "/W3 /D_CRT_SECURE_NO_WARNINGS /wd4005 /wd4996 /nologo" )
     string(REGEX REPLACE "[/\\-]Zm[0-9]+" " " CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Ym0x20000000")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zm512")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zm1000")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
 
@@ -364,7 +365,7 @@ else()
     option(PRECOMPILED_HEADERS "Create and use precompilied headers" ON)
 endif()
 
-include(${CMAKE_CURRENT_LIST_DIR}/clean_library_list.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/utilities/clean_library_list.cmake)
 if(PRECOMPILED_HEADERS)
     include(${CMAKE_CURRENT_LIST_DIR}/cotire.cmake)
 endif()

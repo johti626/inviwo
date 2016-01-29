@@ -47,7 +47,7 @@
 #include <modules/base/processors/ordinalpropertyanimator.h>
 #include <modules/base/processors/spotlightsourceprocessor.h>
 #include <modules/base/processors/surfaceextraction.h>
-#include <modules/base/processors/timestepselector.h>
+#include <modules/base/processors/volumevectorelementselectorprocessor.h>
 #include <modules/base/processors/volumesource.h>
 #include <modules/base/processors/volumeexport.h>
 #include <modules/base/processors/volumebasistransformer.h>
@@ -56,6 +56,8 @@
 #include <modules/base/processors/volumesubset.h>
 #include <modules/base/processors/volumevectorsource.h>
 #include <modules/base/processors/stereocamerasyncer.h>
+
+#include <modules/base/processors/volumeboundingbox.h>
 
 #include <modules/base/properties/basisproperty.h>
 #include <modules/base/properties/gaussianproperty.h>
@@ -99,8 +101,10 @@ BaseModule::BaseModule(InviwoApplication* app) : InviwoModule(app, "Base") {
     registerProcessor<VolumeSubset>();
     registerProcessor<ImageContourProcessor>();
     registerProcessor<VolumeVectorSource>();
-    registerProcessor<TimeStepSelector>();
+    registerProcessor<VolumeVectorElementSelectorProcessor>();
     registerProcessor<StereoCameraSyncer>();
+
+    registerProcessor<VolumeBoundingBox>();
 
     registerProperty<SequenceTimerProperty>();
     registerProperty<BasisProperty>();

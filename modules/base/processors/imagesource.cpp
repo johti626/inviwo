@@ -74,7 +74,7 @@ void ImageSource::process() {
     if (file_.get().empty()) return;
 
     std::string ext = filesystem::getFileExtension(file_.get());
-    auto factory = InviwoApplication::getPtr()->getDataReaderFactory();
+    auto factory = getNetwork()->getApplication()->getDataReaderFactory();
     if (auto reader = factory->getReaderForTypeAndExtension<Layer>(ext)) {
         try {
             auto outLayer = reader->readData(file_.get());

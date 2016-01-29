@@ -34,11 +34,18 @@
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/network/processornetworkobserver.h>
 
+#include <unordered_map>
+
+#include <warn/push>
+#include <warn/ignore/all>
 #include <QObject>
 #include <QMenu>
-#include <QSignalMapper>
+#include <warn/pop>
 
 namespace inviwo {
+
+class ShaderObject;
+class ShaderWidget;
 
 class IVW_MODULE_OPENGLQT_API OpenGLQtMenu : public QObject, public ProcessorNetworkObserver {
     #include <warn/push>
@@ -52,16 +59,14 @@ public:
     virtual void onProcessorNetworkDidAddProcessor(Processor* processor) override;
     virtual void onProcessorNetworkDidRemoveProcessor(Processor* processor) override;
 
-public slots:
-    void shaderMenuCallback(QObject* obj);
-    void shadersReload();
-
 private:
+    void showShader(const ShaderObject* obj);
+    void shadersReload();
     void updateShadersMenu();
 
     QMenu* shadersItem_;
-    std::map<unsigned int, QMenu*> shadersItems_;
-    QSignalMapper* shaderMapper_;
+    std::unordered_map<unsigned int, QMenu*> shadersItems_;
+    std::unordered_map<const ShaderObject*, ShaderWidget*> editors_;
 };
 
 }  // namespace
