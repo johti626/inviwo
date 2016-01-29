@@ -55,7 +55,7 @@ ImageSourceSeries::ImageSourceSeries()
     , findFilesButton_("findFiles", "Update File List")
     , imageFileDirectory_(
           "imageFileDirectory", "Image file directory", "",
-          InviwoApplication::getPtr()->getPath(InviwoApplication::PATH_IMAGES, "/images"))
+          InviwoApplication::getPtr()->getPath(PathType::Images, "/images"))
     , currentImageIndex_("currentImageIndex", "Image index", 1, 1, 1, 1)
     , imageFileName_("imageFileName", "Image file name") {
     addPort(outport_);
@@ -64,7 +64,7 @@ ImageSourceSeries::ImageSourceSeries()
     addProperty(currentImageIndex_);
     addProperty(imageFileName_);
 
-    validExtensions_ = DataReaderFactory::getPtr()->getExtensionsForType<Layer>();
+    validExtensions_ = InviwoApplication::getPtr()->getDataReaderFactory()->getExtensionsForType<Layer>();
 
     imageFileDirectory_.onChange(this, &ImageSourceSeries::onFindFiles);
     findFilesButton_.onChange(this, &ImageSourceSeries::onFindFiles);
@@ -111,9 +111,8 @@ void ImageSourceSeries::process() {
     imageFileName_.set(fileList_[currentIndex]);
 
     std::string fileExtension = filesystem::getFileExtension(currentFileName);
-    auto reader = DataReaderFactory::getPtr()->getReaderForTypeAndExtension<Layer>(fileExtension);
-
-    if (reader) {
+    auto factory = InviwoApplication::getPtr()->getDataReaderFactory();
+    if (auto reader = factory->getReaderForTypeAndExtension<Layer>(fileExtension)) {
         try {
             auto outLayer = reader->readData(currentFileName);
             // Call getRepresentation here to force read a ram representation.

@@ -34,11 +34,17 @@ namespace inviwo {
 VolumeVectorSampler::VolumeVectorSampler(
     std::shared_ptr<const std::vector<std::shared_ptr<Volume>>> volumeVector) {
     for (const auto &vol : (*volumeVector.get())) {
-        samplers_.push_back(VolumeSampler(vol.get()));
+        samplers_.emplace_back(vol);
     }
 }
 
 VolumeVectorSampler::~VolumeVectorSampler() {}
+
+void VolumeVectorSampler::setVectorInterpolation(bool enable) {
+    for (auto &s : samplers_) {
+        s.setVectorInterpolation(enable);
+    }
+}
 
 dvec4 VolumeVectorSampler::sample(const dvec4 &pos) const {
     dvec3 spatialPos = pos.xyz();

@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
     
     // Initialize application and register modules
     splashScreen.showMessage("Initializing modules...");
-    inviwoApp.initialize(&inviwo::registerAllModules);
+    inviwoApp.registerModules(&inviwo::registerAllModules);
     inviwoApp.processEvents();
     // setup main window
     mainWin.initialize();
@@ -84,10 +84,6 @@ int main(int argc, char** argv) {
     inviwoApp.processEvents();    // Make sure the gui is done loading before loading workspace
     mainWin.openLastWorkspace();  // open last workspace
     splashScreen.finish(&mainWin);
-
-#if defined(REG_INVIWOUNITTESTSMODULE) && defined(IVW_RUN_UNITTEST_ON_STARTUP)
-    inviwo::UnitTestsModule::runAllTests();
-#endif
 
     // process last arguments
     if (mainWin.processCommandLineArgs()) {

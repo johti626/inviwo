@@ -37,6 +37,8 @@
 #include <inviwo/core/util/threadpool.h>
 #include <inviwo/core/util/commandlineparser.h>
 #include <inviwo/core/util/vectoroperations.h>
+#include <inviwo/core/util/raiiutils.h>
+#include <inviwo/core/common/inviwomodulefactoryobject.h>
 
 #include <warn/push>
 #include <warn/ignore/all>
@@ -72,6 +74,21 @@ class InviwoModule;
 class ModuleCallbackAction;
 class FileObserver;
 
+enum class PathType {
+    Data,               // /data
+    Volumes,            // /data/volumes
+    Modules,            // /modules
+    Workspaces,         // /data/workspaces
+    Scripts,            // /data/workspaces
+    PortInspectors,     // /data/workspaces/portinspectors
+    Images,             // /data/images
+    Databases,          // /data/databases
+    Resources,          // /resources
+    TransferFunctions,  // /data/transferfunctions
+    Settings,           // path to the current users settings
+    Help,               // /data/help
+    Tests               // /tests
+};
 
 /**
  * \class InviwoApplication
@@ -83,7 +100,8 @@ class FileObserver;
  */
 class IVW_CORE_API InviwoApplication : public Singleton<InviwoApplication> {
 public:
-    typedef void (*registerModuleFuncPtr)(InviwoApplication*);
+    using RegisterModuleFunc =
+        std::function<std::vector<std::unique_ptr<InviwoModuleFactoryObject>>()>;
 
     InviwoApplication();
     InviwoApplication(std::string displayName, std::string basePath);
@@ -93,33 +111,11 @@ public:
 
     virtual ~InviwoApplication();
 
-    virtual void initialize(registerModuleFuncPtr);
-    virtual void deinitialize();
-    virtual bool isInitialized() { return initialized_; }
-
-    enum PathType {
-        PATH_DATA,               // /data
-        PATH_VOLUMES,            // /data/volumes
-        PATH_MODULES,            // /modules
-        PATH_WORKSPACES,         // /data/workspaces
-        PATH_SCRIPTS,            // /data/workspaces
-        PATH_PORTINSPECTORS,     // /data/workspaces/portinspectors
-        PATH_IMAGES,             // /data/images
-        PATH_DATABASES,          // /data/databases
-        PATH_RESOURCES,          // /resources
-        PATH_TRANSFERFUNCTIONS,  // /data/transferfunctions
-        PATH_SETTINGS,           //
-        PATH_HELP                // /data/help
-    };
-
-    virtual void closeInviwoApplication() {
-        LogWarn("this application have not implemented close inviwo function");
-    }
+    virtual void registerModules(RegisterModuleFunc func);
 
     /**
      * Get the base path of the application.
-     *
-     * @return
+     * i.e. where the core data and modules folder and etc are.
      */
     const std::string& getBasePath() const;
 
@@ -135,8 +131,9 @@ public:
     std::string getPath(PathType pathType, const std::string& suffix = "",
                         const bool& createFolder = false);
 
-    void registerModule(InviwoModule* module);
+    void registerModule(std::unique_ptr<InviwoModule> module);
     const std::vector<std::unique_ptr<InviwoModule>>& getModules() const;
+    const std::vector<std::unique_ptr<InviwoModuleFactoryObject>>& getModuleFactoryObjects() const;
 
     ProcessorNetwork* getProcessorNetwork();
     ProcessorNetworkEvaluator* getProcessorNetworkEvaluator();
@@ -147,13 +144,6 @@ public:
     const CommandLineParser* getCommandLineParser() const;
     template <class T>
     T* getModuleByType();
-
-    virtual void registerFileObserver(FileObserver* fileObserver) {}
-    virtual void startFileObservation(std::string fileName) {}
-    virtual void stopFileObservation(std::string fileName) {}
-
-    enum class Message { Ok, Error };
-    virtual void playSound(Message soundID) {}
 
     virtual void addCallbackAction(ModuleCallbackAction* callbackAction);
     virtual std::vector<std::unique_ptr<ModuleCallbackAction>>& getCallbackActions();
@@ -177,6 +167,7 @@ public:
     void setPostEnqueueFront(std::function<void()> func);
     void setProgressCallback(std::function<void(std::string)> progressCallback);
 
+    // Factory getters
     DataReaderFactory* getDataReaderFactory() const;
     DataWriterFactory* getDataWriterFactory() const;
     DialogFactory* getDialogFactory() const;
@@ -191,9 +182,18 @@ public:
     RepresentationConverterFactory* getRepresentationConverterFactory() const;
     ProcessorWidgetFactory* getProcessorWidgetFactory() const;
 
+    // Methods to be implemented by deriving classes
+    virtual void closeInviwoApplication();
+    virtual void registerFileObserver(FileObserver* fileObserver);
+    virtual void startFileObservation(std::string fileName);
+    virtual void stopFileObservation(std::string fileName);
+    enum class Message { Ok, Error };
+    virtual void playSound(Message soundID);
+
 protected:
-    void printApplicationInfo();
+    virtual void printApplicationInfo();
     void postProgress(std::string progress);
+    void cleanupSingletons();
 
 private:
     struct Queue {
@@ -208,7 +208,6 @@ private:
 
     std::string displayName_;
     std::string basePath_;
-    bool initialized_;
     Tags nonSupportedTags_;
 
     std::function<void(std::string)> progressCallback_;
@@ -216,26 +215,30 @@ private:
     ThreadPool pool_;
     Queue queue_;  // "Interaction/GUI" queue
 
+    util::OnScopeExit clearDataFormats_;
+    util::OnScopeExit clearAllSingeltons_;
+
+    // Factories
+    std::unique_ptr<DataReaderFactory> dataReaderFactory_;
+    std::unique_ptr<DataWriterFactory> dataWriterFactory_;
+    std::unique_ptr<DialogFactory> dialogFactory_;
+    std::unique_ptr<MeshDrawerFactory> meshDrawerFactory_;
+    std::unique_ptr<MetaDataFactory> metaDataFactory_;
+    std::unique_ptr<PortFactory> portFactory_;
+    std::unique_ptr<PortInspectorFactory> portInspectorFactory_;
+    std::unique_ptr<ProcessorFactory> processorFactory_;
+    std::unique_ptr<ProcessorWidgetFactory> processorWidgetFactory_;
+    std::unique_ptr<PropertyConverterManager> propertyConverterManager_;
+    std::unique_ptr<PropertyFactory> propertyFactory_;
+    std::unique_ptr<PropertyWidgetFactory> propertyWidgetFactory_;
+    std::unique_ptr<RepresentationConverterFactory> representationConverterFactory_;
+
+    std::vector<std::unique_ptr<InviwoModuleFactoryObject>> modulesFactoryObjects_;
     std::vector<std::unique_ptr<InviwoModule>> modules_;
     std::vector<std::unique_ptr<ModuleCallbackAction>> moudleCallbackActions_;
 
     std::unique_ptr<ProcessorNetwork> processorNetwork_;
     std::unique_ptr<ProcessorNetworkEvaluator> processorNetworkEvaluator_;
-
-    // Factories
-    DataReaderFactory* dataReaderFactory_;
-    DataWriterFactory* dataWriterFactory_;
-    DialogFactory* dialogFactory_;
-    MeshDrawerFactory* meshDrawerFactory_;
-    MetaDataFactory* metaDataFactory_;
-    PortFactory* portFactory_;
-    PortInspectorFactory* portInspectorFactory_;
-    ProcessorFactory* processorFactory_;
-    PropertyConverterManager* propertyConverterManager_;
-    PropertyFactory* propertyFactory_;
-    PropertyWidgetFactory* propertyWidgetFactory_;
-    RepresentationConverterFactory* representationConverterFactory_;
-    ProcessorWidgetFactory* processorWidgetFactory_;
 };
 
 template <class T>
@@ -246,7 +249,7 @@ T* InviwoApplication::getSettingsByType() {
 
 template <class T>
 T* InviwoApplication::getModuleByType() {
-    return getTypeFromVector<T>(getModules());
+    return getTypeFromVector<T>(modules_);
 }
 
 template <class F, class... Args>
@@ -285,48 +288,52 @@ auto dispatchPool(F&& f, Args&&... args) -> std::future<typename std::result_of<
 }
 
 inline DataReaderFactory* InviwoApplication::getDataReaderFactory() const {
-    return dataReaderFactory_;
+    return dataReaderFactory_.get();
 }
 
 inline DataWriterFactory* InviwoApplication::getDataWriterFactory() const {
-    return dataWriterFactory_;
+    return dataWriterFactory_.get();
 }
 
-inline DialogFactory* InviwoApplication::getDialogFactory() const { return dialogFactory_; }
+inline DialogFactory* InviwoApplication::getDialogFactory() const { return dialogFactory_.get(); }
 
 inline MeshDrawerFactory* InviwoApplication::getMeshDrawerFactory() const {
-    return meshDrawerFactory_;
+    return meshDrawerFactory_.get();
 }
 
-inline MetaDataFactory* InviwoApplication::getMetaDataFactory() const { return metaDataFactory_; }
+inline MetaDataFactory* InviwoApplication::getMetaDataFactory() const {
+    return metaDataFactory_.get();
+}
 
-inline PortFactory* InviwoApplication::getPortFactory() const { return portFactory_; }
+inline PortFactory* InviwoApplication::getPortFactory() const { return portFactory_.get(); }
 
 inline PortInspectorFactory* InviwoApplication::getPortInspectorFactory() const {
-    return portInspectorFactory_;
+    return portInspectorFactory_.get();
 }
 
 inline ProcessorFactory* InviwoApplication::getProcessorFactory() const {
-    return processorFactory_;
+    return processorFactory_.get();
 }
 
 inline PropertyConverterManager* InviwoApplication::getPropertyConverterManager() const {
-    return propertyConverterManager_;
+    return propertyConverterManager_.get();
 }
 
-inline PropertyFactory* InviwoApplication::getPropertyFactory() const { return propertyFactory_; }
+inline PropertyFactory* InviwoApplication::getPropertyFactory() const {
+    return propertyFactory_.get();
+}
 
 inline PropertyWidgetFactory* InviwoApplication::getPropertyWidgetFactory() const {
-    return propertyWidgetFactory_;
+    return propertyWidgetFactory_.get();
 }
 
 inline RepresentationConverterFactory* InviwoApplication::getRepresentationConverterFactory()
     const {
-    return representationConverterFactory_;
+    return representationConverterFactory_.get();
 }
 
 inline ProcessorWidgetFactory* InviwoApplication::getProcessorWidgetFactory() const {
-    return processorWidgetFactory_;
+    return processorWidgetFactory_.get();
 }
 
 }  // namespace

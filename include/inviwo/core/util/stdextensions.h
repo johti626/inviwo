@@ -36,6 +36,7 @@
 #include <warn/ignore/all>
 #include <memory>
 #include <string>
+#include <iterator>
 #include <algorithm>
 #include <functional>
 #include <vector>
@@ -308,6 +309,15 @@ OutIt copy_if(const T& cont, OutIt out, P pred) {
     using std::begin;
     using std::end;
     return std::copy_if(begin(cont), end(cont), out, pred);
+}
+
+template <typename T, typename P>
+auto copy_if(const T& cont, P pred) -> std::vector<typename T::value_type> {
+    using std::begin;
+    using std::end;
+    std::vector<typename T::value_type> res;
+    std::copy_if(begin(cont), end(cont), std::back_inserter(res), pred);
+    return res;
 }
 
 template <typename T, typename UnaryOperation>

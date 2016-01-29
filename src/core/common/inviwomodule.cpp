@@ -50,7 +50,7 @@
 #include <inviwo/core/util/filesystem.h>
 #include <inviwo/core/util/settings/settings.h>
 
-#include <pathsexternalmodules.h>
+#include <inviwomodulespaths.h>
 
 #include <algorithm>
 
@@ -105,20 +105,16 @@ std::string InviwoModule::getPath() const {
     std::string moduleNameLowerCase = getIdentifier();
     std::transform(moduleNameLowerCase.begin(), moduleNameLowerCase.end(),
                    moduleNameLowerCase.begin(), ::tolower);
-    if (filesystem::directoryExists(app_->getPath(InviwoApplication::PATH_MODULES) + "/" +
-                                    moduleNameLowerCase)) {
-        return app_->getPath(InviwoApplication::PATH_MODULES) + "/" + moduleNameLowerCase;
-    }
-#ifdef IVW_EXTERNAL_MODULES_PATH_COUNT
-    for (auto& elem : externalModulePaths_) {
+
+    for (auto& elem : inviwoModulePaths_) {
         std::string directory = elem + "/" + moduleNameLowerCase;
         if (filesystem::directoryExists(directory)) {
             return directory;
         }
     }
-#endif
+
     LogWarn(moduleNameLowerCase << " directory was not found");
-    return app_->getPath(InviwoApplication::PATH_MODULES) + "/" + moduleNameLowerCase;
+    return app_->getPath(PathType::Modules) + "/" + moduleNameLowerCase;
 }
 
 const std::vector<Capabilities*> InviwoModule::getCapabilities() const {
@@ -157,7 +153,14 @@ const std::vector<MeshDrawer*> InviwoModule::getDrawers() const { return uniqueT
 const std::vector<Resource*> InviwoModule::getResources() const { return uniqueToPtr(resources_); }
 const std::vector<Settings*> InviwoModule::getSettings() const { return uniqueToPtr(settings_); }
 
-std::string InviwoModule::getDescription() const { return "No description available"; }
+std::string InviwoModule::getDescription() const {
+    for (auto& item : app_->getModuleFactoryObjects()) {
+        if (item->name_ == identifier_) {
+            return item->description_;
+        }
+    }
+    return "No description available";
+}
 
 void InviwoModule::registerCapabilities(std::unique_ptr<Capabilities> info) {
     capabilities_.push_back(std::move(info));

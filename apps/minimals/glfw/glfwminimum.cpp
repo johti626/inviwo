@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
     CanvasGLFW::setAlwaysOnTopByDefault(false);
 
     // Initialize all modules
-    inviwoApp.initialize(&inviwo::registerAllModules);
+    inviwoApp.registerModules(&inviwo::registerAllModules);
 
     // Continue initialization of default context
     CanvasGLFW* sharedCanvas =
@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
     const std::string workspace =
         cmdparser->getLoadWorkspaceFromArg()
             ? cmdparser->getWorkspacePath()
-            : inviwoApp.getPath(InviwoApplication::PATH_WORKSPACES, "/boron.inv");
+            : inviwoApp.getPath(PathType::Workspaces, "/boron.inv");
 
     std::vector<std::unique_ptr<ProcessorWidget>> widgets;
     try {
@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
 
             for (auto processor : processors) {
                 processor->invalidate(InvalidationLevel::InvalidResources);
-                if (auto processorWidget = ProcessorWidgetFactory::getPtr()->create(processor)) {
+                if (auto processorWidget = InviwoApplication::getPtr()->getProcessorWidgetFactory()->create(processor)) {
                     processorWidget->setProcessor(processor);
                     processorWidget->initialize();
                     processorWidget->setVisible(processorWidget->ProcessorWidget::isVisible());
@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
 
     if (cmdparser->getCaptureAfterStartup()) {
         std::string path = cmdparser->getOutputPath();
-        if (path.empty()) path = inviwoApp.getPath(InviwoApplication::PATH_IMAGES);
+        if (path.empty()) path = inviwoApp.getPath(PathType::Images);
 
         util::saveAllCanvases(inviwoApp.getProcessorNetwork(), path, cmdparser->getSnapshotName());
     }
@@ -133,8 +133,6 @@ int main(int argc, char** argv) {
         glfwWaitEvents();
         inviwoApp.processFront();
     }
-
-    inviwoApp.deinitialize();
 
     return 0;
 }

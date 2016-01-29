@@ -54,6 +54,7 @@
 #include <modules/basegl/processors/imageprocessing/imagegamma.h>
 #include <modules/basegl/processors/imageprocessing/imageglprocessor.h>
 #include <modules/basegl/processors/imageprocessing/imagegrayscale.h>
+#include <modules/basegl/processors/imageprocessing/imagegradient.h>
 #include <modules/basegl/processors/imageprocessing/imageinvert.h>
 #include <modules/basegl/processors/imageprocessing/imagemapping.h>
 #include <modules/basegl/processors/imageprocessing/imageresample.h>
@@ -82,7 +83,7 @@ BaseGLModule::BaseGLModule(InviwoApplication* app) : InviwoModule(app, "BaseGL")
 #ifdef BASEGL_INCLUDE_SHADER_RESOURCES
     BASEGL_addGeneratedShaderResources();
 #else
-    ShaderManager::getPtr()->addShaderSearchPath(InviwoApplication::PATH_MODULES, "basegl/glsl");
+    ShaderManager::getPtr()->addShaderSearchPath(PathType::Modules, "basegl/glsl");
 #endif
     
     registerProcessor<Background>();
@@ -112,6 +113,7 @@ BaseGLModule::BaseGLModule(InviwoApplication* app) : InviwoModule(app, "BaseGL")
     registerProcessor<FindEdges>();
     registerProcessor<ImageGamma>();
     registerProcessor<ImageGrayscale>();
+    registerProcessor<ImageGradient>();
     registerProcessor<ImageInvert>();
     registerProcessor<ImageMapping>();
     registerProcessor<ImageResample>();

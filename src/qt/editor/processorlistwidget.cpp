@@ -169,7 +169,7 @@ void ProcessorTreeWidget::addProcessor(std::string className) {
     try {
         // create processor, add it to processor network, and generate it's widgets
         auto network = InviwoApplication::getPtr()->getProcessorNetwork();
-        if (auto p = ProcessorFactory::getPtr()->create(className)) {
+        if (auto p = InviwoApplication::getPtr()->getProcessorFactory()->create(className)) {
             auto meta = p->getMetaData<ProcessorMetaData>(ProcessorMetaData::CLASS_IDENTIFIER);
 
             auto pos = util::transform(network->getProcessors(), [](Processor* elem) {
@@ -214,9 +214,12 @@ const QIcon* ProcessorTreeWidget::getCodeStateIcon(CodeState state) const {
             return &iconExperimental_;
     }
 }
-QTreeWidgetItem* ProcessorTreeWidget::addToplevelItemTo(QString title) {
+QTreeWidgetItem* ProcessorTreeWidget::addToplevelItemTo(QString title, const std::string& desc) {
     QTreeWidgetItem* newItem = new QTreeWidgetItem(QStringList(title));
-
+    
+    if(!desc.empty()) {
+        newItem->setToolTip(0, utilqt::toLocalQString(desc));
+    }
     processorTree_->addTopLevelItem(newItem);
     processorTree_->setFirstItemColumnSpanned(newItem, true);
 
@@ -262,9 +265,9 @@ void ProcessorTreeWidget::addProcessorsToTree() {
     InviwoApplication* inviwoApp = InviwoApplication::getPtr();
 
     if (listView_->currentIndex() == 2) {
-        addToplevelItemTo("Stable Processors");
-        addToplevelItemTo("Experimental Processors");
-        addToplevelItemTo("Broken Processors");
+        addToplevelItemTo("Stable Processors", "");
+        addToplevelItemTo("Experimental Processors", "");
+        addToplevelItemTo("Broken Processors", "");
     }
 
     for (auto& elem : inviwoApp->getModules()) {
@@ -274,28 +277,34 @@ void ProcessorTreeWidget::addProcessorsToTree() {
         for (auto& processor : curProcessorList) {
             if (lineEdit_->text().isEmpty() || processorFits(processor, lineEdit_->text())) {
                 std::string categoryName;
+                std::string categoryDesc;
 
                 switch (listView_->currentIndex()) {
                     case 0:  // By Alphabet
                         categoryName = processor->getDisplayName().substr(0, 1);
+                        categoryDesc = "";
                         break;
                     case 1:  // By Category
                         categoryName = processor->getCategory();
+                        categoryDesc = "";
                         break;
                     case 2:  // By Code State
                         categoryName = Processor::getCodeStateString(processor->getCodeState());
+                        categoryDesc = "";
                         break;
                     case 3:  // By Module
                         categoryName = elem->getIdentifier();
+                        categoryDesc = elem->getDescription();
                         break;
                     default:
                         categoryName = "Unkonwn";
+                        categoryDesc = "";
                 }
 
                 QString category = QString::fromStdString(categoryName);
                 items = processorTree_->findItems(category, Qt::MatchFixedString, 0);
 
-                if (items.empty()) items.push_back(addToplevelItemTo(category));
+                if (items.empty()) items.push_back(addToplevelItemTo(category, categoryDesc));
                 addProcessorItemTo(items[0], processor, elem->getIdentifier());
             }
         }

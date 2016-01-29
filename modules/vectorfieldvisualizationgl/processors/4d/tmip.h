@@ -33,6 +33,7 @@
 #include <modules/vectorfieldvisualizationgl/vectorfieldvisualizationglmoduledefine.h>
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/properties/ordinalproperty.h>
+#include <inviwo/core/properties/optionproperty.h>
 #include <inviwo/core/properties/stringproperty.h>
 #include <inviwo/core/properties/compositeproperty.h>
 #include <inviwo/core/processors/processor.h>
@@ -65,6 +66,11 @@ namespace inviwo {
 class IVW_MODULE_VECTORFIELDVISUALIZATIONGL_API TMIP : public Processor {
 public:
 
+    enum class OutputType {
+        Scalar , 
+        HighestVelocity
+    };
+
     TMIP();
     virtual ~TMIP() = default;
 
@@ -85,6 +91,10 @@ private:
 
     DataInport<std::vector<std::shared_ptr<Volume>>> inport_;
     VolumeOutport outport_;
+
+
+    TemplateOptionProperty<OutputType> outputType_;
+
     std::shared_ptr<Volume> volume0_;
     std::shared_ptr<Volume> volume1_;
 

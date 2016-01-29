@@ -11,6 +11,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/common/inviwocore.h
     ${IVW_INCLUDE_DIR}/inviwo/core/common/inviwocoredefine.h
     ${IVW_INCLUDE_DIR}/inviwo/core/common/inviwomodule.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/common/inviwomodulefactoryobject.h
     ${IVW_INCLUDE_DIR}/inviwo/core/common/moduleaction.h
     ${IVW_INCLUDE_DIR}/inviwo/core/common/modulecallback.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/buffer/buffer.h
@@ -237,6 +238,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/util/introspection.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/inviwosetupinfo.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/logcentral.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/util/logerrorcounter.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/observer.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/raiiutils.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/rendercontext.h
@@ -266,6 +268,7 @@ set(SOURCE_FILES
     common/inviwoapplication.cpp
     common/inviwocore.cpp
     common/inviwomodule.cpp
+    common/inviwomodulefactoryobject.cpp
     common/moduleaction.cpp
     datastructures/buffer/buffer.cpp
     datastructures/buffer/bufferram.cpp
@@ -378,7 +381,6 @@ set(SOURCE_FILES
     ports/portinspectorfactoryobject.cpp
     processors/activityindicator.cpp
     processors/canvasprocessor.cpp
-    processors/canvasprocessorwidget.cpp
     processors/processor.cpp
     processors/processorfactory.cpp
     processors/processorinfo.cpp
@@ -442,6 +444,7 @@ set(SOURCE_FILES
     util/introspection.cpp
     util/inviwosetupinfo.cpp
     util/logcentral.cpp
+    util/logerrorcounter.cpp
     util/observer.cpp    
     util/raiiutils.cpp
     util/rendercontext.cpp
@@ -475,26 +478,15 @@ set(PCH_PATH_FILES
 )
 ivw_add_pch_path(${PCH_PATH_FILES})
 
-
 set(TEST_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/unittests/inviwoapplication-test.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/unittests/commandlineparser-test.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/unittests/processorcreation-test.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/unittests/urlparser-test.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/unittests/volume-test.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/unittests/image-test.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/unittests/picking-test.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/unittests/stacktrace-test.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/unittests/metadata-test.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/unittests/network-test.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/unittests/serializer-test.cpp
+    tests/unittests/inviwo-core-unittest-main.cpp
+    tests/unittests/commandlineparser-test.cpp
+    tests/unittests/urlparser-test.cpp
+    tests/unittests/picking-test.cpp
+    tests/unittests/metadata-test.cpp
+    tests/unittests/serializer-test.cpp
 )
 ivw_add_unittest(${TEST_FILES})
-
-
-#--------------------------------------------------------------------
-# Define standard defintions
-ivw_define_standard_definitions(IVW_CORE)
 
 # Special Core Defines
 remove_definitions(-DHAVE_CONFIG_H)
@@ -507,6 +499,10 @@ add_definitions(-DCMAKE_GENERATOR="${CMAKE_GENERATOR}")
 #--------------------------------------------------------------------
 # Create library
 add_library(inviwo-core ${SOURCE_FILES} ${HEADER_FILES})
+
+#--------------------------------------------------------------------
+# Define standard defintions
+ivw_define_standard_definitions(IVW_CORE inviwo-core)
 
 #--------------------------------------------------------------------
 # Add core folders to includes
@@ -553,3 +549,7 @@ ivw_compile_optimize()
 # Make package (for other projects to find)
 ivw_set_cpack_name(core)
 ivw_make_package(InviwoCore inviwo-core)
+
+if(IVW_UNITTESTS)
+    ivw_make_unittest_target("inviwo-core" "")
+endif()

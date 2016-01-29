@@ -54,17 +54,21 @@ TMIP::TMIP()
     : Processor()
     , inport_("inport")
     , outport_("outport")
+    , outputType_("outputType","Output type")
     , shader_("volume_gpu.vert", "volume_gpu.geom", "tmip.frag", false)
     , shaderLast_("volume_gpu.vert", "volume_gpu.geom", "tmip.frag", false)
     , fbo_() {
     addPort(inport_);
     addPort(outport_);
 
+    addProperty(outputType_);
+    outputType_.addOption("scalar", "Maximum Scalar", OutputType::Scalar);
+    outputType_.addOption("velocity", "Vector with maximum velocity", OutputType::HighestVelocity);
+
     inport_.onChange([this]() { initializeResources(); });
 
     glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxSamplers_);
     maxSamplers_ -= 1;
-    // maxVolumesGL_ = 2;
 }
 
 void TMIP::process() {
@@ -89,7 +93,6 @@ void TMIP::process() {
     }
 
     int iterations = static_cast<int>(std::ceil(volumes->size() / static_cast<float>(maxSamplers_)));
-    LogInfo(iterations);
 
     std::shared_ptr<Volume> readVol = volume0_;
     std::shared_ptr<Volume> writeVol = volume1_;
@@ -132,7 +135,6 @@ void TMIP::initializeResources() {
 }
 
 void TMIP::initShader(Shader& s, int samplers) {
-    LogInfo("Init shader with " << samplers << "samplers");
     std::stringstream uniforms;
     std::stringstream sampling;
     std::stringstream maximum;
@@ -144,11 +146,26 @@ void TMIP::initShader(Shader& s, int samplers) {
         uniforms << "uniform sampler3D volume" << id << ";";
         sampling << "vec4 sample" << i << " = getVoxel(volume" << id
                  << ", volumeParameters, texCoord_.xyz);";
-        if (i == 0) {
-            maximum << "result.xyz = sample0.xyz;result.a = length(sample0.xyz);";
-        } else {
-            maximum << "{ float l = length(sample" << i
+
+        switch (outputType_.get())
+        {
+        case OutputType::Scalar:
+            if (i == 0) {
+                maximum << "result = sample0;";
+            }
+            else {
+                maximum << "result = max(result,sample" << i << ");";
+            }
+            break;
+        case OutputType::HighestVelocity:
+            if (i == 0) {
+                maximum << "result = sample0.xyz;result.a = length(sample0.xyz);";
+            }
+            else {
+                maximum << "{ float l = length(sample" << i
                     << ".xyz); if(l > result.a)   result = vec4(sample" << i << ".xyz,l);}";
+            }
+            break;
         }
 
         i++;

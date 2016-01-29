@@ -55,7 +55,11 @@ class IVW_CORE_API VolumeSampler {
 public:
     VolumeSampler(const VolumeRAM *ram);
     VolumeSampler(const Volume *vol);
+    VolumeSampler(std::shared_ptr<const Volume> sharedVolume);
     virtual ~VolumeSampler();
+
+    void setVectorInterpolation(bool enable);
+    bool getVectorInterpolation()const;
 
     dvec4 sample(const dvec3 &pos) const;
     dvec4 sample(double x, double y, double z) const { return sample(dvec3(x, y, z)); }
@@ -65,6 +69,8 @@ private:
     dvec4 getVoxel(const size3_t &pos)const;
     const VolumeRAM *vol_;
     size3_t dims_;
+    bool vectorInterpolation_;
+    std::shared_ptr<const Volume> sharedVolume_;
 };
 
 template <typename T,typename P>
@@ -75,6 +81,11 @@ public:
 
     TemplateVolumeSampler(const Volume *vol)
         : TemplateVolumeSampler(vol->getRepresentation<VolumeRAM>()) {}
+
+    TemplateVolumeSampler(std::shared_ptr<const Volume> sharedVolume)
+        : TemplateVolumeSampler(sharedVolume.get()) {
+        sharedVolume_ = sharedVolume;
+    }
 
     virtual ~TemplateVolumeSampler(){}
 
@@ -106,6 +117,7 @@ private:
     const T *data_;
     size3_t dims_;
     util::IndexMapper3D ic_;
+    std::shared_ptr<const Volume> sharedVolume_;
 };
 
 }  // namespace

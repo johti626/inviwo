@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
     inviwoApp.setAttribute(Qt::AA_NativeWindows);
 
     // Initialize all modules
-    inviwoApp.initialize(&inviwo::registerAllModules);
+    inviwoApp.registerModules(&inviwo::registerAllModules);
 
     // Continue initialization of default context
     Canvas* sharedCanvas = RenderContext::getPtr()->getDefaultRenderContext();
@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
     else
 #ifdef REG_INVIWOBASEGLMODULE
         workspace =
-        inviwoApp.getPath(InviwoApplication::PATH_WORKSPACES, "/boron.inv");
+        inviwoApp.getPath(PathType::Workspaces, "/boron.inv");
 #else
         workspace = "";
 #endif
@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
                 processor->invalidate(InvalidationLevel::InvalidResources);
 
                 if (auto processorWidget =
-                    ProcessorWidgetFactory::getPtr()->create(processor).release()) {
+                    InviwoApplication::getPtr()->getProcessorWidgetFactory()->create(processor).release()) {
                     processorWidget->setProcessor(processor);
                     processorWidget->initialize();
                     processorWidget->setVisible(processorWidget->ProcessorWidget::isVisible());
@@ -128,7 +128,7 @@ int main(int argc, char** argv) {
     if (cmdparser->getCaptureAfterStartup()) {
         std::string path = cmdparser->getOutputPath();
 
-        if (path.empty()) path = inviwoApp.getPath(InviwoApplication::PATH_IMAGES);
+        if (path.empty()) path = inviwoApp.getPath(PathType::Images);
 
         util::saveAllCanvases(inviwoApp.getProcessorNetwork(), path, cmdparser->getSnapshotName());
     }

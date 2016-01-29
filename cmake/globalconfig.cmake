@@ -31,33 +31,104 @@ set(IVW_VERSION 0.9.5)
 set(IVW_MAJOR_VERSION 0)
 set(IVW_MINOR_VERSION 9)
 set(IVW_PATCH_VERSION 5)
- 
+
 set_property(GLOBAL PROPERTY USE_FOLDERS On)
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER cmake)
 
 #--------------------------------------------------------------------
+# CMake debugging
+option(IVW_CMAKE_DEBUG "Print CMake Debug Information" OFF)
+
+if(IVW_CMAKE_DEBUG)
+    function(log_proj variable access value file stack)
+        if(${access} STREQUAL "MODIFIED_ACCESS")
+            get_filename_component(path ${file} DIRECTORY)
+            get_filename_component(name ${path} NAME)
+            message(STATUS "Variable: ${variable} = ${value}, ${name}")
+        endif()
+    endfunction()
+
+    #variable_watch(ALL_MODULE_PACKAGES)
+    #variable_watch(_projectName log_proj)
+endif()
+
+#--------------------------------------------------------------------
 # Only output error messages
 function(message)
-if( GET )
-  list(GET ARGV 0 MessageType)
-  if(MessageType STREQUAL FATAL_ERROR OR
-     MessageType STREQUAL SEND_ERROR OR
-     MessageType STREQUAL WARNING OR
-     MessageType STREQUAL AUTHOR_WARNING)
-    list(REMOVE_AT ARGV 0)
-    _message(STATUS "${ARGV}")
-  endif()
-endif()
+    if(IVW_CMAKE_DEBUG)
+        _message(${ARGV})
+    else()
+        if( GET )
+            list(GET ARGV 0 MessageType)
+            if( MessageType STREQUAL FATAL_ERROR OR
+                MessageType STREQUAL SEND_ERROR OR
+                MessageType STREQUAL WARNING OR
+                MessageType STREQUAL AUTHOR_WARNING)
+                    list(REMOVE_AT ARGV 0)
+                    _message(STATUS "${ARGV}")
+            endif()
+        endif()
+    endif()
 endfunction()
+
+function(ivw_debug_message)
+    if(IVW_CMAKE_DEBUG)
+        _message(${ARGV})
+    endif()
+endfunction()
+
 function(ivw_message)
     _message(${ARGV})
 endfunction()
+
 
 #--------------------------------------------------------------------
 # Add own cmake modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}/")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_BINARY_DIR}/cmake/")
 
+#--------------------------------------------------------------------
+# Precompile headers
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    option(PRECOMPILED_HEADERS "Create and use precompilied headers" OFF)
+else()
+    option(PRECOMPILED_HEADERS "Create and use precompilied headers" ON)
+endif()
+
+include(${CMAKE_CURRENT_LIST_DIR}/clean_library_list.cmake)
+if(PRECOMPILED_HEADERS)
+    include(${CMAKE_CURRENT_LIST_DIR}/cotire.cmake)
+endif()
+
+mark_as_advanced(
+    COTIRE_ADDITIONAL_PREFIX_HEADER_IGNORE_EXTENSIONS 
+    COTIRE_ADDITIONAL_PREFIX_HEADER_IGNORE_PATH 
+    COTIRE_DEBUG 
+    COTIRE_MAXIMUM_NUMBER_OF_UNITY_INCLUDES 
+    COTIRE_MINIMUM_NUMBER_OF_TARGET_SOURCES
+    COTIRE_UNITY_SOURCE_EXCLUDE_EXTENSIONS
+    COTIRE_VERBOSE
+)
+
+# Exclude stuff from cotire
+set(IVW_COTIRE_EXCLUDES
+    "${IVW_EXTENSIONS_DIR}/warn"
+    "${IVW_MODULE_DIR}/unittests/ext"
+  )
+
+if(WIN32 AND MSVC)
+    if(DEFINED MSVC_ACRO)
+        list(APPEND IVW_COTIRE_EXCLUDES 
+            "C:/Program Files (x86)/Microsoft Visual Studio ${MSVC_ACRO}.0/VC/include/thread"
+            "C:/Program Files (x86)/Microsoft Visual Studio ${MSVC_ACRO}.0/VC/include/thr/xthread")
+    endif()
+endif()
+
+
+#--------------------------------------------------------------------
+# Add globalmacros
+include(${CMAKE_CURRENT_LIST_DIR}/globalutils.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/globalmacros.cmake)
 
 #--------------------------------------------------------------------
@@ -119,7 +190,7 @@ set(IVW_CMAKE_SOURCE_MODULE_DIR ${CMAKE_CURRENT_LIST_DIR})
 set(IVW_CMAKE_BINARY_MODULE_DIR ${CMAKE_BINARY_DIR}/cmake)
 
 #Generate headers
-generate_external_module_header()
+generate_module_paths_header()
 configure_file(${IVW_CMAKE_SOURCE_MODULE_DIR}/inviwocommondefines_template.h 
                ${CMAKE_BINARY_DIR}/modules/_generated/inviwocommondefines.h 
                @ONLY IMMEDIATE)
@@ -146,11 +217,14 @@ if(CMAKE_COMPILER_2005)
     add_definitions(-D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE)
 endif(CMAKE_COMPILER_2005)
 
+#--------------------------------------------------------------------
 # Mac specific
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     add_definitions(-DDARWIN)
 endif()
 
+#--------------------------------------------------------------------
+# Force use of GLFW context over QT context
 option(IVW_USE_GLFW_NOT_OPENGLQT "Use GLFW for context creation instead of OpenGLQt module" OFF)
 mark_as_advanced(FORCE IVW_USE_GLFW_NOT_OPENGLQT)
 
@@ -162,13 +236,24 @@ option(IVW_PACKAGE_PROJECT "Create Inviwo Package Project" OFF)
 # Use and generate resources when available
 option(IVW_USE_GENERATED_RESOURCES "Use and Generate File Resources" OFF)
 
-# Build shared libs or static libs
+#--------------------------------------------------------------------
+# Calculate and display profiling information
 option(IVW_PROFILING "Enable profiling" OFF)
+
+#--------------------------------------------------------------------
+# Build unittest for all modules
+option(IVW_UNITTESTS "Enable unittests" OFF)
+include(${CMAKE_CURRENT_LIST_DIR}/unittests.cmake)
+
+#--------------------------------------------------------------------
+# Use Visual Studio memory leak test
 option(IVW_ENABLE_MSVC_MEMLEAK_TEST "Run memoryleak test within Visual Studio" OFF)
-#mark_as_advanced(SHARED_LIBS)
+include(${CMAKE_CURRENT_LIST_DIR}/memleak.cmake)
+
+#--------------------------------------------------------------------
+# Build shared libs or static libs
 mark_as_advanced(BUILD_SHARED_LIBS)
 mark_as_advanced(FORCE GLM_DIR)
-
 mark_as_advanced(FORCE CMAKE_CONFIGURATION_TYPES)
 
 if(SHARED_LIBS)
@@ -271,10 +356,16 @@ IF(WIN32)
     IF(MSVC)
         SET(CMAKE_DEBUG_POSTFIX "d")
        
-        option(MULTI_PROCESSOR_BUILD "Build with multiple processors" ON)
-        if(MULTI_PROCESSOR_BUILD)
-            SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
-            SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
+        option(IVW_MULTI_PROCESSOR_BUILD "Build with multiple processors" ON)
+        set(IVW_MULTI_PROCESSOR_COUNT 0 CACHE STRING "Number of cores to use (defalt 0 = all)")
+        if(IVW_MULTI_PROCESSOR_BUILD)
+            if(IVW_MULTI_PROCESSOR_COUNT GREATER 1 AND IVW_MULTI_PROCESSOR_COUNT LESS 1024)
+                SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP${IVW_MULTI_PROCESSOR_COUNT}")
+                SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP${IVW_MULTI_PROCESSOR_COUNT}")
+            else()
+                SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+                SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
+            endif()
         endif()    
     ENDIF(MSVC)
 ENDIF()
@@ -282,12 +373,6 @@ ENDIF()
 if(DEBUG_POSTFIX)
     add_definitions(-D_DEBUG_POSTFIX)
 endif(DEBUG_POSTFIX)
-
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    option(PRECOMPILED_HEADERS "Create and use precompilied headers" OFF)
-else()
-    option(PRECOMPILED_HEADERS "Create and use precompilied headers" ON)
-endif()
 
 #--------------------------------------------------------------------
 # Specify build-based defintions
@@ -298,19 +383,6 @@ else(BUILD_SHARED_LIBS)
     add_definitions(-DFREEGLUT_STATIC)
     add_definitions(-DGLEW_STATIC)
 endif(BUILD_SHARED_LIBS)
-
-IF(WIN32)
-    IF(MSVC)
-        if(IVW_ENABLE_MSVC_MEMLEAK_TEST)
-            add_definitions(-DIVW_ENABLE_MSVC_MEM_LEAK_TEST)
-            if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-                link_directories(${IVW_EXTENSIONS_DIR}/vld/lib/Win64)
-            else ()
-                link_directories(${IVW_EXTENSIONS_DIR}/vld/lib/Win32)
-            endif()
-        endif(IVW_ENABLE_MSVC_MEMLEAK_TEST)    
-    ENDIF(MSVC)
-ENDIF(WIN32)
 
 if(IVW_PROFILING)
     add_definitions(-DIVW_PROFILING)
@@ -339,17 +411,3 @@ endif()
 
 
 
-#--------------------------------------------------------------------
-# Exclude stuff from cotire
-set(IVW_COTIRE_EXCLUDES
-    "${IVW_EXTENSIONS_DIR}/warn"
-    "${IVW_MODULE_DIR}/unittests/ext"
-  )
-
-if(WIN32 AND MSVC)
-    if(DEFINED MSVC_ACRO)
-        list(APPEND IVW_COTIRE_EXCLUDES 
-            "C:/Program Files (x86)/Microsoft Visual Studio ${MSVC_ACRO}.0/VC/include/thread"
-            "C:/Program Files (x86)/Microsoft Visual Studio ${MSVC_ACRO}.0/VC/include/thr/xthread")
-    endif()
-endif()

@@ -70,24 +70,29 @@ ImageMixer::ImageMixer()
     blendingMode_.addOption("addition", "Addition", BlendModes::Addition);
     blendingMode_.addOption("subtraction", "Subtraction", BlendModes::Subtraction);
     blendingMode_.addOption("difference", "Difference", BlendModes::Difference);
-    blendingMode_.addOption("darkenonly", "DarkenOnly", BlendModes::DarkenOnly);
-    blendingMode_.addOption("brightenonly", "BrightenOnly", BlendModes::BrightenOnly);
+    blendingMode_.addOption("darkenonly", "DarkenOnly (min)", BlendModes::DarkenOnly);
+    blendingMode_.addOption("brightenonly", "BrightenOnly (max)", BlendModes::BrightenOnly);
     blendingMode_.setSelectedValue(BlendModes::Mix);
     blendingMode_.setCurrentStateAsDefault();
 
     addProperty(blendingMode_);
     addProperty(weight_);
+
+    blendingMode_.onChange([&]() {
+        weight_.setVisible(blendingMode_.get() == BlendModes::Mix);
+    });
 }
 
 ImageMixer::~ImageMixer() {}
 
 void ImageMixer::process() {
-    if (inport0_.isChanged()) {
-        const DataFormatBase* format = inport0_.getData()->getDataFormat();
-        size2_t dimensions = inport0_.getData()->getDimensions();
-        if (!outport_.hasData() || format != outport_.getData()->getDataFormat() ||
-            dimensions != outport_.getData()->getDimensions()) {
-            Image* img = new Image(dimensions, format);
+    if (inport0_.isChanged() || inport1_.isChanged()) {
+        auto format0 = inport0_.getData()->getDataFormat();
+        auto format1 = inport1_.getData()->getDataFormat();
+        auto format = format0->getSize() > format1->getSize() ? format0 : format1;
+        if (format != outport_.getData()->getDataFormat()) {
+            auto dimensions = outport_.getData()->getDimensions();
+            auto img = std::make_shared<Image>(dimensions, format);
             img->copyMetaDataFrom(*inport0_.getData());
             outport_.setData(img);
         }
@@ -146,7 +151,7 @@ void ImageMixer::initializeResources() {
             break;
         case BlendModes::Mix:  //!< f(a,b) = a * (1 - alpha) + b * alpha
         default:
-            compositingValue = "colorB";
+            compositingValue = "colorMix(colorA,colorB)";
             break;
     }
 

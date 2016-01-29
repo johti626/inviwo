@@ -19,6 +19,7 @@ set(MOC_FILES
     ${IVW_INCLUDE_DIR}/inviwo/qt/widgets/propertylistwidget.h
     ${IVW_INCLUDE_DIR}/inviwo/qt/widgets/rangesliderqt.h
     ${IVW_INCLUDE_DIR}/inviwo/qt/widgets/spinboxrangesliderwidgetqt.h
+    ${IVW_INCLUDE_DIR}/inviwo/qt/widgets/processors/processordockwidgetqt.h
     ${IVW_INCLUDE_DIR}/inviwo/qt/widgets/processors/processorwidgetqt.h
     ${IVW_INCLUDE_DIR}/inviwo/qt/widgets/properties/anglepropertywidgetqt.h
     ${IVW_INCLUDE_DIR}/inviwo/qt/widgets/properties/boolpropertywidgetqt.h
@@ -82,6 +83,7 @@ set(SOURCE_FILES
     labelgraphicsitem.cpp
     lightpositionwidgetqt.cpp
     ordinaleditorwidget.cpp
+    processors/processordockwidgetqt.cpp
     processors/processorwidgetqt.cpp
     properties/anglepropertywidgetqt.cpp
     properties/boolcompositepropertywidgetqt.cpp
@@ -126,11 +128,6 @@ set(SOURCE_FILES
 ivw_group("Source Files" ${SOURCE_FILES})
 
 #--------------------------------------------------------------------
-# Define defintions
-ivw_define_standard_definitions(IVW_QTWIDGETS)
-ivw_define_qt_definitions()
-
-#--------------------------------------------------------------------
 # Create library
 if(DESIRED_QT_VERSION MATCHES 5)
     find_package(Qt5Core QUIET REQUIRED)
@@ -140,6 +137,11 @@ endif()
 ivw_qt_wrap_cpp(MOC_FILES ${MOC_FILES})
 source_group("MOC Files" FILES ${MOC_FILES})
 add_library(inviwo-qtwidgets ${SOURCE_FILES} ${MOC_FILES} ${HEADER_FILES})
+
+#--------------------------------------------------------------------
+# Define defintions
+ivw_define_standard_definitions(IVW_QTWIDGETS inviwo-qtwidgets)
+ivw_define_qt_definitions()
 
 # Add qt dependencies to this list
 if(DESIRED_QT_VERSION MATCHES 5)

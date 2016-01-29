@@ -57,19 +57,37 @@
 #include <inviwo/core/util/settings/systemsettings.h>
 
 namespace inviwo {
-// Helper function to retriever user settings path
-void getInviwoUserSettingsPath();
 
 InviwoApplication::InviwoApplication(int argc, char** argv, std::string displayName,
                                      std::string basePath)
     : displayName_(displayName)
     , basePath_(basePath)
-    , initialized_(false)
     , nonSupportedTags_()
     , progressCallback_()
     , commandLineParser_(argc, argv)
     , pool_(0)
     , queue_()
+
+    , clearDataFormats_{[]() { DataFormatBase::cleanDataFormatBases(); }}
+    , clearAllSingeltons_{[this]() { cleanupSingletons(); }}
+
+    , dataReaderFactory_{util::make_unique<DataReaderFactory>()}
+    , dataWriterFactory_{util::make_unique<DataWriterFactory>()}
+    , dialogFactory_{util::make_unique<DialogFactory>()}
+    , meshDrawerFactory_{util::make_unique<MeshDrawerFactory>()}
+    , metaDataFactory_{util::make_unique<MetaDataFactory>()}
+    , portFactory_{util::make_unique<PortFactory>()}
+    , portInspectorFactory_{util::make_unique<PortInspectorFactory>()}
+    , processorFactory_{util::make_unique<ProcessorFactory>()}
+    , processorWidgetFactory_{util::make_unique<ProcessorWidgetFactory>()}
+    , propertyConverterManager_{util::make_unique<PropertyConverterManager>()}
+    , propertyFactory_{util::make_unique<PropertyFactory>()}
+    , propertyWidgetFactory_{util::make_unique<PropertyWidgetFactory>()}
+    , representationConverterFactory_{util::make_unique<RepresentationConverterFactory>()}
+
+    , modules_()
+    , moudleCallbackActions_()
+
     , processorNetwork_{util::make_unique<ProcessorNetwork>()}
     , processorNetworkEvaluator_{
           util::make_unique<ProcessorNetworkEvaluator>(processorNetwork_.get())} {
@@ -79,6 +97,25 @@ InviwoApplication::InviwoApplication(int argc, char** argv, std::string displayN
     }
 
     init(this);
+
+    // initialize singletons
+    RenderContext::init();
+    ResourceManager::init();
+    PickingManager::init();
+
+    // Create and register core
+    auto ivwCore = util::make_unique<InviwoCore>(this);
+    // Load settings from core
+    auto coreSettings = ivwCore->getSettings();
+    registerModule(std::move(ivwCore));
+    
+    for (auto setting : coreSettings) setting->loadFromDisk();
+    auto sys = getSettingsByType<SystemSettings>();
+    if (sys && !commandLineParser_.getQuitApplicationAfterStartup()) {
+        pool_.setSize(static_cast<size_t>(sys->poolSize_.get()));
+        sys->poolSize_.onChange(
+            [this, sys]() { pool_.setSize(static_cast<size_t>(sys->poolSize_.get())); });
+    }
 }
 
 InviwoApplication::InviwoApplication() : InviwoApplication(0, nullptr, "Inviwo", "") {}
@@ -87,71 +124,22 @@ InviwoApplication::InviwoApplication(std::string displayName, std::string basePa
     : InviwoApplication(0, nullptr, displayName, basePath) {}
 
 InviwoApplication::~InviwoApplication() {
-    if (initialized_) deinitialize();
-
-    SingletonBase::deleteAllSingeltons();
-    DataFormatBase::cleanDataFormatBases();
+    pool_.setSize(0);
+    ResourceManager::getPtr()->clearAllResources();
 }
 
-void InviwoApplication::initialize(registerModuleFuncPtr regModuleFunc) {
+void InviwoApplication::registerModules(RegisterModuleFunc regModuleFunc) {
     printApplicationInfo();
-    // initialize singletons
-    postProgress("Initializing singletons");
-
-    RenderContext::init();
-    ResourceManager::init();
-    PickingManager::init();
-    
-    DataReaderFactory::init();
-    dataReaderFactory_ = DataReaderFactory::getPtr();
-    
-    DataWriterFactory::init();
-    dataWriterFactory_ = DataWriterFactory::getPtr();
-    
-    DialogFactory::init();
-    dialogFactory_ = DialogFactory::getPtr();
-    
-    MeshDrawerFactory::init();
-    meshDrawerFactory_ = MeshDrawerFactory::getPtr();
-    
-    MetaDataFactory::init();
-    metaDataFactory_ = MetaDataFactory::getPtr();
-    
-    PortFactory::init();
-    portFactory_ = PortFactory::getPtr();
-    
-    PortInspectorFactory::init();
-    portInspectorFactory_ = PortInspectorFactory::getPtr();
-    
-    ProcessorFactory::init();
-    processorFactory_ = ProcessorFactory::getPtr();
-    
-    ProcessorWidgetFactory::init();
-    processorWidgetFactory_ = ProcessorWidgetFactory::getPtr();
-    
-    PropertyFactory::init();
-    propertyFactory_ = PropertyFactory::getPtr();
-    
-    PropertyWidgetFactory::init();
-    propertyWidgetFactory_ = PropertyWidgetFactory::getPtr();
-    
-    PropertyConverterManager::init();
-    propertyConverterManager_ = PropertyConverterManager::getPtr();
-    
-    RepresentationConverterFactory::init();
-    representationConverterFactory_ = RepresentationConverterFactory::getPtr();
-    
-    // Create and register core
-    InviwoCore* ivwCore = new InviwoCore(this);
-    registerModule(ivwCore);
-
-    // Load settings from core
-    auto coreSettings = ivwCore->getSettings();
-    for (auto setting : coreSettings) setting->loadFromDisk();
 
     // Create and register other modules
-    (*regModuleFunc)(this);
+    modulesFactoryObjects_ = regModuleFunc();
 
+    for (auto& moduleObj : modulesFactoryObjects_) {
+        postProgress("Loading module: " + moduleObj->name_);
+        registerModule(moduleObj->create(this));
+    }
+    
+    postProgress("Loading Capabilities");
     for (auto& module : modules_) {
         for (auto& elem : module->getCapabilities()) {
             elem->retrieveStaticInfo();
@@ -160,60 +148,9 @@ void InviwoApplication::initialize(registerModuleFuncPtr regModuleFunc) {
     }
 
     // Load settings from other modules
-    postProgress("Loading settings...");
+    postProgress("Loading Settings");
     auto settings = getModuleSettings(1);
     for (auto setting : settings) setting->loadFromDisk();
-
-    auto sys = getSettingsByType<SystemSettings>();
-    if (sys && !commandLineParser_.getQuitApplicationAfterStartup()) {
-        pool_.setSize(static_cast<size_t>(sys->poolSize_.get()));
-        sys->poolSize_.onChange(
-            [this, sys]() { pool_.setSize(static_cast<size_t>(sys->poolSize_.get())); });
-    }
-
-    initialized_ = true;
-}
-
-void InviwoApplication::deinitialize() {
-    pool_.setSize(0);
-    processorNetworkEvaluator_.reset();
-    processorNetwork_.reset();
-    ResourceManager::getPtr()->clearAllResources();
-
-    moudleCallbackActions_.clear();
-    modules_.clear();
-
-    ResourceManager::deleteInstance();
-    DataReaderFactory::deleteInstance();
-    DataWriterFactory::deleteInstance();
-    DialogFactory::deleteInstance();
-    MeshDrawerFactory::deleteInstance();
-    MetaDataFactory::deleteInstance();
-    PickingManager::deleteInstance();
-    PortFactory::deleteInstance();
-    PortInspectorFactory::deleteInstance();
-    ProcessorWidgetFactory::deleteInstance();
-    PropertyFactory::deleteInstance();
-    PropertyWidgetFactory::deleteInstance();
-    PropertyConverterManager::deleteInstance();
-    RepresentationConverterFactory::deleteInstance();
-    RenderContext::deleteInstance();
-    
-    dataReaderFactory_ = nullptr;
-    dataWriterFactory_ = nullptr;
-    dialogFactory_ = nullptr;
-    meshDrawerFactory_ = nullptr;
-    metaDataFactory_ = nullptr;
-    portFactory_ = nullptr;
-    portInspectorFactory_ = nullptr;
-    processorFactory_ = nullptr;
-    processorWidgetFactory_ = nullptr;
-    propertyFactory_ = nullptr;
-    propertyWidgetFactory_ = nullptr;
-    propertyConverterManager_ = nullptr;
-    representationConverterFactory_ = nullptr;
-    
-    initialized_ = false;
 }
 
 const std::string& InviwoApplication::getBasePath() const { return basePath_; }
@@ -223,52 +160,56 @@ std::string InviwoApplication::getPath(PathType pathType, const std::string& suf
     std::string result = getBasePath();
 
     switch (pathType) {
-        case inviwo::InviwoApplication::PATH_DATA:
+        case PathType::Data:
             result += "/data";
             break;
 
-        case inviwo::InviwoApplication::PATH_VOLUMES:
+        case PathType::Volumes:
             result += "/data/volumes";
             break;
 
-        case inviwo::InviwoApplication::PATH_MODULES:
+        case PathType::Modules:
             result += "/modules";
             break;
 
-        case inviwo::InviwoApplication::PATH_WORKSPACES:
+        case PathType::Workspaces:
             result += "/data/workspaces";
             break;
 
-        case inviwo::InviwoApplication::PATH_PORTINSPECTORS:
+        case PathType::PortInspectors:
             result += "/data/workspaces/portinspectors";
             break;
 
-        case inviwo::InviwoApplication::PATH_SCRIPTS:
+        case PathType::Scripts:
             result += "/data/scripts";
             break;
 
-        case inviwo::InviwoApplication::PATH_IMAGES:
+        case PathType::Images:
             result += "/data/images";
             break;
 
-        case inviwo::InviwoApplication::PATH_DATABASES:
+        case PathType::Databases:
             result += "/data/databases";
             break;
 
-        case inviwo::InviwoApplication::PATH_RESOURCES:
+        case PathType::Resources:
             result += "/resources";
             break;
 
-        case inviwo::InviwoApplication::PATH_TRANSFERFUNCTIONS:
+        case PathType::TransferFunctions:
             result += "/data/transferfunctions";
             break;
 
-        case inviwo::InviwoApplication::PATH_SETTINGS:
+        case PathType::Settings:
             result = filesystem::getInviwoUserSettingsPath();
             break;
 
-        case inviwo::InviwoApplication::PATH_HELP:
+        case PathType::Help:
             result += "/data/help";
+            break;
+
+        case PathType::Tests:
+            result += "/tests";
             break;
 
         default:
@@ -281,13 +222,17 @@ std::string InviwoApplication::getPath(PathType pathType, const std::string& suf
     return result + suffix;
 }
 
-void InviwoApplication::registerModule(InviwoModule* module) {
-    postProgress("Loaded module: " + module->getIdentifier());
-    modules_.emplace_back(module);
+void InviwoApplication::registerModule(std::unique_ptr<InviwoModule> module) {
+    modules_.push_back(std::move(module));
 }
 
 const std::vector<std::unique_ptr<InviwoModule>>& InviwoApplication::getModules() const {
     return modules_;
+}
+
+const std::vector<std::unique_ptr<InviwoModuleFactoryObject>>&
+InviwoApplication::getModuleFactoryObjects() const {
+    return modulesFactoryObjects_;
 }
 
 ProcessorNetwork* InviwoApplication::getProcessorNetwork() { return processorNetwork_.get(); }
@@ -350,14 +295,12 @@ void InviwoApplication::addNonSupportedTags(const Tags t) {
         nonSupportedTags_.addTag(elem);
     }
 }
-
+void InviwoApplication::cleanupSingletons() { SingletonBase::deleteAllSingeltons(); }
 bool InviwoApplication::checkIfAllTagsAreSupported(const Tags t) const {
     return (nonSupportedTags_.getMatches(t) == 0);
 }
 
-std::locale InviwoApplication::getUILocale() const {
-    return std::locale();
-}
+std::locale InviwoApplication::getUILocale() const { return std::locale(); }
 
 void InviwoApplication::processFront() {
     NetworkLock netlock(processorNetwork_.get());
@@ -383,6 +326,22 @@ void InviwoApplication::waitForPool() {
     pool_.setSize(0);  // This will wait until all tasks are done;
     processFront();
     pool_.setSize(old_size);
+}
+
+void InviwoApplication::closeInviwoApplication() {
+    LogWarn("this application have not implemented the closeInviwoApplication function");
+}
+void InviwoApplication::registerFileObserver(FileObserver* fileObserver) {
+    LogWarn("this application have not implemented the registerFileObserver function");
+}
+void InviwoApplication::startFileObservation(std::string fileName) {
+    LogWarn("this application have not implemented the startFileObservation function");
+}
+void InviwoApplication::stopFileObservation(std::string fileName) {
+    LogWarn("this application have not implemented the stopFileObservation function");
+}
+void InviwoApplication::playSound(Message soundID) {
+    LogWarn("this application have not implemented the playSound function");
 }
 
 }  // namespace

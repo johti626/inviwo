@@ -18,6 +18,7 @@ set(HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/heightfieldmapper.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/imagecontourprocessor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/imageexport.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/processors/imagesnapshot.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/imagesource.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/imagesourceseries.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/meshclipping.h
@@ -60,6 +61,7 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/heightfieldmapper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/imagecontourprocessor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/imageexport.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/processors/imagesnapshot.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/imagesource.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/imagesourceseries.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/meshclipping.cpp
@@ -89,7 +91,8 @@ ivw_group("Source Files" ${SOURCE_FILES})
 #--------------------------------------------------------------------
 # Unit tests
 set(TEST_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests/kdtree-test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/unittests/base-unittest-main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/unittests/kdtree-test.cpp
 )
 ivw_add_unittest(${TEST_FILES})
 
