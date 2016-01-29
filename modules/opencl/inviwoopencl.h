@@ -142,8 +142,8 @@ public:
      */
     void setDevice(cl::Device device, bool glSharing);
 
-    static cl::Program buildProgram(const std::string& fileName, const std::string& defines = "");
-    static cl::Program buildProgram(const std::string& fileName, const std::string& defines, const cl::CommandQueue& queue);
+    static cl::Program buildProgram(const std::string& fileName, const std::string& header = "", const std::string& defines = "");
+    static cl::Program buildProgram(const std::string& fileName, const std::string& header, const std::string& defines, const cl::CommandQueue& queue);
 
     /**
      * Check if image format combination is valid.
@@ -185,14 +185,6 @@ public:
      * @param directoryPath Directory path to include
      */
     void addCommonIncludeDirectory(const std::string& directoryPath);
-
-    /**
-     * Add a relative directory as an include path to be used when compiling OpenCL kernels.
-     *
-     * @param pathType PathType of directory
-     * @param relativePath Relative directory path to include
-     */
-    void addCommonIncludeDirectory(PathType pathType, const std::string& relativePath);
 
     /**
      * Remove common include path.

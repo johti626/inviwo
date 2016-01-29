@@ -35,6 +35,8 @@
 
 namespace inviwo {
 
+class CompositeProperty;
+
 /**
  * \class Camera
  *
@@ -55,12 +57,17 @@ public:
      * @param vec3 lookUp Camera up direction
      */
     Camera(vec3 lookFrom = vec3(0.0f, 0.0f, 2.0f), vec3 lookTo = vec3(0.0f),
-               vec3 lookUp = vec3(0.0f, 1.0f, 0.0f), float nearPlane = 0.01f,
-               float farPlane = 10000.0f);
+           vec3 lookUp = vec3(0.0f, 1.0f, 0.0f), float nearPlane = 0.01f,
+           float farPlane = 10000.0f);
     virtual ~Camera() = default;
     Camera(const Camera& other) = default;
-    //Camera(Camera&& other) = default;
+    // Camera(Camera&& other) = default;
     Camera& operator=(const Camera& other) = default;
+    
+    virtual Camera* clone() const = 0;
+    virtual bool update(const Camera* source) = 0;
+
+    virtual void configureProperties(CompositeProperty* comp) {};
 
     vec3& getLookFrom() { return lookFrom_; }
     const vec3& getLookFrom() const;
@@ -74,26 +81,28 @@ public:
     const vec3& getLookUp() const;
     void setLookUp(vec3 val);
 
+    virtual float getAspectRatio() const = 0;
+    virtual void setAspectRatio(float val) = 0;
 
-    /** 
+    /**
      * \brief Get unnormalized direction of camera: lookTo - lookFrom
-     * 
+     *
      * @return Unnormalized direction of camera
      */
     vec3 getDirection() const { return lookTo_ - lookFrom_; }
 
     float getNearPlaneDist() const;
-    /** 
+    /**
      * \brief Set distance to the near plane from lookFrom.
-     * 
+     *
      * @param val Distance
      */
     void setNearPlaneDist(float val);
 
     float getFarPlaneDist() const;
-    /** 
+    /**
      * \brief Set distance to the far plane from lookFrom.
-     * 
+     *
      * @param val Distance
      */
     void setFarPlaneDist(float val);
@@ -113,19 +122,22 @@ public:
 
     /**
     * \brief Convert from normalized device coordinates (xyz in [-1 1]) to clip coordinates,
-    * where z value of -1 correspond to the near plane and 1 to the far plane. 
+    * where z value of -1 correspond to the near plane and 1 to the far plane.
     * Coordinates outside of the [-1 1]^3 range will be clipped.
     *
-    * @param ndcCoords xyz clip-coordinates in [-1 1]^3, and the clip w-coordinate used for perspective division.
+    * @param ndcCoords xyz clip-coordinates in [-1 1]^3, and the clip w-coordinate used for
+    * perspective division.
     * @return Clip space position
     */
     vec4 getClipPosFromNormalizedDeviceCoords(const vec3& ndcCoords) const;
+
+    vec3 getNormalizedDeviceFromNormalizedScreenAtFocusPointDepth(
+        const vec2& normalizedScreenCoord) const;
 
     virtual void serialize(Serializer& s) const override;
     virtual void deserialize(Deserializer& d) override;
 
 protected:
-
     bool equalTo(const Camera& other) const;
     /**
      * \brief Calculate and return the projection matrix for the camera.
@@ -144,8 +156,8 @@ protected:
     vec3 lookTo_;
     vec3 lookUp_;
 
-    float nearPlaneDist_; ///< Distance to the near plane from lookFrom.
-    float farPlaneDist_;  ///< Distance to the far plane from lookFrom.
+    float nearPlaneDist_;  ///< Distance to the near plane from lookFrom.
+    float farPlaneDist_;   ///< Distance to the far plane from lookFrom.
 
     // Make mutable to allow then to be changed even though they are called from const function.
     // This allows us to perform lazy evaluation.
@@ -164,16 +176,20 @@ public:
                       float farPlane = 10000.0f, float fieldOfView = 60.f, float aspectRatio = 1.f);
     virtual ~PerspectiveCamera() = default;
     PerspectiveCamera(const PerspectiveCamera& other) = default;
-    //Camera(Camera&& other) = default;
+    // Camera(Camera&& other) = default;
     PerspectiveCamera& operator=(const PerspectiveCamera& other) = default;
+    virtual PerspectiveCamera* clone() const override;
+    virtual bool update(const Camera* source) override;
+    virtual void configureProperties(CompositeProperty* comp) override;
+
 
     friend bool operator==(const PerspectiveCamera& lhs, const PerspectiveCamera& rhs);
     friend bool operator!=(const PerspectiveCamera& lhs, const PerspectiveCamera& rhs);
 
     float getFovy() const;
     void setFovy(float val);
-    float getAspectRatio() const;
-    void setAspectRatio(float val);
+    virtual float getAspectRatio() const override;
+    virtual void setAspectRatio(float val) override;
 
     virtual void serialize(Serializer& s) const override;
     virtual void deserialize(Deserializer& d) override;
@@ -200,11 +216,14 @@ class IVW_CORE_API OrthographicCamera : public Camera {
 public:
     OrthographicCamera(vec3 lookFrom = vec3(0.0f, 0.0f, 2.0f), vec3 lookTo = vec3(0.0f),
                        vec3 lookUp = vec3(0.0f, 1.0f, 0.0f), float nearPlane = 0.01f,
-                       float farPlane = 10000.0f, vec4 frustum = vec4(-1, 1, -1, 1));
+                       float farPlane = 10000.0f, vec4 frustum = vec4(-01, 10, -10, 10));
     virtual ~OrthographicCamera() = default;
     OrthographicCamera(const OrthographicCamera& other) = default;
-    //Camera(Camera&& other) = default;
+    // Camera(Camera&& other) = default;
     OrthographicCamera& operator=(const OrthographicCamera& other) = default;
+    virtual OrthographicCamera* clone() const override;
+    virtual bool update(const Camera* source) override;
+    virtual void configureProperties(CompositeProperty* comp) override;
 
     friend bool operator==(const OrthographicCamera& lhs, const OrthographicCamera& rhs);
     friend bool operator!=(const OrthographicCamera& lhs, const OrthographicCamera& rhs);
@@ -219,6 +238,8 @@ public:
      * @return void
      */
     void setFrustum(vec4 val);
+    virtual float getAspectRatio() const override;
+    virtual void setAspectRatio(float val) override;
 
     virtual void serialize(Serializer& s) const override;
     virtual void deserialize(Deserializer& d) override;
@@ -232,6 +253,72 @@ protected:
 
 bool operator==(const OrthographicCamera& lhs, const OrthographicCamera& rhs);
 bool operator!=(const OrthographicCamera& lhs, const OrthographicCamera& rhs);
+
+/**
+* \class SkewedPerspectiveCamera
+*
+* \brief Camera with off axis perspective projection
+* The camera with unsymmetrical frustum for stereo in VR
+* Kooima, Robert. "Generalized perspective projection." School of Elect. Eng. and Computer Science
+* (2008): 1-7.
+* @see Camera
+* @see SkewedPerspectiveCamera
+*/
+class IVW_CORE_API SkewedPerspectiveCamera : public Camera {
+public:
+	SkewedPerspectiveCamera(vec3 lookFrom = vec3(0.0f, 0.0f, 2.0f), vec3 lookTo = vec3(0.0f),
+		vec3 lookUp = vec3(0.0f, 1.0f, 0.0f), float nearPlane = 0.01f,
+		float farPlane = 10000.0f, vec4 frustum = vec4(-01, 10, -10, 10), vec2 frustumOffset = vec2(0.0f, 0.0f));
+	virtual ~SkewedPerspectiveCamera() = default;
+	SkewedPerspectiveCamera(const SkewedPerspectiveCamera& other) = default;
+	// Camera(Camera&& other) = default;
+	SkewedPerspectiveCamera& operator=(const SkewedPerspectiveCamera& other) = default;
+	virtual SkewedPerspectiveCamera* clone() const override;
+	virtual bool update(const Camera* source) override;
+	virtual void configureProperties(CompositeProperty* comp) override;
+
+	friend bool operator==(const SkewedPerspectiveCamera& lhs, const SkewedPerspectiveCamera& rhs);
+	friend bool operator!=(const SkewedPerspectiveCamera& lhs, const SkewedPerspectiveCamera& rhs);
+		
+	const vec4& getFrustum() const;
+	/**
+	* \brief Left, right, bottom, top view volume
+	*
+	* Set view frustum used for projection matrix calculation.
+	*
+	* @param inviwo::vec4 val
+	* @return void
+	*/
+	void setFrustum(vec4 val);
+
+	const vec2& getFrustumOffset() const;
+	/**
+	* \brief Left, right, bottom, top view volume
+	*
+	* Set view frustum used for projection matrix calculation.
+	*
+	* @param inviwo::vec4 val
+	* @return void
+	*/
+	void setFrustumOffset(vec2 val);
+	virtual float getAspectRatio() const override;
+	virtual void setAspectRatio(float val) override;
+
+	virtual void serialize(Serializer& s) const override;
+	virtual void deserialize(Deserializer& d) override;
+
+protected:
+	virtual mat4 calculateProjectionMatrix() const override;
+
+	// Left, right, bottom, top view volume
+	vec4 frustum_;
+	vec2 frustumSkewOffset_;
+
+};
+
+bool operator==(const SkewedPerspectiveCamera& lhs, const SkewedPerspectiveCamera& rhs);
+bool operator!=(const SkewedPerspectiveCamera& lhs, const SkewedPerspectiveCamera& rhs);
+
 
 // Implementation details
 
@@ -288,8 +375,22 @@ inline void OrthographicCamera::setFrustum(inviwo::vec4 val) {
 }
 
 inline mat4 OrthographicCamera::calculateProjectionMatrix() const {
-    return glm::ortho(frustum_.x, frustum_.y, frustum_.z, frustum_.w, nearPlaneDist_, farPlaneDist_);
+    return glm::ortho(frustum_.x, frustum_.y, frustum_.z, frustum_.w, nearPlaneDist_,
+                      farPlaneDist_);
 };
+
+inline const vec4& SkewedPerspectiveCamera::getFrustum() const { return frustum_; }
+
+inline void SkewedPerspectiveCamera::setFrustum(inviwo::vec4 val) {
+	frustum_ = val;
+	invalidateProjectionMatrix();
+}
+
+inline const vec2& SkewedPerspectiveCamera::getFrustumOffset() const { return frustumSkewOffset_; }
+inline void SkewedPerspectiveCamera::setFrustumOffset(vec2 offset) {
+	frustumSkewOffset_ = offset;
+	invalidateProjectionMatrix();
+}
 
 }  // namespace
 

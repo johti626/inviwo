@@ -204,6 +204,25 @@ function(generate_module_registration_file module_classes modules_class_paths)
 
 endfunction()
 
+function(ivw_create_pyconfig modulepaths activemodules)
+       
+    # template vars:
+    set(MODULEPATHS ${modulepaths})
+    set(ACTIVEMODULES ${activemodules})
+
+    find_package(Git QUIET)
+    if(GIT_FOUND)
+        ivw_debug_message(STATUS "git found: ${GIT_EXECUTABLE}")
+    else()
+        set(GIT_EXECUTABLE "")
+    endif()
+
+    configure_file(${IVW_CMAKE_TEMPLATES}/pyconfig_template.ini 
+                   ${CMAKE_BINARY_DIR}/pyconfig.ini @ONLY)
+
+endfunction()
+
+
 #--------------------------------------------------------------------
 # Create CMAKE file for pre-process 
 function(ivw_generate_shader_resource parent_path)
@@ -299,6 +318,8 @@ macro(ivw_register_modules)
     #Generate module registration file
     generate_module_registration_file("${IVW_MODULE_CLASSES}" "${IVW_MODULE_CLASS_PATHS}")
     create_module_package_list(${IVW_MODULE_CLASSES})
+
+    ivw_create_pyconfig("${IVW_MODULE_DIR};${IVW_EXTERNAL_MODULES}" "${IVW_MODULE_CLASSES}")
 endmacro()
 
 
@@ -421,7 +442,7 @@ function(build_module_dependency the_module the_owner)
     first_case_upper(dir_name_cap ${the_module})
     if(${the_owner} AND NOT ${mod_name})
         ivw_add_module_option_to_cache(${the_module} ON TRUE)
-        ivw_message("${mod_name} was set to build, due to dependency towards ${the_owner}")
+        ivw_message(STATUS "${mod_name} was set to build, due to dependency towards ${the_owner}")
     endif()
 endfunction()
 

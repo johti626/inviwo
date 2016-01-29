@@ -49,6 +49,7 @@
 #include <inviwo/core/util/capabilities.h>
 #include <inviwo/core/util/filesystem.h>
 #include <inviwo/core/util/settings/settings.h>
+#include <inviwo/core/util/stringconversion.h>
 
 #include <inviwomodulespaths.h>
 
@@ -60,7 +61,10 @@ InviwoModule::InviwoModule(InviwoApplication* app, const std::string& identifier
     : app_(app), identifier_(identifier) {}
 
 InviwoModule::~InviwoModule() {
-    // deregersiter everything...
+    // unregister everything...
+    for (auto& elem : cameras_) {
+        app_->getCameraFactory()->unRegisterObject(elem.get());
+    }
     for (auto& elem : dataReaders_) {
         app_->getDataReaderFactory()->unRegisterObject(elem.get());
     }
@@ -85,6 +89,9 @@ InviwoModule::~InviwoModule() {
     for (auto& elem : processors_) {
         app_->getProcessorFactory()->unRegisterObject(elem.get());
     }
+    for (auto& elem : processorWidgets_) {
+        app_->getProcessorWidgetFactory()->unRegisterObject(elem.get());
+    }
     for (auto& elem : propertyConverters_) {
         app_->getPropertyConverterManager()->unRegisterObject(elem.get());
     }
@@ -102,24 +109,53 @@ InviwoModule::~InviwoModule() {
 std::string InviwoModule::getIdentifier() const { return identifier_; }
 
 std::string InviwoModule::getPath() const {
-    std::string moduleNameLowerCase = getIdentifier();
-    std::transform(moduleNameLowerCase.begin(), moduleNameLowerCase.end(),
-                   moduleNameLowerCase.begin(), ::tolower);
+    std::string moduleNameLowerCase = toLower(getIdentifier());
 
-    for (auto& elem : inviwoModulePaths_) {
-        std::string directory = elem + "/" + moduleNameLowerCase;
-        if (filesystem::directoryExists(directory)) {
-            return directory;
+    const auto defaultPath = filesystem::findBasePath() + "/modules/" + moduleNameLowerCase;
+    
+    if (filesystem::directoryExists(defaultPath)) {
+        return defaultPath;
+    } else {
+        for (auto& elem : inviwoModulePaths_) {
+            const auto path = elem + "/" + moduleNameLowerCase;
+            if (filesystem::directoryExists(path)) {
+                return path;
+            }
         }
     }
+    
+    throw Exception("Unable to find path to Module: " + identifier_, IvwContext);
+}
 
-    LogWarn(moduleNameLowerCase << " directory was not found");
-    return app_->getPath(PathType::Modules) + "/" + moduleNameLowerCase;
+std::string InviwoModule::getPath(ModulePath type) const {
+    std::string path = getPath();
+    switch (type) {
+        case ModulePath::Data:               return path + "/data";
+        case ModulePath::Images:             return path + "/data/images";
+        case ModulePath::PortInspectors:     return path + "/data/portinspectors";
+        case ModulePath::Scripts:            return path + "/data/scripts";
+        case ModulePath::Volumes:            return path + "/data/volumes";
+        case ModulePath::Workspaces:         return path + "/data/workspaces";
+        case ModulePath::Docs:               return path + "/docs";
+        case ModulePath::Tests:              return path + "/tests";
+        case ModulePath::TestImages:         return path + "/tests/images";
+        case ModulePath::TestVolumes:        return path + "/tests/volumes";
+        case ModulePath::UnitTests:          return path + "/tests/unittests";
+        case ModulePath::RegressionTests:    return path + "/tests/regression";
+        case ModulePath::GLSL:               return path + "/glsl";
+        case ModulePath::CL:                 return path + "/cl";
+        default:                             return path;
+    }
 }
 
 const std::vector<Capabilities*> InviwoModule::getCapabilities() const {
     return uniqueToPtr(capabilities_);
 }
+
+const std::vector<CameraFactoryObject*> InviwoModule::getCameras() const {
+    return uniqueToPtr(cameras_);
+}
+
 const std::vector<DataReader*> InviwoModule::getDataReaders() const {
     return uniqueToPtr(dataReaders_);
 }

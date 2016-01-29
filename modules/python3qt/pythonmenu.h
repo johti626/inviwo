@@ -34,14 +34,19 @@
 
 namespace inviwo {
 class PythonInfoWidget;
+class PythonEditorWidget;
+class InviwoApplication;
 
 class IVW_MODULE_PYTHON3QT_API PythonMenu {
 public:
-    PythonMenu();
+    PythonMenu(InviwoApplication* app);
     virtual ~PythonMenu();
+
+    PythonEditorWidget* getEditor() const;
 
 private:
     PythonInfoWidget* infoWidget_;
+    PythonEditorWidget* editor_;
 };
 
 } // namespace

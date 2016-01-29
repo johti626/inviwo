@@ -33,7 +33,8 @@
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/common/inviwoapplication.h>
-
+#include <inviwo/core/datastructures/camerafactory.h>
+#include <inviwo/core/datastructures/camerafactoryobject.h>
 #include <inviwo/core/ports/portfactory.h>
 #include <inviwo/core/ports/portfactoryobject.h>
 #include <inviwo/core/processors/processorfactory.h>
@@ -59,6 +60,24 @@ class DataWriter;
 class PortInspectorFactoryObject;
 class MeshDrawer;
 class PropertyConverter;
+
+
+enum class ModulePath {
+    Data,               // /data
+    Images,             // /data/images
+    PortInspectors,     // /data/portinspectors
+    Scripts,            // /data/scripts
+    Volumes,            // /data/volumes
+    Workspaces,         // /data/workspaces
+    Docs,               // /docs
+    Tests,              // /tests
+    TestImages,         // /tests/images
+    TestVolumes,        // /tests/volumes
+    UnitTests,          // /tests/unittests
+    RegressionTests,    // /tests/regression
+    GLSL,               // /glsl
+    CL                  // /cl
+};
 
 /**
  * \class InviwoModule
@@ -91,9 +110,11 @@ public:
      * @note Assumes that getIdentifier() returns the module folder name.
      * @return std::string Path to module directory
      */
-    std::string getPath() const;
+    virtual std::string getPath() const;
+    std::string getPath(ModulePath type) const;
 
     const std::vector<Capabilities*> getCapabilities() const;
+    const std::vector<CameraFactoryObject*> getCameras() const;
     const std::vector<DataReader*> getDataReaders() const;
     const std::vector<DataWriter*> getDataWriters() const;
     const std::vector<DialogFactoryObject*> getDialogs() const;
@@ -111,6 +132,8 @@ public:
 
 protected:
     void registerCapabilities(std::unique_ptr<Capabilities> info);
+    template <typename T>
+    void registerCamera(std::string classIdentifier);
     void registerDataReader(std::unique_ptr<DataReader> reader);
     void registerDataWriter(std::unique_ptr<DataWriter> writer);
 
@@ -162,6 +185,7 @@ private:
     const std::string identifier_;  ///< Module folder name
 
     std::vector<std::unique_ptr<Capabilities>> capabilities_;
+    std::vector<std::unique_ptr<CameraFactoryObject>> cameras_;
     std::vector<std::unique_ptr<DataReader>> dataReaders_;
     std::vector<std::unique_ptr<DataWriter>> dataWriters_;
     std::vector<std::unique_ptr<DialogFactoryObject>> dialogs_;
@@ -180,12 +204,19 @@ private:
 };
 
 template <typename T>
+void InviwoModule::registerCamera(std::string classIdentifier) {
+    auto camera = util::make_unique<CameraFactoryObjectTemplate<T>>(classIdentifier);
+    if (app_->getCameraFactory()->registerObject(camera.get())) {
+        cameras_.push_back(std::move(camera));
+    }
+}
+
+template <typename T>
 void InviwoModule::registerDialog(std::string classIdentifier) {
     auto dialog = util::make_unique<DialogFactoryObjectTemplate<T>>(classIdentifier);
     if (app_->getDialogFactory()->registerObject(dialog.get())) {
         dialogs_.push_back(std::move(dialog));
     }
-
 }
 
 template <typename T>

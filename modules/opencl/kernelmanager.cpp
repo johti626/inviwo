@@ -44,7 +44,7 @@ KernelManager::~KernelManager() {
     clear();
 }
 
-cl::Program* KernelManager::buildProgram(const std::string& fileName, const std::string& defines /*= ""*/, bool& wasBuilt) {
+cl::Program* KernelManager::buildProgram(const std::string& fileName, const std::string& header /*= ""*/, const std::string& defines /*= ""*/, bool& wasBuilt) {
     wasBuilt = false;
     std::string absoluteFileName = fileName;
     if (!filesystem::fileExists(absoluteFileName)) {
@@ -70,7 +70,7 @@ cl::Program* KernelManager::buildProgram(const std::string& fileName, const std:
     cl::Program* program = new cl::Program();
 
     try {
-        *program = cl::Program(OpenCL::buildProgram(absoluteFileName, defines));
+        *program = cl::Program(OpenCL::buildProgram(absoluteFileName, header, defines));
 
         try {
             std::vector<cl::Kernel> kernels;
@@ -86,9 +86,7 @@ cl::Program* KernelManager::buildProgram(const std::string& fileName, const std:
     } catch (cl::Error&) {
     }
 
-    ProgramIdentifier uniqueProgram;
-    uniqueProgram.defines = defines;
-    uniqueProgram.program = program;
+    ProgramIdentifier uniqueProgram{ program, header, defines };
     programs_.insert(std::pair<std::string, ProgramIdentifier>(absoluteFileName, uniqueProgram));
     startFileObservation(absoluteFileName);
     wasBuilt = true;
@@ -135,7 +133,7 @@ void KernelManager::fileChanged(std::string fileName) {
 
         try {
             LogInfo(fileName + " building program with defines: " + programIt->second.defines);
-            *program = OpenCL::buildProgram(fileName, programIt->second.defines);
+            *program = OpenCL::buildProgram(fileName, programIt->second.header, programIt->second.defines);
             LogInfo(fileName + " finished building program");
             std::vector<cl::Kernel> newKernels;
 

@@ -31,6 +31,7 @@
 #include <inviwo/core/common/inviwocore.h>
 #include <inviwo/core/common/inviwomodule.h>
 #include <inviwo/core/common/moduleaction.h>
+#include <inviwo/core/datastructures/camerafactory.h>
 #include <inviwo/core/datastructures/representationconverterfactory.h>
 #include <inviwo/core/interaction/pickingmanager.h>
 #include <inviwo/core/io/datareaderfactory.h>
@@ -69,6 +70,7 @@ InviwoApplication::InviwoApplication(int argc, char** argv, std::string displayN
     , clearDataFormats_{[]() { DataFormatBase::cleanDataFormatBases(); }}
     , clearAllSingeltons_{[this]() { cleanupSingletons(); }}
 
+    , cameraFactory_{util::make_unique<CameraFactory>()}
     , dataReaderFactory_{util::make_unique<DataReaderFactory>()}
     , dataWriterFactory_{util::make_unique<DataWriterFactory>()}
     , dialogFactory_{util::make_unique<DialogFactory>()}
@@ -90,8 +92,12 @@ InviwoApplication::InviwoApplication(int argc, char** argv, std::string displayN
     , processorNetworkEvaluator_{
           util::make_unique<ProcessorNetworkEvaluator>(processorNetwork_.get())} {
     if (commandLineParser_.getLogToFile()) {
-        LogCentral::getPtr()->registerLogger(
-            new FileLogger(commandLineParser_.getLogToFileFileName()));
+        auto filename = commandLineParser_.getLogToFileFileName();
+        auto dir = filesystem::getFileDirectory(filename);
+        if (dir.empty() || !filesystem::directoryExists(dir)){
+            filename = commandLineParser_.getOutputPath() + "/" + filename;
+        }
+        LogCentral::getPtr()->registerLogger(new FileLogger(filename));
     }
 
     init(this);
@@ -136,7 +142,7 @@ void InviwoApplication::registerModules(RegisterModuleFunc regModuleFunc) {
         postProgress("Loading module: " + moduleObj->name_);
         registerModule(moduleObj->create(this));
     }
-    
+
     postProgress("Loading Capabilities");
     for (auto& module : modules_) {
         for (auto& elem : module->getCapabilities()) {
@@ -171,14 +177,29 @@ InviwoApplication::getModuleFactoryObjects() const {
     return modulesFactoryObjects_;
 }
 
+InviwoModule* InviwoApplication::getModuleByIdentifier(const std::string& identifier) const {
+    const auto it = std::find_if(
+        modules_.begin(), modules_.end(),
+        [&](const std::unique_ptr<InviwoModule>& m) { return m->getIdentifier() == identifier; });
+    if (it != modules_.end()) {
+        return it->get();
+    } else {
+        return nullptr;
+    }
+}
+
 ProcessorNetwork* InviwoApplication::getProcessorNetwork() { return processorNetwork_.get(); }
 
 ProcessorNetworkEvaluator* InviwoApplication::getProcessorNetworkEvaluator() {
     return processorNetworkEvaluator_.get();
 }
 
-const CommandLineParser* InviwoApplication::getCommandLineParser() const {
-    return &commandLineParser_;
+const CommandLineParser& InviwoApplication::getCommandLineParser() const {
+    return commandLineParser_;
+}
+
+CommandLineParser& InviwoApplication::getCommandLineParser() {
+    return commandLineParser_;
 }
 
 void InviwoApplication::printApplicationInfo() {

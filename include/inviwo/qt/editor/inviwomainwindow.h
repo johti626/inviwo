@@ -45,6 +45,8 @@
 #include <QAction>
 #include <warn/pop>
 
+#include <tclap/CmdLine.h>
+
 namespace inviwo {
 
 class NetworkEditorView;
@@ -55,7 +57,7 @@ class ResourceManagerWidget;
 class ConsoleWidget;
 class SettingsWidget;
 class HelpWidget;
-class InviwoApplication;
+class InviwoApplicationQt;
 
 class IVW_QTEDITOR_API InviwoMainWindow : public QMainWindow, public NetworkEditorObserver {
 #include <warn/push>
@@ -65,17 +67,15 @@ class IVW_QTEDITOR_API InviwoMainWindow : public QMainWindow, public NetworkEdit
 public:
     static const unsigned int maxNumRecentFiles_ = 10;
 
-    InviwoMainWindow(InviwoApplication* app);
+    InviwoMainWindow(InviwoApplicationQt* app);
     virtual ~InviwoMainWindow();
 
     void initialize();
     void showWindow();
 
-    void openLastWorkspace();
+    void openLastWorkspace(std::string workspace = "");
     void openWorkspace(QString workspaceFileName);
     std::string getCurrentWorkspace();
-
-    bool processCommandLineArgs();
 
     virtual void onNetworkEditorFileChanged(const std::string& filename) override;
     virtual void onModifiedStatusChanged(const bool& newStatus) override;
@@ -109,7 +109,7 @@ public slots:
     * leaves the current workspace file as current workspace
     */
     void saveWorkspaceAsCopy();
-    void exitInviwo();
+    void exitInviwo(bool saveIfModified = true);
     void showAboutBox();
     void setVisibilityMode(bool value);  // True = Application, False = Developer
 
@@ -122,6 +122,9 @@ private:
 
     void saveWindowState();
     void loadWindowState();
+
+    void saveCanvases(std::string path, std::string fileName);
+    void getScreenGrab(std::string path, std::string fileName);
 
     bool askToSaveWorkspaceChanges();
 
@@ -152,7 +155,7 @@ private:
     */
     void fillTestWorkspaceMenu(QMenu* menu);
 
-    InviwoApplication* app_;
+    InviwoApplicationQt* app_;
     NetworkEditor* networkEditor_;
     NetworkEditorView* networkEditorView_;
     OptionPropertyInt* appUsageModeProp_;
@@ -184,6 +187,10 @@ private:
     QString workspaceFileDir_;
     QString currentWorkspaceFileName_;
     QString workspaceOnLastSuccessfulExit_;
+
+    // command line switches
+    TCLAP::ValueArg<std::string> snapshotArg_;
+    TCLAP::ValueArg<std::string> screenGrabArg_;
 };
 
 }  // namespace

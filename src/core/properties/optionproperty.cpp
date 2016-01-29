@@ -46,6 +46,16 @@ OptionPropertyString::OptionPropertyString(std::string identifier, std::string d
                                            PropertySemantics semantics)
     : TemplateOptionProperty<std::string>(identifier, displayName, invalidationLevel, semantics) {}
 
+
+OptionPropertyString::OptionPropertyString(std::string identifier, std::string displayName,
+                                           std::vector<OptionPropertyOption<std::string>> options,
+                                           size_t selectedIndex,
+                                           InvalidationLevel invalidationLevel,
+                                           PropertySemantics semantics)
+    : TemplateOptionProperty<std::string>(identifier, displayName, options, selectedIndex,
+                                          invalidationLevel, semantics) {}
+
+
 OptionPropertyString::OptionPropertyString(const OptionPropertyString& rhs)
     : TemplateOptionProperty<std::string>(rhs) {}
 
@@ -73,14 +83,11 @@ BaseOptionProperty::~BaseOptionProperty() {}
 
 void BaseOptionProperty::set(const Property* srcProperty) {
     if (auto optionSrcProp = dynamic_cast<const BaseOptionProperty*>(srcProperty)) {
-        size_t option = optionSrcProp->getSelectedIndex();
-
-        if (option < size()) {
+        size_t option = std::min(optionSrcProp->getSelectedIndex(), size() -1);
+        if (option != getSelectedIndex()) {      
             setSelectedIndex(option);
-        } else {
-            setSelectedIndex(size() - 1);
-        }
-        propertyModified();
+            propertyModified();
+        }      
     }
 }
 

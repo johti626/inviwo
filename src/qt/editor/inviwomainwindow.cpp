@@ -70,25 +70,24 @@
 
 #include <warn/pop>
 
-#ifdef IVW_PYTHON2_QT
-#define IVW_PYTHON_QT
-#include <modules/pythonqt/pythoneditorwidget.h>
-#elif IVW_PYTHON3_QT
-#define IVW_PYTHON_QT
-#include <modules/python3qt/pythoneditorwidget.h>
-#endif
 
 // enable menu entry to reload the application stylesheet
 //#define IVW_STYLESHEET_RELOAD
 
 namespace inviwo {
 
-InviwoMainWindow::InviwoMainWindow(InviwoApplication* app)
+InviwoMainWindow::InviwoMainWindow(InviwoApplicationQt* app)
     : QMainWindow()
     , app_(app)
     , networkEditor_(nullptr)
     , appUsageModeProp_(nullptr)
-    , exampleWorkspaceOpen_(false) {
+    , exampleWorkspaceOpen_(false)
+
+    , snapshotArg_("s", "snapshot",
+                   "Specify base name of each snapshot, or \"UPN\" string for processor name.",
+                   false, "", "file name")
+    , screenGrabArg_("g", "screengrab", "Specify default name of each screen grab.", false, "",
+                     "file name") {
     networkEditor_ = new NetworkEditor(this);
     // initialize console widget first to receive log messages
     consoleWidget_ = new ConsoleWidget(this);
@@ -109,6 +108,14 @@ InviwoMainWindow::InviwoMainWindow(InviwoApplication* app)
 
     resize(size);
     move(pos);
+
+    app->getCommandLineParser().add(&snapshotArg_, [this]() {
+        saveCanvases(app_->getCommandLineParser().getOutputPath(), snapshotArg_.getValue());
+    }, 1000);
+
+    app->getCommandLineParser().add(&screenGrabArg_, [this]() {
+        getScreenGrab(app_->getCommandLineParser().getOutputPath(), screenGrabArg_.getValue());
+    }, 1000);
 }
 
 InviwoMainWindow::~InviwoMainWindow() {
@@ -146,15 +153,13 @@ void InviwoMainWindow::initialize() {
     restoreState(settings.value("state", saveState()).toByteArray());
     maximized_ = settings.value("maximized", false).toBool();
 
-    auto app = InviwoApplication::getPtr();
-
-    QString firstWorkspace = app->getPath(PathType::Workspaces, "/boron.inv").c_str();
+    QString firstWorkspace = filesystem::getPath(PathType::Workspaces, "/boron.inv").c_str();
     workspaceOnLastSuccessfulExit_ =
         settings.value("workspaceOnLastSuccessfulExit", QVariant::fromValue(firstWorkspace))
             .toString();
     settings.setValue("workspaceOnLastSuccessfulExit", "");
     settings.endGroup();
-    rootDir_ = QString::fromStdString(app->getPath(PathType::Data));
+    rootDir_ = QString::fromStdString(filesystem::getPath(PathType::Data));
     workspaceFileDir_ = rootDir_ + "/workspaces";
     settingsWidget_->updateSettingsWidget();
 
@@ -180,7 +185,7 @@ void InviwoMainWindow::initialize() {
     w->hide();
     delete w;
 
-    static_cast<InviwoApplicationQt*>(app)->setWindowDecorationOffset(offset);
+    app_->setWindowDecorationOffset(offset);
 #endif
 #endif
 }
@@ -192,53 +197,30 @@ void InviwoMainWindow::showWindow() {
         show();
 };
 
-bool InviwoMainWindow::processCommandLineArgs() {
-    auto app = static_cast<InviwoApplicationQt*>(InviwoApplication::getPtr());
-    const auto cmdparser = app->getCommandLineParser();
-#ifdef IVW_PYTHON_QT
+void InviwoMainWindow::saveCanvases(std::string path, std::string fileName) {
+    if (path.empty()) path = app_->getPath(PathType::Images);
 
-    if (cmdparser->getRunPythonScriptAfterStartup()) {
-        PythonEditorWidget::getPtr()->loadFile(cmdparser->getPythonScriptName(), false);
-        PythonEditorWidget::getPtr()->run();
-    }
+    repaint();
+    app_->processEvents();
+    util::saveAllCanvases(app_->getProcessorNetwork(), path, fileName);
+}
 
-#endif
+void InviwoMainWindow::getScreenGrab(std::string path, std::string fileName) {
+    if (path.empty()) path = filesystem::getPath(PathType::Images);
 
-    if (cmdparser->getScreenGrabAfterStartup()) {
-        std::string path = cmdparser->getOutputPath();
-        if (path.empty()) path = app->getPath(PathType::Images);
-
-        repaint();
-        app->processEvents();
+    repaint();
+    app_->processEvents();
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
-        QPixmap screenGrab = QGuiApplication::primaryScreen()->grabWindow(this->winId());
+    QPixmap screenGrab = QGuiApplication::primaryScreen()->grabWindow(this->winId());
 #else
-        QPixmap screenGrab = QPixmap::grabWindow(this->winId());
+    QPixmap screenGrab = QPixmap::grabWindow(this->winId());
 #endif
-        std::string fileName = cmdparser->getScreenGrabName();
-        screenGrab.save(QString::fromStdString(path + "/" + fileName), "png");
-    }
-
-    if (cmdparser->getCaptureAfterStartup()) {
-        std::string path = cmdparser->getOutputPath();
-        if (path.empty()) path = app->getPath(PathType::Images);
-
-        repaint();
-        app->processEvents();
-        util::saveAllCanvases(app->getProcessorNetwork(), path, cmdparser->getSnapshotName());
-    }
-
-    if (cmdparser->getQuitApplicationAfterStartup()) {
-        getNetworkEditor()->setModified(false);
-        return false;
-    }
-
-    return true;
+    screenGrab.save(QString::fromStdString(path + "/" + fileName), "png");
 }
 
 void InviwoMainWindow::addActions() {
     auto menu = menuBar();
-    
+
     auto fileMenuItem = new QMenu(tr("&File"), menu);
     auto editMenuItem = new QMenu(tr("&Edit"), menu);
     auto viewMenuItem = new QMenu(tr("&View"), menu);
@@ -256,43 +238,53 @@ void InviwoMainWindow::addActions() {
     workspaceToolBar->setObjectName("fileToolBar");
     auto viewModeToolBar = addToolBar("View");
     viewModeToolBar->setObjectName("viewModeToolBar");
-    auto evalToolBar = addToolBar("Evalulation");
+    auto evalToolBar = addToolBar("Evaluation");
     evalToolBar->setObjectName("evalToolBar");
 
     // file menu entries
     {
-        auto workspaceActionNew = new QAction(QIcon(":/icons/new.png"), tr("&New Workspace"), this);
-        workspaceActionNew->setShortcut(QKeySequence::New);
-        connect(workspaceActionNew, SIGNAL(triggered()), this, SLOT(newWorkspace()));
-        fileMenuItem->addAction(workspaceActionNew);
-        workspaceToolBar->addAction(workspaceActionNew);
+        auto newAction = new QAction(QIcon(":/icons/new.png"), tr("&New Workspace"), this);
+        actions_["New"] = newAction;
+        newAction->setShortcut(QKeySequence::New);
+        newAction->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+        this->addAction(newAction);
+        connect(newAction, SIGNAL(triggered()), this, SLOT(newWorkspace()));
+        fileMenuItem->addAction(newAction);
+        workspaceToolBar->addAction(newAction);
     }
 
     {
-        auto workspaceActionOpen =
-            new QAction(QIcon(":/icons/open.png"), tr("&Open Workspace"), this);
-        workspaceActionOpen->setShortcut(QKeySequence::Open);
-        connect(workspaceActionOpen, SIGNAL(triggered()), this, SLOT(openWorkspace()));
-        fileMenuItem->addAction(workspaceActionOpen);
-        workspaceToolBar->addAction(workspaceActionOpen);
+        auto openAction = new QAction(QIcon(":/icons/open.png"), tr("&Open Workspace"), this);
+        openAction->setShortcut(QKeySequence::Open);
+        openAction->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+        this->addAction(openAction);
+        actions_["Open"] = openAction;
+        connect(openAction, SIGNAL(triggered()), this, SLOT(openWorkspace()));
+        fileMenuItem->addAction(openAction);
+        workspaceToolBar->addAction(openAction);
     }
 
     {
-        auto workspaceActionSave =
-            new QAction(QIcon(":/icons/save.png"), tr("&Save Workspace"), this);
-        workspaceActionSave->setShortcut(QKeySequence::Save);
-        connect(workspaceActionSave, SIGNAL(triggered()), this, SLOT(saveWorkspace()));
-        fileMenuItem->addAction(workspaceActionSave);
-        workspaceToolBar->addAction(workspaceActionSave);
+        auto saveAction = new QAction(QIcon(":/icons/save.png"), tr("&Save Workspace"), this);
+        saveAction->setShortcut(QKeySequence::Save);
+        saveAction->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+        this->addAction(saveAction);
+        actions_["Save"] = saveAction;
+        connect(saveAction, SIGNAL(triggered()), this, SLOT(saveWorkspace()));
+        fileMenuItem->addAction(saveAction);
+        workspaceToolBar->addAction(saveAction);
     }
 
     {
-        auto workspaceActionSaveAs =
+        auto saveAsAction =
             new QAction(QIcon(":/icons/saveas.png"), tr("&Save Workspace As"), this);
-        workspaceActionSaveAs->setShortcut(QKeySequence::SaveAs);
-        connect(workspaceActionSaveAs, SIGNAL(triggered()), this, SLOT(saveWorkspaceAs()));
-        fileMenuItem->addAction(workspaceActionSaveAs);
-        workspaceToolBar->addAction(workspaceActionSaveAs);
+        saveAsAction->setShortcut(QKeySequence::SaveAs);
+        saveAsAction->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+        this->addAction(saveAsAction);
+        actions_["Save As"] = saveAsAction;
+        connect(saveAsAction, SIGNAL(triggered()), this, SLOT(saveWorkspaceAs()));
+        fileMenuItem->addAction(saveAsAction);
+        workspaceToolBar->addAction(saveAsAction);
     }
 
     {
@@ -322,7 +314,6 @@ void InviwoMainWindow::addActions() {
 
     {
         // create list of all example workspaces
-        fileMenuItem->addSeparator();
         auto exampleWorkspaceMenu = fileMenuItem->addMenu(tr("&Example Workspaces"));
         fillExampleWorkspaceMenu(exampleWorkspaceMenu);
     }
@@ -331,12 +322,12 @@ void InviwoMainWindow::addActions() {
         // TODO: need a DEVELOPER flag here!
         // create list of all test workspaces, inviwo-dev and other external modules, i.e.
         // "research"
-        fileMenuItem->addSeparator();
         auto testWorkspaceMenu = fileMenuItem->addMenu(tr("&Test Workspaces"));
         fillTestWorkspaceMenu(testWorkspaceMenu);
     }
 
     {
+        fileMenuItem->addSeparator();
         auto exitAction = new QAction(QIcon(":/icons/button_cancel.png"), tr("&Exit"), this);
         exitAction->setShortcut(QKeySequence::Close);
         connect(exitAction, SIGNAL(triggered()), this, SLOT(close()));
@@ -410,8 +401,7 @@ void InviwoMainWindow::addActions() {
         editMenuItem->addAction(clearLogAction);
         connect(clearLogAction, &QAction::triggered, [&]() { consoleWidget_->clear(); });
     }
-    
-    
+
     // View
     {
         // dock widget visibility menu entries
@@ -505,8 +495,6 @@ void InviwoMainWindow::addActions() {
         helpMenuItem->addAction(action);
     }
 #endif
-
-
 }
 
 void InviwoMainWindow::updateWindowTitle() {
@@ -589,32 +577,64 @@ void InviwoMainWindow::setCurrentWorkspace(QString workspaceFileName) {
 }
 
 void InviwoMainWindow::fillExampleWorkspaceMenu(QMenu* menu) {
-    auto app = InviwoApplication::getPtr();
+    for (const auto& module : app_->getModules()) {
+        QMenu* moduleMenu = nullptr;
+        auto moduleWorkspacePath = module->getPath(ModulePath::Workspaces);
+        if (filesystem::directoryExists(moduleWorkspacePath)) {
+            for (auto item : filesystem::getDirectoryContents(moduleWorkspacePath)) {
+                // only accept inviwo workspace files
+                if (filesystem::getFileExtension(item) == "inv") {
+                    if(!moduleMenu)
+                        moduleMenu = menu->addMenu(QString::fromStdString(module->getIdentifier()));
+                
+                    QString filename(QString::fromStdString(item));
+                    QAction* action = moduleMenu->addAction(filename);
+                    QString path(
+                        QString("%1/%2").arg(QString::fromStdString(moduleWorkspacePath)).arg(filename));
+                    action->setData(path);
 
-    std::string workspacePath{app->getPath(PathType::Workspaces)};
-    // get non-recursive list of contents
-    auto fileList = filesystem::getDirectoryContents(workspacePath);
-    for (auto item : fileList) {
-        // only accept inviwo workspace files
-        if (filesystem::getFileExtension(item) == "inv") {
-            QString filename(QString::fromStdString(item));
-            QAction* action = menu->addAction(filename);
-            QString path(QString("%1/%2").arg(QString::fromStdString(workspacePath)).arg(filename));
-            action->setData(path);
-
-            QObject::connect(action, SIGNAL(triggered()), this, SLOT(openExampleWorkspace()));
+                    QObject::connect(action, SIGNAL(triggered()), this,
+                                     SLOT(openExampleWorkspace()));
+                }
+            }
         }
     }
     menu->menuAction()->setVisible(!menu->isEmpty());
 }
 
 void InviwoMainWindow::fillTestWorkspaceMenu(QMenu* menu) {
+    for (const auto& module : app_->getModules()) {
+        auto moduleTestPath = module->getPath(ModulePath::RegressionTests);
+        if (filesystem::directoryExists(moduleTestPath)) {
+            QMenu* moduleMenu = nullptr;
+
+            for (auto test : filesystem::getDirectoryContents(moduleTestPath,
+                                                              filesystem::ListMode::Directories)) {
+                std::string testdir = moduleTestPath + "/" + test;
+                // only accept inviwo workspace files
+                if (filesystem::directoryExists(testdir)) {
+                    for (auto item : filesystem::getDirectoryContents(testdir)) {
+                        if (filesystem::getFileExtension(item) == "inv") {
+                            if (!moduleMenu) {
+                                moduleMenu =
+                                    menu->addMenu(QString::fromStdString(module->getIdentifier()));
+                            }
+                            QAction* action = moduleMenu->addAction(QString::fromStdString(item));
+                            action->setData(QString::fromStdString(testdir + "/" + item));
+                            QObject::connect(action, SIGNAL(triggered()), this,
+                                             SLOT(openRecentWorkspace()));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // store path and extracted module name
     std::vector<std::pair<std::string, std::string> > paths;  // we need to keep the order...
 
     // add default workspace path
-    auto app = InviwoApplication::getPtr();
-    std::string coreWorkspacePath = app->getPath(PathType::Workspaces) + "/tests";
+    std::string coreWorkspacePath = app_->getPath(PathType::Workspaces) + "/tests";
     if (filesystem::directoryExists(coreWorkspacePath)) {
         // check whether path contains at least one workspace
         bool workspaceExists = false;
@@ -709,14 +729,6 @@ std::string InviwoMainWindow::getCurrentWorkspace() {
 }
 
 void InviwoMainWindow::newWorkspace() {
-#ifdef IVW_PYTHON_QT
-    if (PythonEditorWidget::getPtr()->isActiveWindow() &&
-        PythonEditorWidget::getPtr()->hasFocus()) {
-        PythonEditorWidget::getPtr()->setDefaultText();
-        return;
-    }
-#endif
-
     if (currentWorkspaceFileName_ != "")
         if (!askToSaveWorkspaceChanges()) return;
 
@@ -761,13 +773,9 @@ void InviwoMainWindow::onNetworkEditorFileChanged(const std::string& filename) {
 
 void InviwoMainWindow::onModifiedStatusChanged(const bool& newStatus) { updateWindowTitle(); }
 
-void InviwoMainWindow::openLastWorkspace() {
-    // if a workspace is defined by an argument, that workspace is opened, otherwise, the last
-    // opened workspace is used
-    const auto cmdparser = InviwoApplicationQt::getPtr()->getCommandLineParser();
-
-    if (cmdparser->getLoadWorkspaceFromArg()) {
-        openWorkspace(static_cast<const QString>(cmdparser->getWorkspacePath().c_str()));
+void InviwoMainWindow::openLastWorkspace(std::string workspace) {
+    if (!workspace.empty()) {
+        openWorkspace(QString::fromStdString(workspace));
     } else if (!workspaceOnLastSuccessfulExit_.isEmpty()) {
         openWorkspace(workspaceOnLastSuccessfulExit_);
     } else {
@@ -824,16 +832,6 @@ void InviwoMainWindow::openExampleWorkspace() {
 }
 
 void InviwoMainWindow::saveWorkspace() {
-#ifdef IVW_PYTHON_QT
-
-    if (PythonEditorWidget::getPtr()->isActiveWindow() &&
-        PythonEditorWidget::getPtr()->hasFocus()) {
-        PythonEditorWidget::getPtr()->save();
-        return;
-    }  // only save workspace if python editor does not have focus
-
-#endif
-
     if (currentWorkspaceFileName_.contains("untitled.inv"))
         saveWorkspaceAs();
     else {
@@ -951,7 +949,8 @@ void InviwoMainWindow::setVisibilityMode(bool applicationView) {
     }
 }
 
-void InviwoMainWindow::exitInviwo() {
+void InviwoMainWindow::exitInviwo(bool saveIfModified) {
+    if(!saveIfModified) getNetworkEditor()->setModified(false);
     QMainWindow::close();
     InviwoApplication::getPtr()->closeInviwoApplication();
 }

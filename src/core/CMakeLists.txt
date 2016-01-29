@@ -19,6 +19,8 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/buffer/bufferramprecision.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/buffer/bufferrepresentation.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/camera.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/camerafactory.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/camerafactoryobject.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/coordinatetransformer.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/data.h
     ${IVW_INCLUDE_DIR}/inviwo/core/datastructures/datagroup.h
@@ -87,6 +89,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/pickingmapper.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/pickingobject.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/trackball.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/interaction/trackballobject.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/bytereaderutil.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/datareader.h
     ${IVW_INCLUDE_DIR}/inviwo/core/io/datareaderdialog.h
@@ -275,6 +278,8 @@ set(SOURCE_FILES
     datastructures/buffer/bufferram.cpp
     datastructures/buffer/bufferrepresentation.cpp
     datastructures/camera.cpp
+    datastructures/camerafactory.cpp
+    datastructures/camerafactoryobject.cpp
     datastructures/data.cpp
     datastructures/datagroup.cpp
     datastructures/datagrouprepresentation.cpp
@@ -331,6 +336,8 @@ set(SOURCE_FILES
     interaction/pickingmanager.cpp
     interaction/pickingmapper.cpp
     interaction/pickingobject.cpp
+    interaction/trackball.cpp
+    interaction/trackballobject.cpp
     io/bytereaderutil.cpp
     io/datareader.cpp
     io/datareaderdialog.cpp

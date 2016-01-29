@@ -35,12 +35,9 @@ namespace inviwo {
 
 class CompositePropertyWidgetQt;
 
-ABufferGLModule::ABufferGLModule(InviwoApplication* app) : InviwoModule(app, "ABufferGLModule") {
-    ShaderManager::getPtr()->addShaderSearchPath(PathType::Modules, "opengl/glsl");
-    ShaderManager::getPtr()->addShaderSearchPath(PathType::Modules, "abuffergl/glsl");
-    ShaderManager::getPtr()->addShaderSearchPath(PathType::Modules,
-                                                 "abuffergl/glsl/abuffer");
-    ShaderManager::getPtr()->addShaderSearchPath(PathType::Modules, "abuffergl");
+ABufferGLModule::ABufferGLModule(InviwoApplication* app) : InviwoModule(app, "ABufferGL") {
+    ShaderManager::getPtr()->addShaderSearchPath(getPath(ModulePath::GLSL));
+    ShaderManager::getPtr()->addShaderSearchPath(getPath(ModulePath::GLSL) + "/abuffer");
 
     registerProcessor<ABufferGeometryGLProcessor>();
 }

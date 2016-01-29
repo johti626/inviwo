@@ -38,6 +38,7 @@
 #include <inviwo/core/util/commandlineparser.h>
 #include <inviwo/core/util/vectoroperations.h>
 #include <inviwo/core/util/raiiutils.h>
+#include <inviwo/core/util/pathtype.h>
 #include <inviwo/core/common/inviwomodulefactoryobject.h>
 
 #include <warn/push>
@@ -55,6 +56,7 @@ namespace inviwo {
 class ProcessorNetwork;
 class ProcessorNetworkEvaluator;
 
+class CameraFactory;
 class DataReaderFactory;
 class DataWriterFactory;
 class MeshDrawerFactory;
@@ -74,21 +76,7 @@ class InviwoModule;
 class ModuleCallbackAction;
 class FileObserver;
 
-enum class PathType {
-    Data,               // /data
-    Volumes,            // /data/volumes
-    Modules,            // /modules
-    Workspaces,         // /data/workspaces
-    Scripts,            // /data/workspaces
-    PortInspectors,     // /data/workspaces/portinspectors
-    Images,             // /data/images
-    Databases,          // /data/databases
-    Resources,          // /resources
-    TransferFunctions,  // /data/transferfunctions
-    Settings,           // path to the current users settings
-    Help,               // /data/help
-    Tests               // /tests
-};
+
 
 /**
  * \class InviwoApplication
@@ -104,8 +92,8 @@ public:
         std::function<std::vector<std::unique_ptr<InviwoModuleFactoryObject>>()>;
 
     InviwoApplication();
-    InviwoApplication(std::string displayName, std::string basePath);
-    InviwoApplication(int argc, char** argv, std::string displayName, std::string basePath);
+    InviwoApplication(std::string displayName);
+    InviwoApplication(int argc, char** argv, std::string displayName);
     InviwoApplication(const InviwoApplication& rhs) = delete;
     InviwoApplication& operator=(const InviwoApplication& that) = delete;
 
@@ -117,7 +105,7 @@ public:
      * Get the base path of the application.
      * i.e. where the core data and modules folder and etc are.
      */
-    const std::string& getBasePath() const;
+    std::string getBasePath() const;
 
     std::string getDisplayName() const;
 
@@ -134,6 +122,9 @@ public:
     void registerModule(std::unique_ptr<InviwoModule> module);
     const std::vector<std::unique_ptr<InviwoModule>>& getModules() const;
     const std::vector<std::unique_ptr<InviwoModuleFactoryObject>>& getModuleFactoryObjects() const;
+    template <class T>
+    T* getModuleByType() const;
+    InviwoModule* getModuleByIdentifier(const std::string& identifier) const;
 
     ProcessorNetwork* getProcessorNetwork();
     ProcessorNetworkEvaluator* getProcessorNetworkEvaluator();
@@ -141,9 +132,8 @@ public:
     template <class T>
     T* getSettingsByType();
 
-    const CommandLineParser* getCommandLineParser() const;
-    template <class T>
-    T* getModuleByType();
+    CommandLineParser& getCommandLineParser();
+    const CommandLineParser& getCommandLineParser() const;
 
     virtual void addCallbackAction(ModuleCallbackAction* callbackAction);
     virtual std::vector<std::unique_ptr<ModuleCallbackAction>>& getCallbackActions();
@@ -168,6 +158,7 @@ public:
     void setProgressCallback(std::function<void(std::string)> progressCallback);
 
     // Factory getters
+    CameraFactory* getCameraFactory() const;
     DataReaderFactory* getDataReaderFactory() const;
     DataWriterFactory* getDataWriterFactory() const;
     DialogFactory* getDialogFactory() const;
@@ -207,7 +198,6 @@ private:
     };
 
     std::string displayName_;
-    std::string basePath_;
     Tags nonSupportedTags_;
 
     std::function<void(std::string)> progressCallback_;
@@ -219,6 +209,7 @@ private:
     util::OnScopeExit clearAllSingeltons_;
 
     // Factories
+    std::unique_ptr<CameraFactory> cameraFactory_;
     std::unique_ptr<DataReaderFactory> dataReaderFactory_;
     std::unique_ptr<DataWriterFactory> dataWriterFactory_;
     std::unique_ptr<DialogFactory> dialogFactory_;
@@ -248,7 +239,7 @@ T* InviwoApplication::getSettingsByType() {
 }
 
 template <class T>
-T* InviwoApplication::getModuleByType() {
+T* InviwoApplication::getModuleByType() const {
     return getTypeFromVector<T>(modules_);
 }
 
@@ -285,6 +276,10 @@ template <class F, class... Args>
 auto dispatchPool(F&& f, Args&&... args) -> std::future<typename std::result_of<F(Args...)>::type> {
     return InviwoApplication::getPtr()->dispatchPool(std::forward<F>(f),
                                                      std::forward<Args>(args)...);
+}
+
+inline CameraFactory* InviwoApplication::getCameraFactory() const {
+    return cameraFactory_.get();
 }
 
 inline DataReaderFactory* InviwoApplication::getDataReaderFactory() const {

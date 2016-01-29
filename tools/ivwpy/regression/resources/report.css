@@ -1,0 +1,195 @@
+ul,ol {
+    margin : 0px;
+    padding : 0px;
+}
+ul li {
+    list-style-type : none;
+    padding : 0px;
+}
+ol li {
+    list-style-type: decimal;
+    padding-left : 10px;
+}
+
+.ok {
+    background-color : #ddffdd;
+}
+.fail {
+    background-color : #ffdddd;
+}
+.toggle {
+    cursor : pointer;
+}
+.toggle:hover {
+    color : #555555;
+}
+a.version {
+    padding : 0px 5px 0px 0px;
+}
+a:link, a:visited {
+    text-decoration: none;
+    color : #000000;
+}
+a:hover, a:active {
+    text-decoration: underline;
+    color : #000000;
+}
+
+div.title {
+    font-family: sans-serif;
+    font-weight: bold;
+    font-variant: small-caps;
+    vertical-align : middle;
+    font-size : 250%;
+    padding : 10px 10px 10px 10px;
+    display : inline-block;
+}
+div.titleimg {
+    vertical-align : middle;
+    padding : 0px 0px 0px 0px;
+    display : inline-block;
+}
+div.subtitle {
+    font-family: sans-serif;
+    font-size : 90%;
+}
+
+img.test {
+    background-position : 0 0, 25px 25px;
+    max-height : 100%;
+    max-width : 100%;
+    background-image: linear-gradient(45deg, gray 25%, transparent 25%, transparent 75%, gray 75%, gray), 
+                      linear-gradient(45deg, gray 25%, transparent 25%, transparent 75%, gray 75%, gray);
+    background-size : 50px 50px;
+    padding : 0px;
+    border : 1px solid #000000;
+}
+img.diff {
+    max-height : 100%;
+    max-width : 100%;
+    padding : 0px;
+    border : 1px solid #000000;
+}
+div.libody {
+    margin-left : 20px;
+    padding-bottom : 15px;
+}
+div.head {
+    border-bottom-style : solid;
+    border-bottom-color : #dddddd;
+    border-bottom-width : 2px;
+}
+div.row {
+    border-top-style : solid;
+    border-top-width : 1px;
+    border-top-color : #dddddd;
+    padding: 0px 0px 0px 0px;
+    margin: 0px 0px 0px 0px;
+}
+div.cell {
+    margin : 0px 5px 0px 5px;
+    display : inline-block;
+    overflow: hidden;
+
+}
+div.testname {
+    width : 170px;
+}
+div.testmodule {
+    width : 170px;
+}
+div.testfailures {
+    width : 130px;
+}
+div.testruntime {
+    width : 130px;
+}
+div.testdate {
+    width : 150px;
+}
+div.imageinfo {
+    width : 130px;
+}
+div.imagename {
+    width : 200px;
+}
+div.itemname {
+    width : 100px;
+}
+div.key {
+    width : 150px;
+}
+
+div.log {
+  font-family: monospace;
+}
+div.log .info {
+}
+div.log .warn {
+    color : orange;
+}
+div.log .error {
+    color : red;
+}
+
+input {
+    vertical-align : middle;
+    border-radius : 5px;
+    font-size : 100%;
+    padding : 10px 10px 10px 10px;
+    border : solid 1px #ccc;
+}
+input:focus {
+    outline : none;
+    border-color : #aaa;
+}
+.sort {
+    background : none;
+    font-size : 100%;
+    cursor : pointer;
+    display : inline-block;
+    padding : 0px 30px 0px 0px;
+    border : none;
+}
+.sort:hover {
+    background-color : #dddddd;
+}
+.sort:active {
+    background-color : #bbbbbb;
+}
+.sort:focus {
+    outline:none;
+}
+.sort:after {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    content:"";
+    position: relative;
+    top:-10px;
+    right:-5px;
+}
+.sort.asc:after {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid #000;
+    content:"";
+    position: relative;
+    top:13px;
+    right:-5px;
+}
+.sort.desc:after {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid #000;
+    content:"";
+    position: relative;
+    top:-10px;
+    right:-5px;
+}
