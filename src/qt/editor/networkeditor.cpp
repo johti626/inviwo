@@ -108,16 +108,16 @@ ProcessorGraphicsItem* NetworkEditor::addProcessorRepresentations(Processor* pro
     ProcessorGraphicsItem* ret = addProcessorGraphicsItem(processor);
 
     auto factory = mainwindow_->getInviwoApplication()->getProcessorWidgetFactory();
-    if (auto processorWidget = factory->create(processor).release()) {
-        processorWidget->setProcessor(processor);
-        processor->setProcessorWidget(processorWidget);
-
-        if (auto widget = dynamic_cast<QWidget*>(processorWidget)) {
+    if (auto processorWidget = factory->create(processor)) {
+        if (auto widget = dynamic_cast<QWidget*>(processorWidget.get())) {
             widget->setParent(mainwindow_);
         }
+        processorWidget->setProcessor(processor);
         processorWidget->initialize();
         processorWidget->setVisible(processorWidget->ProcessorWidget::isVisible());
         processorWidget->addObserver(ret->getStatusItem());
+
+        processor->setProcessorWidget(processorWidget.release());
     }
     return ret;
 }
@@ -265,7 +265,6 @@ bool NetworkEditor::addPortInspector(Outport* port, QPointF pos) {
         NetworkLock lock(network_);
         // Add processors to the network
         CanvasProcessor* canvasProcessor = portInspector->getCanvasProcessor();
-        canvasProcessor->deinitialize();
 
         for (auto& processor : portInspector->getProcessors()) {
             // For Debugging
@@ -274,8 +273,6 @@ bool NetworkEditor::addPortInspector(Outport* port, QPointF pos) {
             // meta->setVisibile(true);
             network_->addProcessor(processor);
         }
-        canvasProcessor->initialize();  // This is needed since, we need to call initialize after we
-                                        // add the canvas to the processor.
 
         // Connect the port to inspect to the inports of the inspector network
         Outport* outport = dynamic_cast<Outport*>(port);
@@ -356,10 +353,6 @@ std::unique_ptr<std::vector<unsigned char>> NetworkEditor::renderPortInspectorIm
                     network_->addProcessor(processor);
                 }
 
-                // This is needed since, we need to call initialize after we
-                // add the canvas to the processor.
-                canvasProcessor->initialize();
-
                 // Connect the port to inspect to the inports of the inspector network
                 for (auto inport : portInspector->getInports()) {
                     network_->addConnection(outport, inport);
@@ -380,7 +373,7 @@ std::unique_ptr<std::vector<unsigned char>> NetworkEditor::renderPortInspectorIm
                     network_->autoLinkProcessor(processor);
                 }
 
-                int size = InviwoApplication::getPtr()
+                int size = mainwindow_->getInviwoApplication()
                                ->getSettingsByType<SystemSettings>()
                                ->portInspectorSize_.get();
                 canvasProcessor->setCanvasSize(ivec2(size, size));
@@ -421,7 +414,7 @@ void NetworkEditor::addExternalNetwork(std::string fileName, std::string identif
                                        ivec2 canvasSize) {
     NetworkLock lock(network_);
 
-    Deserializer xmlDeserializer(fileName);
+    Deserializer xmlDeserializer(mainwindow_->getInviwoApplication(), fileName);
     ProcessorNetwork* processorNetwork = new ProcessorNetwork();
     processorNetwork->deserialize(xmlDeserializer);
 
@@ -449,9 +442,10 @@ void NetworkEditor::addExternalNetwork(std::string fileName, std::string identif
 std::vector<std::string> NetworkEditor::saveSnapshotsInExternalNetwork(
     std::string externalNetworkFile, std::string identifierPrefix) {
     // turnoff sound
-    BoolProperty* soundProperty = dynamic_cast<BoolProperty*>(
-        InviwoApplication::getPtr()->getSettingsByType<SystemSettings>()->getPropertyByIdentifier(
-            "enableSound"));
+    BoolProperty* soundProperty =
+        dynamic_cast<BoolProperty*>(mainwindow_->getInviwoApplication()
+                                        ->getSettingsByType<SystemSettings>()
+                                        ->getPropertyByIdentifier("enableSound"));
     bool isSoundEnabled = soundProperty->get();
 
     if (isSoundEnabled) soundProperty->set(false);
@@ -498,7 +492,7 @@ std::vector<std::string> NetworkEditor::getSnapshotsOfExternalNetwork(std::strin
         NetworkEditor::UseOriginalCanvasSize | NetworkEditor::CanvasHidden;
     addExternalNetwork(fileName, identifierPrefix, pos, networkEditorFlags);
     network_->setModified(true);
-    InviwoApplication::getPtr()->getProcessorNetworkEvaluator()->requestEvaluate();
+    mainwindow_->getInviwoApplication()->getProcessorNetworkEvaluator()->requestEvaluate();
     // save snapshot
     snapshotFileNames = saveSnapshotsInExternalNetwork(fileName, identifierPrefix);
     // unload external network
@@ -768,7 +762,7 @@ void NetworkEditor::progagateEventToSelecedProcessors(KeyboardEvent& pressKeyEve
     for (auto& item : selectedItems()) {
         if (auto pgi = qgraphicsitem_cast<ProcessorGraphicsItem*>(item)) {
             Processor* p = pgi->getProcessor();
-            p->propagateEvent(&pressKeyEvent);
+            p->propagateEvent(&pressKeyEvent, nullptr);
             if (pressKeyEvent.hasBeenUsed()) break;
         }
     }
@@ -1114,7 +1108,7 @@ bool NetworkEditor::loadNetwork(std::istream& stream, const std::string& path) {
 
         // Deserialize processor network
         try {
-            Deserializer xmlDeserializer(stream, path);
+            Deserializer xmlDeserializer(mainwindow_->getInviwoApplication(), stream, path);
             network_->deserialize(xmlDeserializer);
         } catch (const AbortException& exception) {
             util::log(exception.getContext(),
@@ -1164,7 +1158,7 @@ QByteArray NetworkEditor::cut() {
 void NetworkEditor::paste(QByteArray mimeData) {
     std::stringstream ss;
     for (auto d : mimeData) ss << d;
-    auto added = util::appendDeserialized(network_, ss, "");
+    auto added = util::appendDeserialized(network_, ss, "", mainwindow_->getInviwoApplication());
 
     for (auto p : added) {
         auto m = p->getMetaData<ProcessorMetaData>(ProcessorMetaData::CLASS_IDENTIFIER);

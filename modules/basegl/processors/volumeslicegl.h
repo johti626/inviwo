@@ -96,12 +96,11 @@ class Mesh;
 class IVW_MODULE_BASEGL_API VolumeSliceGL : public Processor {
 public:
     VolumeSliceGL();
-    ~VolumeSliceGL();
+    virtual ~VolumeSliceGL();
 
     virtual const ProcessorInfo getProcessorInfo() const override;
     static const ProcessorInfo processorInfo_;
 
-    virtual void initialize() override;
     virtual void initializeResources() override;
 
     // Overridden to be able to turn off interaction events.
@@ -185,17 +184,14 @@ private:
 
     EventProperty gestureShiftSlice_;
 
-
-
-    Mesh* meshCrossHair_;
-    Mesh* meshBox_;  // second mesh needed since Mesh does not support multiple connectivity types
+    std::unique_ptr<Mesh> meshCrossHair_;
+   
     bool meshDirty_;
     bool updating_;
 
     mat4 sliceRotation_;
     mat4 inverseSliceRotation_; // Used to calculate the slice "z position" from the plain point. 
     size3_t volumeDimensions_;
-    size2_t outportDimensions_;
     mat4 texToWorld_;
 };
 }

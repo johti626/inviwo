@@ -45,7 +45,6 @@ namespace inviwo {
 ProcessorNetworkEvaluator::ProcessorNetworkEvaluator(ProcessorNetwork* processorNetwork)
     : processorNetwork_(processorNetwork)
     , evaulationQueued_(false)
-    , evaluationDisabled_(false)
     , exceptionHandler_(StandardExceptionHandler()) {
     
     processorNetwork_->addObserver(this);
@@ -82,17 +81,6 @@ void ProcessorNetworkEvaluator::onProcessorNetworkUnlocked() {
     }
 }
 
-void ProcessorNetworkEvaluator::disableEvaluation() { evaluationDisabled_ = true; }
-
-void ProcessorNetworkEvaluator::enableEvaluation() {
-    evaluationDisabled_ = false;
-
-    if (evaulationQueued_) {
-        evaulationQueued_ = false;
-        requestEvaluate();
-    }
-}
-
 void ProcessorNetworkEvaluator::requestEvaluate() {
     // evaluation has been triggered but is currently queued
     // requestEvaluate needs to be called with evaulationQueued_ false to continue.
@@ -105,7 +93,7 @@ void ProcessorNetworkEvaluator::requestEvaluate() {
     }
 
     // evaluation disabled
-    if (processorNetwork_->islocked() || evaluationDisabled_) {
+    if (processorNetwork_->islocked()) {
         evaulationQueued_ = true;
         return;
     }
@@ -128,20 +116,9 @@ void ProcessorNetworkEvaluator::evaluate() {
 
     // if the processor network has changed determine the new processor order
     if (processorNetwork_->isModified()) {
-        // make sure all processor are initialized
-        for (auto p : processorNetwork_->getProcessors()) {
-            try {
-                if (!p->isInitialized()) {
-                    p->initialize();
-                }
-            } catch (Exception&) {
-                exceptionHandler_(IvwContext);
-            }
-        }
-        processorNetwork_->setModified(false);
-
         // network topology has changed, update internal processor states
         processorsSorted_ = util::topologicalSort(processorNetwork_);
+        processorNetwork_->setModified(false);
     }
 
     for (auto processor : processorsSorted_) {

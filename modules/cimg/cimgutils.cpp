@@ -31,6 +31,7 @@
 #include <inviwo/core/datastructures/image/layerramprecision.h>
 #include <inviwo/core/util/filesystem.h>
 #include <inviwo/core/io/datawriter.h>
+#include <inviwo/core/io/datareaderexception.h>
 #include <algorithm>
 
 #include <warn/push>
@@ -87,6 +88,8 @@ val>(double)max() ? max() : (half_float::half)val; }
 using namespace cimg_library;
 
 namespace inviwo {
+
+namespace cimgutil {
 
 std::unordered_map<std::string, DataFormatId> extToBaseTypeMap_ = {
     {"png", DataFormatId::UInt8}, {"jpg", DataFormatId::UInt8},   {"jpeg", DataFormatId::UInt8},
@@ -175,27 +178,32 @@ struct CImgLoadLayerDispatcher {
                    const DataFormatBase* dataFormat, bool rescaleToDim) {
         using P = typename T::primitive;
 
-        CImg<P> img(filePath);
-        size_t components = static_cast<size_t>(img.spectrum());
+        try {
+            CImg<P> img(filePath);
+            size_t components = static_cast<size_t>(img.spectrum());
 
-        if (rescaleToDim) {
-            img.resize(dimensions.x, dimensions.y, -100, -100, 3);
-        } else {
-            dimensions = uvec2(img.width(), img.height());
+            if (rescaleToDim) {
+                img.resize(dimensions.x, dimensions.y, -100, -100, 3);
+            } else {
+                dimensions = uvec2(img.width(), img.height());
+            }
+
+            auto loadedDataFormat =
+                DataFormatBase::get(dataFormat->getNumericType(), components, sizeof(P) * 8);
+            if (loadedDataFormat) {
+                formatId = loadedDataFormat->getId();
+            } else {
+                throw DataReaderException(
+                    "CImgLoadLayerDispatcher, could not find proper data type", IvwContext);
+            }
+
+            // Image is up-side-down
+            img.mirror('y');
+
+            return CImgToVoidConvert<P>::convert(dst, &img);
+        } catch (CImgIOException& e) {
+            throw DataReaderException(std::string(e.what()), IvwContext);
         }
-
-        auto loadedDataFormat = DataFormatBase::get(
-            dataFormat->getNumericType(), components, sizeof(P) * 8);
-        if (loadedDataFormat) {
-            formatId = loadedDataFormat->getId();
-        } else {
-            throw Exception("CImgLoadLayerDispatcher, could not find proper data type");
-        }
-
-        // Image is up-side-down
-        img.mirror('y');
-
-        return CImgToVoidConvert<P>::convert(dst, &img);
     }
 };
 
@@ -207,7 +215,7 @@ struct CImgSaveLayerDispatcher {
 
         // Should rescale values based on output format i.e. PNG/JPG is 0-255, HDR different.
         const DataFormatBase* outFormat = DataFloat32::get();
-        std::string fileExtension = filesystem::getFileExtension(filePath);
+        std::string fileExtension = toLower(filesystem::getFileExtension(filePath));
         if (extToBaseTypeMap_.find(fileExtension) != extToBaseTypeMap_.end()) {
             outFormat = DataFormatBase::get(extToBaseTypeMap_[fileExtension]);
         }
@@ -290,9 +298,9 @@ struct CImgLoadVolumeDispatcher {
 
 ////////////////////// CImgUtils ///////////////////////////////////////////////////
 
-void* CImgUtils::loadLayerData(void* dst, const std::string& filePath, uvec2& dimensions,
-                               DataFormatId& formatId, bool rescaleToDim) {
-    std::string fileExtension = filesystem::getFileExtension(filePath);
+void* loadLayerData(void* dst, const std::string& filePath, uvec2& dimensions,
+    DataFormatId& formatId, bool rescaleToDim) {
+    std::string fileExtension = toLower(filesystem::getFileExtension(filePath));
     if (extToBaseTypeMap_.find(fileExtension) != extToBaseTypeMap_.end()) {
         formatId = extToBaseTypeMap_[fileExtension];
     } else {
@@ -305,9 +313,9 @@ void* CImgUtils::loadLayerData(void* dst, const std::string& filePath, uvec2& di
                                 rescaleToDim);
 }
 
-void* CImgUtils::loadVolumeData(void* dst, const std::string& filePath, size3_t& dimensions,
-                                DataFormatId& formatId) {
-    std::string fileExtension = filesystem::getFileExtension(filePath);
+void* loadVolumeData(void* dst, const std::string& filePath, size3_t& dimensions,
+    DataFormatId& formatId) {
+    std::string fileExtension = toLower(filesystem::getFileExtension(filePath));
     if (extToBaseTypeMap_.find(fileExtension) != extToBaseTypeMap_.end()) {
         formatId = extToBaseTypeMap_[fileExtension];
     } else {
@@ -319,13 +327,13 @@ void* CImgUtils::loadVolumeData(void* dst, const std::string& filePath, size3_t&
     return dataFormat->dispatch(disp, dst, filePath.c_str(), dimensions, formatId, dataFormat);
 }
 
-void CImgUtils::saveLayer(const std::string& filePath, const Layer* inputLayer) {
+void saveLayer(const std::string& filePath, const Layer* inputLayer) {
     CImgSaveLayerDispatcher disp;
     const LayerRAM* inputLayerRam = inputLayer->getRepresentation<LayerRAM>();
     inputLayer->getDataFormat()->dispatch(disp, filePath.c_str(), inputLayerRam);
 }
 
-std::unique_ptr<std::vector<unsigned char>> CImgUtils::saveLayerToBuffer(std::string& fileType,
+std::unique_ptr<std::vector<unsigned char>> saveLayerToBuffer(std::string& fileType,
                                                                          const Layer* inputLayer) {
     const LayerRAM* inputLayerRam = inputLayer->getRepresentation<LayerRAM>();  
     fileType = "raw";  // Can only produce raw output
@@ -334,15 +342,84 @@ std::unique_ptr<std::vector<unsigned char>> CImgUtils::saveLayerToBuffer(std::st
     return inputLayer->getDataFormat()->dispatch(disp, inputLayerRam);
 }
 
-void* CImgUtils::rescaleLayer(const Layer* inputLayer, uvec2 dst_dim) {
+void* rescaleLayer(const Layer* inputLayer, uvec2 dst_dim) {
     const LayerRAM* layerRam = inputLayer->getRepresentation<LayerRAM>();
     return rescaleLayerRAM(layerRam, dst_dim);
 }
 
-void* CImgUtils::rescaleLayerRAM(const LayerRAM* srcLayerRam, uvec2 dst_dim) {
+void* rescaleLayerRAM(const LayerRAM* srcLayerRam, uvec2 dst_dim) {
     CImgRescaleLayerDispatcher disp;
     return srcLayerRam->getDataFormat()->dispatch(disp, srcLayerRam, dst_dim);
 }
+
+struct CImgRescaleLayerRamToLayerRamDispatcher {
+    using type = bool;
+    template <typename T>
+    bool dispatch(const LayerRAM* source, LayerRAM* target) {
+        using E = typename T::type;       // elem type i.e. vec3
+        using P = typename T::primitive;  // comp type i.e float
+        const size_t rank = util::rank<E>::value;
+
+        const uvec2 sourceDim = source->getDimensions();
+        const uvec2 targetDim = target->getDimensions();
+
+        const double sourceAspect =
+            static_cast<double>(sourceDim.x) / static_cast<double>(sourceDim.y);
+        const double targetAspect =
+            static_cast<double>(targetDim.x) / static_cast<double>(targetDim.y);
+
+        const uvec2 resizeDim{
+            sourceAspect > targetAspect ? targetDim.x : targetDim.y * sourceAspect,
+            sourceAspect > targetAspect ? targetDim.x / sourceAspect : targetDim.y};
+
+        auto srcData = static_cast<const P*>(source->getData());
+        P* dstData = static_cast<P*>(target->getData());
+
+        if (rank == 0) {
+            CImg<P> src(srcData, sourceDim.x, sourceDim.y, 1, 1, true);
+            auto resized = src.get_resize(resizeDim.x, resizeDim.y, -100, -100,
+                                          static_cast<int>(InterpolationType::Linear));
+
+            CImg<P> dst(dstData, targetDim.x, targetDim.y, 1, 1, true);
+            dst.fill(P{0});
+            dst.draw_image(targetDim.x / 2 - resizeDim.x / 2, targetDim.y / 2 - resizeDim.y / 2,
+                           resized);
+        } else {
+            // Inviwo store pixels interleaved (RGBRGBRGB),
+            // CImg stores pixels in a planer format (RRRRGGGGBBBB).
+            // Permute from interleaved to planer format,
+            // we need to specify yzcx as input instead of cxyz
+
+            size_t comp = util::extent<E>::value;
+
+            CImg<P> src(srcData, comp, sourceDim.x, sourceDim.y, 1, true);
+            auto temp = src.get_permute_axes("yzcx");  // put first index last
+
+            temp.resize(resizeDim.x, resizeDim.y, -100, -100,
+                        static_cast<int>(InterpolationType::Linear));
+
+            CImg<P> dst(dstData, targetDim.x, targetDim.y, 1, comp, true);
+            dst.fill(P{0});
+            dst.draw_image(targetDim.x / 2 - resizeDim.x / 2, targetDim.y / 2 - resizeDim.y / 2,
+                           temp);
+
+            dst.permute_axes("cxyz");  // put last index first
+        }
+
+        return true;
+    }
+};
+
+bool rescaleLayerRamToLayerRam(const LayerRAM* source, LayerRAM* target) {
+    if (!source->getData()) return false;
+    if (!target->getData()) return false;
+    if (source->getDataFormatId() != target->getDataFormatId()) return false;
+
+    CImgRescaleLayerRamToLayerRamDispatcher disp;
+    return source->getDataFormat()->dispatch(disp, source, target);
+}
+
+}  // namespace
 
 }  // namespace
 

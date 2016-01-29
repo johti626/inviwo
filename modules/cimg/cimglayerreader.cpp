@@ -41,6 +41,10 @@ CImgLayerReader::CImgLayerReader() : DataReaderType<Layer>() {
 #ifdef cimg_use_png
     addExtension(FileExtension("png", "Portable Network Graphics"));
 #endif
+#ifdef cimg_use_tiff
+    addExtension(FileExtension("tif", "Tagged Image File Format"));
+    addExtension(FileExtension("tiff", "Tagged Image File Format"));
+#endif
 #ifdef cimg_use_jpeg
     addExtension(FileExtension("jpg", "Joint Photographic Experts Group"));
     addExtension(FileExtension("jpeg", "Joint Photographic Experts Group"));
@@ -64,10 +68,9 @@ std::shared_ptr<Layer> CImgLayerReader::readData(std::string filePath) {
         }
     }
 
-    auto layer = std::make_shared<Layer>();
     auto layerDisk = std::make_shared<LayerDisk>(filePath);
     layerDisk->setLoader(new CImgLayerRAMLoader(layerDisk.get()));
-    layer->addRepresentation(layerDisk);
+    auto layer = std::make_shared<Layer>(layerDisk);
     return layer;
 }
 
@@ -97,10 +100,10 @@ std::shared_ptr<DataRepresentation> CImgLayerRAMLoader::createRepresentation() c
 
     if (dimensions != uvec2(0)) {
         // Load and rescale to input dimensions
-        data = CImgUtils::loadLayerData(nullptr, filePath, dimensions, formatId, true);
+        data = cimgutil::loadLayerData(nullptr, filePath, dimensions, formatId, true);
     } else {
         // Load to original dimensions
-        data = CImgUtils::loadLayerData(nullptr, filePath, dimensions, formatId, false);
+        data = cimgutil::loadLayerData(nullptr, filePath, dimensions, formatId, false);
         layerDisk_->setDimensions(dimensions);
     }
 
@@ -133,10 +136,10 @@ void CImgLayerRAMLoader::updateRepresentation(std::shared_ptr<DataRepresentation
 
     if (dimensions != uvec2(0)) {
         // Load and rescale to input dimensions
-        CImgUtils::loadLayerData(layerDst->getData(), filePath, dimensions, formatId, true);
+        cimgutil::loadLayerData(layerDst->getData(), filePath, dimensions, formatId, true);
     } else {
         // Load to original dimensions
-        CImgUtils::loadLayerData(layerDst->getData(), filePath, dimensions, formatId, false);
+        cimgutil::loadLayerData(layerDst->getData(), filePath, dimensions, formatId, false);
         layerDisk_->setDimensions(dimensions);
     }
 

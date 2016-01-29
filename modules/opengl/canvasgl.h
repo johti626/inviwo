@@ -30,10 +30,10 @@
 #ifndef IVW_CANVASGL_H
 #define IVW_CANVASGL_H
 
-#include <modules/opengl/openglmoduledefine.h>
-#include <modules/opengl/inviwoopengl.h>
-#include <inviwo/core/util/canvas.h>
 #include <inviwo/core/processors/processorwidget.h>
+#include <inviwo/core/util/canvas.h>
+#include <modules/opengl/inviwoopengl.h>
+#include <modules/opengl/openglmoduledefine.h>
 
 namespace inviwo {
 
@@ -52,9 +52,10 @@ public:
     virtual void deinitialize() override;
 
     virtual void activate() override;
-    void defaultGLState();
+    static void defaultGLState();
 
-    virtual void render(const Image* im, LayerType layerType = LayerType::Color, size_t idx = 0) override;
+    virtual void render(std::shared_ptr<const Image> image, LayerType layerType = LayerType::Color,
+                        size_t idx = 0) override;
     virtual void resize(uvec2 size) override;
     virtual void glSwapBuffers();
     virtual void update() override;
@@ -112,9 +113,9 @@ protected:
     static void enableDrawImagePlaneRect();
     static void disableDrawImagePlaneRect();
 
+    std::shared_ptr<const Image> image_;
     const ImageGL* imageGL_;
-    const Image* image_;
-
+    
 private:
     static const MeshGL* screenAlignedRectGL_;
 
@@ -122,7 +123,7 @@ private:
     LayerType layerType_;
     std::unique_ptr<Shader> shader_;
     std::unique_ptr<Shader> noiseShader_;
-    int singleChannel_;
+    size_t channels_;
     size_t previousRenderedLayerIdx_;
 };
 

@@ -7,8 +7,8 @@
 cmake_minimum_required( VERSION 2.6 )
 SET( HEADER_PATH ../include/assimp )
 
-if(CMAKE_VERSION VERSION_GREATER "3.0.0")
-    cmake_policy(SET CMP0042 OLD) # MacOSX rpath policy.
+if(POLICY CMP0042)
+    cmake_policy(SET CMP0042 NEW) # MacOSX rpath policy.
 endif()
 
 SET( COMPILER_HEADERS
@@ -515,6 +515,16 @@ SET( Raw_SRCS
 )
 SOURCE_GROUP( Raw FILES ${Raw_SRCS})
 
+SET( VRML_SRCS
+	VRML1Importer.cpp
+	VRML1Importer.h
+	VRML2Importer.cpp
+	VRML2Importer.h
+	VRMLUtil.cpp
+	VRMLUtil.h
+)
+SOURCE_GROUP( VRML FILES ${VRML_SRCS})
+
 SET( SMD_SRCS
 	SMDLoader.cpp
 	SMDLoader.h
@@ -681,6 +691,7 @@ SET( assimp_src
 	${IFC_SRCS}
 	${XGL_SRCS}
 	${FBX_SRCS}
+	${VRML_SRCS}
 	
 	# Third-party libraries
 	${IrrXML_SRCS}

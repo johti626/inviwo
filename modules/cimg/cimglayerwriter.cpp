@@ -24,7 +24,7 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
 #include <modules/cimg/cimglayerwriter.h>
@@ -34,11 +34,14 @@
 
 namespace inviwo {
 
-CImgLayerWriter::CImgLayerWriter() 
-    : DataWriterType<Layer>() {
+CImgLayerWriter::CImgLayerWriter() : DataWriterType<Layer>() {
     addExtension(FileExtension("raw", "RAW"));
 #ifdef cimg_use_png
     addExtension(FileExtension("png", "Portable Network Graphics"));
+#endif
+#ifdef cimg_use_tiff
+    addExtension(FileExtension("tif", "Tagged Image File Format"));
+    addExtension(FileExtension("tiff", "Tagged Image File Format"));
 #endif
 #ifdef cimg_use_jpeg
     addExtension(FileExtension("jpg", "Joint Photographic Experts Group"));
@@ -51,28 +54,19 @@ CImgLayerWriter::CImgLayerWriter()
     addExtension(FileExtension("hdr", "Analyze 7.5"));
 }
 
-CImgLayerWriter::CImgLayerWriter(const CImgLayerWriter& rhs) : DataWriterType<Layer>(rhs) {}
-
-CImgLayerWriter& CImgLayerWriter::operator=(const CImgLayerWriter& that) {
-    if (this != &that)
-        DataWriterType<Layer>::operator=(that);
-
-    return *this;
-}
-
-CImgLayerWriter* CImgLayerWriter::clone() const {
-    return new CImgLayerWriter(*this);
-}
+CImgLayerWriter* CImgLayerWriter::clone() const { return new CImgLayerWriter(*this); }
 
 void CImgLayerWriter::writeData(const Layer* data, const std::string filePath) const {
-    CImgUtils::saveLayer(filePath, data);
+    cimgutil::saveLayer(filePath, data);
 }
 
-std::unique_ptr<std::vector<unsigned char>> CImgLayerWriter::writeDataToBuffer(const Layer* data, std::string& type) const {
-    return CImgUtils::saveLayerToBuffer(type, data);
+std::unique_ptr<std::vector<unsigned char>> CImgLayerWriter::writeDataToBuffer(
+    const Layer* data, std::string& type) const {
+    return cimgutil::saveLayerToBuffer(type, data);
 }
 
-bool CImgLayerWriter::writeDataToRepresentation(const DataRepresentation* src, DataRepresentation* dst) const {
+bool CImgLayerWriter::writeDataToRepresentation(const DataRepresentation* src,
+                                                DataRepresentation* dst) const {
     const LayerRAM* source = dynamic_cast<const LayerRAM*>(src);
     LayerRAM* target = dynamic_cast<LayerRAM*>(dst);
 
@@ -81,19 +75,7 @@ bool CImgLayerWriter::writeDataToRepresentation(const DataRepresentation* src, D
         LogError("Target representation missing.");
     }
 
-    if (!source->getData())
-        return true;
-    
-    uvec2 dimensions = target->getDimensions();
-
-    void* rawData = CImgUtils::rescaleLayerRAM(source, dimensions);
-
-    if (!rawData)
-        return false;
-
-    target->setData(rawData, dimensions);
-
-    return true;
+    return cimgutil::rescaleLayerRamToLayerRam(source, target);
 }
 
-} // namespace
+}  // namespace

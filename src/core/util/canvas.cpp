@@ -65,10 +65,10 @@ Canvas::Canvas(uvec2 dimensions)
         auto indices_ = util::makeIndexBuffer({0, 1, 2, 3});
 
         Mesh* screenAlignedRectMesh = new Mesh();
-        screenAlignedRectMesh->addBuffer(BufferType::POSITION_ATTRIB, verticesBuffer);
-        screenAlignedRectMesh->addBuffer(BufferType::TEXCOORD_ATTRIB, texCoordsBuffer);
+        screenAlignedRectMesh->addBuffer(BufferType::PositionAttrib, verticesBuffer);
+        screenAlignedRectMesh->addBuffer(BufferType::TexcoordAttrib, texCoordsBuffer);
         screenAlignedRectMesh->addIndicies(
-            Mesh::MeshInfo(DrawType::TRIANGLES, ConnectivityType::STRIP), indices_);
+            Mesh::MeshInfo(DrawType::Triangles, ConnectivityType::Strip), indices_);
 
         screenAlignedRect_ = screenAlignedRectMesh;
     }
@@ -102,7 +102,7 @@ void Canvas::initialize() {
 
 void Canvas::deinitialize() { propagator_ = nullptr; }
 
-void Canvas::render(const Image* im, LayerType layerType, size_t idx) {}
+void Canvas::render(std::shared_ptr<const Image> im, LayerType layerType, size_t idx) {}
 
 void Canvas::activate() {}
 
@@ -133,7 +133,7 @@ void Canvas::activateDefaultRenderContext() {
 void Canvas::interactionEvent(Event* event) {
     if (propagator_) {
         NetworkLock lock;
-        propagator_->propagateEvent(event);
+        propagator_->propagateEvent(event, nullptr);
     }
 }
 

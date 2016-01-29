@@ -44,15 +44,18 @@
 
 namespace inviwo {
 
-class IVW_QTWIDGETS_API FilePropertyWidgetQt : public PropertyWidgetQt {
+class IVW_QTWIDGETS_API FilePropertyWidgetQt : public PropertyWidgetQt, public FileRequestable {
 
+#include <warn/push>
+#include <warn/ignore/all>
     Q_OBJECT
+#include <warn/pop>
 
 public:
     FilePropertyWidgetQt(FileProperty* property);
 
-    void updateFromProperty();
-
+    virtual void updateFromProperty() override;
+    virtual bool requestFile() override;
 private:
     FileProperty* property_;
     QLineEdit* lineEdit_;
@@ -63,6 +66,9 @@ private:
 
 public slots:
     void setPropertyValue();
+
+
+
 };
 
 } // namespace

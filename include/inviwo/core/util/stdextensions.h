@@ -121,18 +121,31 @@ struct is_string<T, typename void_helper<typename T::value_type, typename T::tra
 template <typename T>
 struct is_string : detail::is_string<T> {};
 
+template <class F, class... Args>
+void for_each_argument(F f, Args&&... args) {
+    [](...){}((f(std::forward<Args>(args)), 0)...);
+}
+
 template <typename T, typename V>
-void erase_remove(T& cont, const V& elem) {
+auto erase_remove(T& cont, const V& elem)
+    -> decltype(std::distance(std::declval<T>().begin(), std::declval<T>().end())) {
     using std::begin;
     using std::end;
-    cont.erase(std::remove(begin(cont), end(cont), elem), cont.end());
+    auto it = std::remove(begin(cont), end(cont), elem);
+    auto nelem = std::distance(it, cont.end());
+    cont.erase(it, cont.end());
+    return nelem;
 }
 
 template <typename T, typename Pred>
-void erase_remove_if(T& cont, Pred pred) {
+auto erase_remove_if(T& cont, Pred pred)
+    -> decltype(std::distance(std::declval<T>().begin(), std::declval<T>().end())) {
     using std::begin;
     using std::end;
-    cont.erase(std::remove_if(begin(cont), end(cont), pred), cont.end());
+    auto it = std::remove_if(begin(cont), end(cont), pred);
+    auto nelem = std::distance(it, cont.end());
+    cont.erase(it, cont.end());
+    return nelem;
 }
 
 template <typename T, typename Pred>
@@ -328,6 +341,21 @@ auto transform(const T& cont, UnaryOperation op)
     std::transform(cont.begin(), cont.end(), std::back_inserter(res), op);
     return res;
 }
+
+
+template <typename Generator>
+auto table(Generator gen, int start, int end, int step = 1) -> 
+std::vector<decltype(gen(std::declval<int>()))> {
+    using type = decltype(gen(std::declval<int>()));
+    std::vector<type> res((end-start)/step);
+    size_t count = 0;
+    for(int i = start; i < end; i+=step){
+        res[count] = gen(i);
+        count++;
+    }
+    return res;
+}
+
 
 template <typename T>
 bool is_future_ready(const std::future<T>& future) {

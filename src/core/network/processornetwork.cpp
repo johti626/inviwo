@@ -79,19 +79,16 @@ void ProcessorNetwork::removeProcessor(Processor* processor) {
     if (!processor) return;
     NetworkLock lock(this);
 
-    // Remove all connections for this processor
-    PortConnectionMap connections = connections_;
-    for (auto& connection : connections)
-        if (connection.second->involvesProcessor(processor))
-            removeConnection(connection.second->getOutport(), connection.second->getInport());
-
+    // Remove all connections for this processor 
     for (auto outport : processor->getOutports()) {
-        for (auto inport : outport->getConnectedInports()) {
+        auto inports = outport->getConnectedInports();
+        for (auto inport : inports) {
             removeConnection(outport, inport);
         }
     }
     for (auto inport : processor->getInports()) {
-        for (auto outport : inport->getConnectedOutports()) {
+        auto outports = inport->getConnectedOutports();
+        for (auto outport : outports) {
             removeConnection(outport, inport);
         }
     }
@@ -119,10 +116,7 @@ void ProcessorNetwork::removeProcessor(Processor* processor) {
 
 void ProcessorNetwork::removeAndDeleteProcessor(Processor* processor) {
     if (!processor) return;
-
     removeProcessor(processor);
-    if (processor->isInitialized()) processor->deinitialize();
-
     delete processor;
 }
 

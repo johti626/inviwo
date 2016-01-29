@@ -45,14 +45,13 @@ namespace inviwo {
 
 class CanvasProcessorWidget;
 class ProcessorNetworkEvaluator;
+template<typename T>
+class DataWriterType;
 
 class IVW_CORE_API CanvasProcessor : public Processor {
 public:
     CanvasProcessor();
     virtual ~CanvasProcessor();
-
-    virtual void initialize() override;
-    virtual void deinitialize() override;
 
     virtual void process() override;
     virtual void doIfNotReady() override;
@@ -76,8 +75,8 @@ public:
 
     void triggerQueuedEvaluation();
     virtual bool isReady() const override;
-
-    virtual bool propagateResizeEvent(ResizeEvent* event, Outport* source) override;
+    virtual void setProcessorWidget(ProcessorWidget* processorWidget) override;
+    virtual void propagateResizeEvent(ResizeEvent* event, Outport* source) override;
 
 protected:
     void performEvaluationAtNextShow();
@@ -97,13 +96,15 @@ protected:
     CompositeProperty inputSize_;
 
 private:
+    const Layer* getSelectedLayer() const;
+    std::shared_ptr<DataWriterType<Layer>> getWriter(const std::string& fileExtension) const;
+
     void resizeCanvas();
     void sizeChanged();
     ivec2 calcSize();
 
     ivec2 previousImageSize_;
 
-    ProcessorNetworkEvaluator* evaluator_;  //< non-owning reference
     CanvasProcessorWidget* canvasWidget_;   //< non-owning reference
     bool queuedRequest_;
 };

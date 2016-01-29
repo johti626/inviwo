@@ -164,7 +164,7 @@ function(ivw_add_module_option_to_cache the_module onoff forcemodule)
     ivw_dir_to_mod_dep(mod_dep ${the_module})
     first_case_upper(dir_name_cap ${the_module})
 
-    if(${${mod_dep}_description})
+    if(${mod_dep}_description)
         set(desc "Build ${dir_name_cap} Module\n${${mod_dep}_description}")
     else()
         set(desc "Build ${dir_name_cap} Module")
@@ -172,13 +172,23 @@ function(ivw_add_module_option_to_cache the_module onoff forcemodule)
 
     if(forcemodule)
         set(${mod_name} ${onoff} CACHE BOOL "${desc}" FORCE)
-    else()
-        if(NOT DEFINED ${mod_name})
-            option(${mod_name} "${desc}" ${onoff})
-        endif()
+    elseif(NOT DEFINED ${mod_name})
+        option(${mod_name} "${desc}" ${onoff})
     endif()
 endfunction()
 
+#--------------------------------------------------------------------
+# ivw_to_macro_name(retval item1 item2 ...)
+# Convert a name to a macro name, i.e. OpenGL-test -> OPENGL_TEST
+function(ivw_to_macro_name retval)
+    set(the_list "")
+    foreach(item ${ARGN})
+        string(TOUPPER ${item} u_item)
+        string(REGEX REPLACE "-" "_" new_item ${u_item})
+        list(APPEND the_list "${new_item}")
+    endforeach()
+    set(${retval} ${the_list} PARENT_SCOPE)
+endfunction()
 
 
 #--------------------------------------------------------------------

@@ -70,8 +70,8 @@ protected:
 template <typename T>
 class Buffer : public BufferBase {
 public:
-    Buffer(size_t size, BufferUsage usage = BufferUsage::STATIC);
-    Buffer(BufferUsage usage = BufferUsage::STATIC);
+    Buffer(size_t size, BufferUsage usage = BufferUsage::Static);
+    Buffer(BufferUsage usage = BufferUsage::Static);
     Buffer(std::shared_ptr<BufferRAMPrecision<T>> repr);
     Buffer(const Buffer<T>& rhs) = default;
     Buffer<T>& operator=(const Buffer<T>& that) = default;
@@ -89,15 +89,16 @@ protected:
 using IndexBuffer = Buffer<std::uint32_t>;
 
 namespace util {
-inline std::shared_ptr<IndexBuffer> makeIndexBuffer(std::initializer_list<std::uint32_t> data) {
+
+inline std::shared_ptr<IndexBuffer> makeIndexBuffer(std::vector<std::uint32_t>&& data) {
     auto indexBufferRAM =
         std::make_shared<IndexBufferRAM>(std::vector<std::uint32_t>(std::move(data)));
     auto indices = std::make_shared<IndexBuffer>(indexBufferRAM);
     return indices;
 }
 
-template <typename T = vec3, BufferUsage U = BufferUsage::STATIC>
-std::shared_ptr<Buffer<T>> makeBuffer(std::initializer_list<T> data) {
+template <typename T = vec3, BufferUsage U = BufferUsage::Static>
+std::shared_ptr<Buffer<T>> makeBuffer(std::vector<T>&& data) {
     auto repr = std::make_shared<BufferRAMPrecision<T>>(std::vector<T>(std::move(data)), U);
     auto buffer = std::make_shared<Buffer<T>>(repr);
     return buffer;
@@ -121,11 +122,11 @@ Buffer<T>::Buffer(std::shared_ptr<BufferRAMPrecision<T>> repr)
 }
 
 template <typename T>
-Buffer<T>::Buffer(size_t size, BufferUsage usage /*= BufferUsage::STATIC*/)
+Buffer<T>::Buffer(size_t size, BufferUsage usage /*= BufferUsage::Static*/)
     : BufferBase(size, DataFormat<T>::get(), usage) {}
 
 template <typename T>
-Buffer<T>::Buffer(BufferUsage usage /*= BufferUsage::STATIC*/)
+Buffer<T>::Buffer(BufferUsage usage /*= BufferUsage::Static*/)
     : BufferBase(0, DataFormat<T>::get(), usage) {}
 
 template <typename T>

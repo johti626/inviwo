@@ -51,23 +51,6 @@ class ProcessorWidget;
 class ResizeEvent;
 class ProcessorNetwork;
 
-#define InviwoProcessorInfo()                                                             \
-    virtual const ProcessorInfo getProcessorInfo() const override {                       \
-        return ProcessorInfo(CLASS_IDENTIFIER, DISPLAY_NAME, CATEGORY, CODE_STATE, TAGS); \
-    }                                                                                     \
-    static const std::string CLASS_IDENTIFIER;                                            \
-    static const std::string CATEGORY;                                                    \
-    static const std::string DISPLAY_NAME;                                                \
-    static const CodeState CODE_STATE;                                                    \
-    static const Tags TAGS
-
-#define ProcessorClassIdentifier(T, classIdentifier) \
-    const std::string T::CLASS_IDENTIFIER = classIdentifier;
-#define ProcessorDisplayName(T, displayName) const std::string T::DISPLAY_NAME = displayName;
-#define ProcessorTags(T, tags) const Tags T::TAGS = tags;
-#define ProcessorCategory(T, category) const std::string T::CATEGORY = category;
-#define ProcessorCodeState(T, codeState) const CodeState T::CODE_STATE = codeState;
-
 /**
  * \defgroup processors Processors
  * \class Processor
@@ -202,27 +185,12 @@ public:
     std::string getIdentifier();
     virtual std::vector<std::string> getPath() const override;
 
-    void setProcessorWidget(ProcessorWidget* processorWidget);
+    virtual void setProcessorWidget(ProcessorWidget* processorWidget);
     ProcessorWidget* getProcessorWidget() const;
     bool hasProcessorWidget() const;
 
     void setNetwork(ProcessorNetwork* network);
     ProcessorNetwork* getNetwork() const;
-
-    /**
-     * Initialize is called once before the first time the process function of the processor
-     * is called. It is called by the processor network evaluator. Override to add resource
-     * allocation in your processor. Make sure to call the base class initialize first.
-     */
-    virtual void initialize();
-
-    /*
-     *    Deinitialize is called once before the processor is deleted by the processor network
-     *    Override to delete resources allocated in initialize. Make sure to call the base class
-     *    deinitialize last.
-     */
-    virtual void deinitialize();
-    bool isInitialized() const;
 
     /**
      * InitializeResources is called whenever a property with InvalidationLevel::InvalidResources
@@ -299,8 +267,10 @@ public:
     const std::vector<InteractionHandler*>& getInteractionHandlers() const;
 
     virtual void invokeEvent(Event* event) override;
-    virtual void propagateEvent(Event* event) override;
-    virtual bool propagateResizeEvent(ResizeEvent* event, Outport* source) override;
+
+    // Overridden from EventPropagator.
+    virtual void propagateEvent(Event* event, Outport* source) override;
+    virtual void propagateResizeEvent(ResizeEvent* event, Outport* source) override;
 
     // Override from the property owner
     virtual Processor* getProcessor() override { return this; }
@@ -312,9 +282,6 @@ public:
     static const std::string getCodeStateString(CodeState state);
 
 protected:
-    void enableInvalidation();
-    void disableInvalidation();
-
     void addPort(Inport* port, const std::string& portDependencySet = "default");
     void addPort(Inport& port, const std::string& portDependencySet = "default");
 
@@ -334,9 +301,6 @@ private:
     Group<std::string, Port*> portDependencySets_;
     static std::unordered_set<std::string> usedIdentifiers_;
 
-    bool initialized_;
-    bool invalidationEnabled_;
-    InvalidationLevel invalidationRequestLevel_;
     ProcessorNetwork* network_;
 };
 

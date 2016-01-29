@@ -118,8 +118,12 @@ ImageOverlayGL::ImageOverlayGL()
 
 ImageOverlayGL::~ImageOverlayGL() {}
 
-void ImageOverlayGL::propagateEvent(Event* event) {
+void ImageOverlayGL::propagateEvent(Event* event, Outport* source) {
+    if (event->hasVisitedProcessor(this)) return;
+    event->markAsVisited(this);
+
     invokeEvent(event);
+    if (event->hasBeenUsed()) return;
 
     if (overlayInteraction_.get() && overlayPort_.isConnected()) {
         std::unique_ptr<Event> newEvent(viewManager_.registerEvent(event));
@@ -139,7 +143,10 @@ void ImageOverlayGL::propagateEvent(Event* event) {
 
 bool ImageOverlayGL::isReady() const { return inport_.isReady(); }
 
-bool ImageOverlayGL::propagateResizeEvent(ResizeEvent* resizeEvent, Outport* source) {
+void ImageOverlayGL::propagateResizeEvent(ResizeEvent* resizeEvent, Outport* source) {
+    if (resizeEvent->hasVisitedProcessor(this)) return;
+    resizeEvent->markAsVisited(this);
+    
     updateViewports(resizeEvent->size(), true);
 
     if (inport_.isConnected()) {
@@ -151,8 +158,6 @@ bool ImageOverlayGL::propagateResizeEvent(ResizeEvent* resizeEvent, Outport* sou
         overlayPort_.propagateResizeEvent(
             &e, static_cast<ImageOutport*>(overlayPort_.getConnectedOutport()));
     }
-
-    return false;
 }
 
 void ImageOverlayGL::onStatusChange() {

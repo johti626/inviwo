@@ -36,13 +36,21 @@
 
 namespace inviwo {
 
+class IVW_CORE_API FileRequestable {
+public:
+    virtual ~FileRequestable() = default;
+    /**
+     *	Ask the user to supply a file, return true if successful
+     */
+    virtual bool requestFile() = 0;
+};
+
 /** class FileProperty
  *  A class for file representations.
  *  Holds the value of the path to a file as a string.
  *
  * @see TemplateProperty
  */
-
 class IVW_CORE_API FileProperty : public TemplateProperty<std::string> {
 public:
     InviwoPropertyInfo();
@@ -87,6 +95,11 @@ public:
 
     void setContentType(const std::string& contentType);
     std::string getContentType() const;
+
+    /**
+     *	Request a file from the user through the use of a widget.
+     */
+    void requestFile();
 
 private:
     std::vector<FileExtension> nameFilters_;

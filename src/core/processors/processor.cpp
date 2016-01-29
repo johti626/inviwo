@@ -47,9 +47,6 @@ Processor::Processor()
     , ProcessorObservable()
     , processorWidget_(nullptr)
     , identifier_("")
-    , initialized_(false)
-    , invalidationEnabled_(true)
-    , invalidationRequestLevel_(InvalidationLevel::Valid) 
     , network_(nullptr) {
     createMetaData<ProcessorMetaData>(ProcessorMetaData::CLASS_IDENTIFIER);
 }
@@ -167,18 +164,7 @@ std::vector<Port*> Processor::getPortsInSameSet(Port* port) const {
     return portDependencySets_.getGroupedData(portDependencySets_.getKey(port));
 }
 
-void Processor::initialize() { initialized_ = true; }
-
-void Processor::deinitialize() { initialized_ = false; }
-
-bool Processor::isInitialized() const { return initialized_; }
-
 void Processor::invalidate(InvalidationLevel invalidationLevel, Property* modifiedProperty) {
-    if (!invalidationEnabled_) {
-        invalidationRequestLevel_ = invalidationLevel;
-        return;
-    }
-
     notifyObserversInvalidationBegin(this);
     PropertyOwner::invalidate(invalidationLevel, modifiedProperty);
     if (!isValid()) {
@@ -215,23 +201,6 @@ bool Processor::hasInteractionHandler() const { return !interactionHandlers_.emp
 
 const std::vector<InteractionHandler*>& Processor::getInteractionHandlers() const {
     return interactionHandlers_;
-}
-
-void Processor::invokeEvent(Event* event) {
-    PropertyOwner::invokeEvent(event);
-    for (auto elem : interactionHandlers_) elem->invokeEvent(event);
-}
-
-bool Processor::propagateResizeEvent(ResizeEvent* resizeEvent, Outport* source) {
-    bool propagationEnded = true;
-
-    for (auto port : getPortsInSameSet(source)) {
-        if (auto imageInport = dynamic_cast<ImagePortBase*>(port)) {
-            propagationEnded = false;
-            imageInport->propagateResizeEvent(resizeEvent);
-        }
-    }
-    return propagationEnded;
 }
 
 void Processor::serialize(Serializer& s) const {
@@ -274,28 +243,34 @@ void Processor::setValid() {
     for (auto outport : outports_) outport->setValid();
 }
 
-void Processor::enableInvalidation() {
-    invalidationEnabled_ = true;
-    if (invalidationRequestLevel_ > InvalidationLevel::Valid) {
-        invalidate(invalidationRequestLevel_);
-        invalidationRequestLevel_ = InvalidationLevel::Valid;
-    }
-}
-
-void Processor::disableInvalidation() {
-    invalidationRequestLevel_ = InvalidationLevel::Valid;
-    invalidationEnabled_ = false;
-}
-
 void Processor::performEvaluateRequest() { notifyObserversRequestEvaluate(this); }
 
-void Processor::propagateEvent(Event* event) {
-    invokeEvent(event);
+void Processor::invokeEvent(Event* event) {
+    PropertyOwner::invokeEvent(event);
+    for (auto elem : interactionHandlers_) elem->invokeEvent(event);
+}
 
+void Processor::propagateEvent(Event* event, Outport* source) {
+    if (event->hasVisitedProcessor(this)) return;
+    event->markAsVisited(this);
+    
+    invokeEvent(event);
     if (event->hasBeenUsed()) return;
+
     for (auto inport : getInports()) {
         inport->propagateEvent(event);
         if (event->hasBeenUsed()) return;
+    }
+}
+
+void Processor::propagateResizeEvent(ResizeEvent* resizeEvent, Outport* source) {
+    if (resizeEvent->hasVisitedProcessor(this)) return;
+    resizeEvent->markAsVisited(this);
+
+    for (auto port : getPortsInSameSet(source)) {
+        if (auto imageInport = dynamic_cast<ImagePortBase*>(port)) {
+            imageInport->propagateResizeEvent(resizeEvent);
+        }
     }
 }
 

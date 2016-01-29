@@ -1,5 +1,4 @@
 #if(IVW_MODULE_CIMG)
-#    add_subdirectory(ext/zlib)
 #    add_subdirectory(ext/libpng)
 #    add_subdirectory(ext/libjpeg)
 #endif(IVW_MODULE_CIMG)
@@ -13,10 +12,6 @@ ivw_module(CImg)
 if(WIN32)
 add_definitions( "/W0 /D_CRT_SECURE_NO_WARNINGS /wd4005 /wd4996 /nologo /IGNORE:4006" )
 endif()
-#if(NOT DESIRED_QT_VERSION MATCHES 5)    
-    # Certain zlib functions conflict with Qt4 or less. Hence Z_PREFIX is requried.
-    #add_definitions( "/DZ_PREFIX" )
-#endif()
 
 #--------------------------------------------------------------------
 # Add LIBJPEG files
@@ -34,6 +29,36 @@ endif()
 # Add LIBPNG files
 file(GLOB_RECURSE LIBPNG_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libpng/*.h)
 file(GLOB_RECURSE LIBPNG_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libpng/*.c)
+
+#--------------------------------------------------------------------
+# Add LIBTIFF files
+file(GLOB_RECURSE LIBTIFF4_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff/*.h)
+list(REMOVE_ITEM LIBTIFF4_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff/tif_config.wince.h)
+list(REMOVE_ITEM LIBTIFF4_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff/tif_config.vc.h)
+
+file(GLOB_RECURSE LIBTIFF4_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.c)
+list(REMOVE_ITEM LIBTIFF4_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff/mkg3states.c)
+list(REMOVE_ITEM LIBTIFF4_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff/mkspans.c)
+list(REMOVE_ITEM LIBTIFF4_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff/tif_msdos.c)
+list(REMOVE_ITEM LIBTIFF4_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff/tif_wince.c)
+list(REMOVE_ITEM LIBTIFF4_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff/tif_win3.c)
+list(REMOVE_ITEM LIBTIFF4_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff/tif_vms.c)
+list(REMOVE_ITEM LIBTIFF4_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff/tif_atari.c)
+list(REMOVE_ITEM LIBTIFF4_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff/tif_acorn.c)
+
+if(WIN32)
+    list(REMOVE_ITEM LIBTIFF4_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff/tif_apple.c)
+    list(REMOVE_ITEM LIBTIFF4_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff/tif_unix.c)
+elseif(APPLE)
+    list(REMOVE_ITEM LIBTIFF4_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff/tif_win32.c)
+    list(REMOVE_ITEM LIBTIFF4_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff/tiffconf.vc.h)
+    list(REMOVE_ITEM LIBTIFF4_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff/tif_config.vc.h)
+else()
+    list(REMOVE_ITEM LIBTIFF4_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff/tif_apple.c)
+    list(REMOVE_ITEM LIBTIFF4_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff/tif_win32.c)
+    list(REMOVE_ITEM LIBTIFF4_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff/tiffconf.vc.h)
+    list(REMOVE_ITEM LIBTIFF4_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff/tif_config.vc.h)
+endif()
 
 #--------------------------------------------------------------------
 # Add OpenEXR files
@@ -83,24 +108,35 @@ endif()
 file(GLOB_RECURSE IMATH_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/openexr/imath/*.h)
 file(GLOB_RECURSE IMATH_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/openexr/imath/*.cpp)
 
-set(OPENEXR_HEADER_FILES ${HALF_HEADER_FILES} ${IEX_HEADER_FILES} ${ILLMIMF_HEADER_FILES} ${ILMTHREAD_HEADER_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/ext/openexr/IlmBaseConfig.h
+set(OPENEXR_HEADER_FILES 
+    ${HALF_HEADER_FILES} 
+    ${IEX_HEADER_FILES} 
+    ${ILLMIMF_HEADER_FILES} 
+    ${ILMTHREAD_HEADER_FILES} 
+    ${CMAKE_CURRENT_SOURCE_DIR}/ext/openexr/IlmBaseConfig.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ext/openexr/OpenEXRConfig.h)
-set(OPENEXR_SOURCE_FILES ${HALF_SOURCE_FILES} ${IEX_SOURCE_FILES} ${ILLMIMF_SOURCE_FILES} ${ILMTHREAD_SOURCE_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/ext/openexr/asd.cpp)
-
-#--------------------------------------------------------------------
-# Add ZLib files
-file(GLOB_RECURSE ZLIB_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/zlib/*.h)
-file(GLOB_RECURSE ZLIB_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/ext/zlib/*.c)
+set(OPENEXR_SOURCE_FILES 
+    ${HALF_SOURCE_FILES} 
+    ${IEX_SOURCE_FILES} 
+    ${ILLMIMF_SOURCE_FILES} 
+    ${ILMTHREAD_SOURCE_FILES} 
+    ${CMAKE_CURRENT_SOURCE_DIR}/ext/openexr/asd.cpp)
 
 #--------------------------------------------------------------------
 # Add header files
 set(HEADER_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/ext/cimg/CImg.h
     ${CMAKE_CURRENT_SOURCE_DIR}/cimgutils.h
     ${CMAKE_CURRENT_SOURCE_DIR}/cimglayerreader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/cimglayerwriter.h
     ${CMAKE_CURRENT_SOURCE_DIR}/cimgvolumereader.h
 )
-ivw_group("Header Files" ${HEADER_FILES} ${LIBJPEG_HEADER_FILES} ${LIBPNG_HEADER_FILES} ${LIBRAWLITE_HEADER_FILES} ${OPENEXR_HEADER_FILES} ${ZLIB_HEADER_FILES})
+ivw_group("Header Files" ${HEADER_FILES} 
+    ${LIBJPEG_HEADER_FILES} 
+    ${LIBPNG_HEADER_FILES} 
+    ${LIBTIFF4_HEADER_FILES}
+    ${LIBRAWLITE_HEADER_FILES} 
+    ${OPENEXR_HEADER_FILES})
 
 #--------------------------------------------------------------------
 # Add source files
@@ -110,7 +146,11 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/cimglayerwriter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/cimgvolumereader.cpp
 )
-ivw_group("Source Files" ${SOURCE_FILES} ${LIBJPEG_SOURCE_FILES} ${LIBPNG_SOURCE_FILES} ${OPENEXR_SOURCE_FILES} ${ZLIB_SOURCE_FILES})
+ivw_group("Source Files" ${SOURCE_FILES} 
+    ${LIBJPEG_SOURCE_FILES} 
+    ${LIBPNG_SOURCE_FILES}
+    ${LIBTIFF4_SOURCE_FILES} 
+    ${OPENEXR_SOURCE_FILES})
 
 #--------------------------------------------------------------------
 # Add all folders as includes
@@ -124,8 +164,11 @@ include_directories(${LIB_IMAGE_DIRS})
 #endif()
 ivw_add_definition(cimg_use_cpp11)
 ivw_add_definition(cimg_use_png)
+ivw_add_definition(cimg_use_tiff)
 ivw_add_definition(cimg_use_jpeg)
-ivw_add_definition(cimg_use_zlib)
+if (ZLIB_FOUND)
+	ivw_add_definition(cimg_use_zlib)
+endif()
 ivw_add_definition(cimg_use_openexr)
 
 remove_definitions(-DHAVE_CONFIG_H)
@@ -148,17 +191,23 @@ endif()
 ivw_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ext)
 ivw_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ext/libjpeg)
 ivw_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ext/libpng)
+ivw_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ext/libtiff)
 ivw_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ext/openexr/half)
 ivw_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ext/openexr/imath)
 ivw_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ext/openexr/ilmimf)
 ivw_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ext/openexr/ilmthread)
 ivw_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ext/openexr/iex)
 ivw_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ext/openexr)
-ivw_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ext/zlib)
 
 #--------------------------------------------------------------------
 # Supress warning from ext...
-set(IGNORE_WARN_FILES ${LIBJPEG_SOURCE_FILES} ${LIBPNG_SOURCE_FILES} ${OPENEXR_SOURCE_FILES} ${ZLIB_SOURCE_FILES})
+set(IGNORE_WARN_FILES 
+    ${LIBJPEG_SOURCE_FILES} 
+    ${LIBPNG_SOURCE_FILES}
+    ${LIBTIFF4_SOURCE_FILES} 
+    ${OPENEXR_SOURCE_FILES}
+)
+
 if(MSVC)
     set_source_files_properties( ${IGNORE_WARN_FILES} PROPERTIES COMPILE_FLAGS " /W0 " )
 endif(MSVC)
@@ -169,4 +218,15 @@ endif(CMAKE_SYSTEM_NAME MATCHES "(Darwin|FreeBSD)")
 
 #--------------------------------------------------------------------
 # Create module
-ivw_create_module(${SOURCE_FILES} ${LIBJPEG_SOURCE_FILES} ${LIBPNG_SOURCE_FILES} ${OPENEXR_SOURCE_FILES} ${ZLIB_SOURCE_FILES} ${HEADER_FILES} ${LIBJPEG_HEADER_FILES} ${LIBPNG_HEADER_FILES} ${OPENEXR_HEADER_FILES} ${ZLIB_HEADER_FILES})
+ivw_create_module(
+    ${SOURCE_FILES} 
+    ${LIBJPEG_SOURCE_FILES} 
+    ${LIBPNG_SOURCE_FILES}
+    ${LIBTIFF4_SOURCE_FILES}
+    ${OPENEXR_SOURCE_FILES}
+    ${HEADER_FILES}
+    ${LIBJPEG_HEADER_FILES}
+    ${LIBPNG_HEADER_FILES}
+    ${LIBTIFF4_HEADER_FILES} 
+    ${OPENEXR_HEADER_FILES}
+)
