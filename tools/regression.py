@@ -40,6 +40,8 @@ from ivwpy.colorprint import *
 # yattag, http://www.yattag.org for html report generation
 # Pillow (PIL) for image comparison https://python-pillow.github.io/
 # sqlalchemy for database connection 
+# bs4 (Beautiful Soup 4) for dom manipulation
+# lesscpy to process css
 
 missing_modules = {}
 
@@ -58,6 +60,16 @@ try:
 	import sqlalchemy
 except ImportError:
 	missing_modules['sqlalchemy'] = "needed for database connection"
+
+try:
+	import bs4
+except ImportError:
+	missing_modules['beautifulsoup4'] = "needed for dom manipulation"
+
+try:
+	import lesscpy
+except ImportError:
+	missing_modules['lesscpy'] = "needed for css generation"
 
 if len(missing_modules)>0: 
 	print_error("Error: Missing python modules:")
@@ -96,6 +108,8 @@ def makeCmdParser():
 						help="Exclude filter")
 	parser.add_argument("-l", "--list", action="store_true", dest="list", 
 						help="List all tests")
+	parser.add_argument("--imagetolerance", type=float, action="store", dest="imagetolerance", default=0.0,
+						help="Tolerance when comparing images")
 
 	return parser.parse_args()
 
@@ -157,7 +171,7 @@ if __name__ == '__main__':
 	if args.output:
 		output = os.path.abspath(args.output)
 	elif config.has_option("CMake","binary_dir"):
-		output = config.get("CMake","binary_dir") + "/regress"
+		output = mkdir(config.get("CMake","binary_dir"), "regress")
 	else:
 		print_error("Regression.py was unable to decide on a output dir, please specify \"-o <output path>\"")
 		sys.exit(1)
@@ -166,11 +180,22 @@ if __name__ == '__main__':
 	if config.has_option("Inviwo", "activemodules"):
 		activeModules = config.get("Inviwo", "activemodules").split(";")
 
-	settings=ivwpy.regression.inviwoapp.RunSettings(
+	runSettings=ivwpy.regression.inviwoapp.RunSettings(
 		timeout=60,
 		activeModules = activeModules
 	)
-	app = ivwpy.regression.app.App(inviwopath, output, modulePaths, settings=settings)
+
+	testSettings = ivwpy.regression.reporttest.ReportTestSettings(imageDifferenceTolerance = args.imagetolerance)
+
+	app = ivwpy.regression.app.App(appPath         = inviwopath,
+								   moduleTestPaths = modulePaths, 
+								   outputDir       = output,
+								   jsonFile		   = "report",
+								   htmlFile        = "report",
+								   sqlFile         = "report",
+								   runSettings     = runSettings,
+								   testSettings    = testSettings)
+
 
 	testfilter = makeFilter(args.include, args.exclude)
 	testrange = makeSlice(args.slice)
@@ -179,14 +204,10 @@ if __name__ == '__main__':
 		app.printTestList(testrange = testrange, testfilter = testfilter)
 		exit(0)
 
-	try: 
-		#load any old report
-		if os.path.exists(output+"/report.json"): app.loadJson(output+"/report.json")
-
+	try:
 		app.runTests(testrange = testrange, testfilter = testfilter)
-		app.updateDatabase(output + "/report.sqlite")
-		app.saveJson(output+"/report.json")	
-		app.saveHtml(output+"/report.html", output + "/report.sqlite")
+		app.saveJson()	
+		app.saveHtml()
 
 		if app.success():
 			print_info("Regression was successful")

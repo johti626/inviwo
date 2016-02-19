@@ -96,6 +96,14 @@ NetworkEditor::NetworkEditor(InviwoMainWindow* mainwindow)
 
     // The defalt bsp tends to crash...
     setItemIndexMethod(QGraphicsScene::NoIndex);
+    
+    connect(this, &QGraphicsScene::selectionChanged, [&](){
+        auto actions = mainwindow_->getActions();
+        auto enable = selectedItems().size()>0;
+        actions["Copy"]->setEnabled(enable);
+        actions["Cut"]->setEnabled(enable);
+        actions["Delete"]->setEnabled(enable);
+    });
 }
 
 NetworkEditor::~NetworkEditor() {}
@@ -107,17 +115,8 @@ ProcessorGraphicsItem* NetworkEditor::addProcessorRepresentations(Processor* pro
     // generate GUI representations (graphics item, property widget, processor widget)
     ProcessorGraphicsItem* ret = addProcessorGraphicsItem(processor);
 
-    auto factory = mainwindow_->getInviwoApplication()->getProcessorWidgetFactory();
-    if (auto processorWidget = factory->create(processor)) {
-        if (auto widget = dynamic_cast<QWidget*>(processorWidget.get())) {
-            widget->setParent(mainwindow_);
-        }
-        processorWidget->setProcessor(processor);
-        processorWidget->initialize();
-        processorWidget->setVisible(processorWidget->ProcessorWidget::isVisible());
-        processorWidget->addObserver(ret->getStatusItem());
-
-        processor->setProcessorWidget(processorWidget.release());
+    if (auto widget = processor->getProcessorWidget()){
+        widget->addObserver(ret->getStatusItem());
     }
     return ret;
 }
@@ -125,13 +124,6 @@ ProcessorGraphicsItem* NetworkEditor::addProcessorRepresentations(Processor* pro
 void NetworkEditor::removeProcessorRepresentations(Processor* processor) {
     removeProcessorGraphicsItem(processor);
     removeAndDeletePropertyWidgets(processor);
-
-    // processor widget should be removed here since it is added in addProcessorRepresentations()
-    if (auto processorWidget = processor->getProcessorWidget()) {
-        processorWidget->deinitialize();
-        processor->setProcessorWidget(nullptr);
-        delete processorWidget;
-    }
 }
 
 ProcessorGraphicsItem* NetworkEditor::addProcessorGraphicsItem(Processor* processor) {
@@ -250,7 +242,7 @@ void NetworkEditor::showLinkDialog(Processor* processor1, Processor* processor2)
 bool NetworkEditor::addPortInspector(Outport* port, QPointF pos) {
     if (!port) return false;
 
-    PortInspectorMap::iterator it = portInspectors_.find(port);
+    auto it = portInspectors_.find(port);
     if (it != portInspectors_.end()) {
         return false;
     }
@@ -265,12 +257,7 @@ bool NetworkEditor::addPortInspector(Outport* port, QPointF pos) {
         NetworkLock lock(network_);
         // Add processors to the network
         CanvasProcessor* canvasProcessor = portInspector->getCanvasProcessor();
-
         for (auto& processor : portInspector->getProcessors()) {
-            // For Debugging
-            // auto meta =
-            // processor->getMetaData<ProcessorMetaData>(ProcessorMetaData::CLASS_IDENTIFIER);
-            // meta->setVisibile(true);
             network_->addProcessor(processor);
         }
 
@@ -310,7 +297,6 @@ bool NetworkEditor::addPortInspector(Outport* port, QPointF pos) {
             processorWidget->show();
             processorWidget->addObserver(new PortInspectorObserver(this, outport));
         }
-
         return true;
     }
     return false;
@@ -319,13 +305,19 @@ bool NetworkEditor::addPortInspector(Outport* port, QPointF pos) {
 void NetworkEditor::removePortInspector(Outport* port) {
     if (port) {
         auto it = portInspectors_.find(port);
-        if (it != portInspectors_.end() && it->second->isActive()) {
-            NetworkLock lock(network_);
-            // Remove processors from the network
-            auto processors = it->second->getProcessors();
-            for (auto& processor : processors) network_->removeProcessor(processor);
+        if (it != portInspectors_.end()) {
+            if (it->second && it->second->isActive()) {
+                NetworkLock lock(network_);
 
-            it->second->setActive(false);
+                it->second->getCanvasProcessor()->getProcessorWidget()->hide();
+
+                // Remove processors from the network
+                auto processors = it->second->getProcessors();
+                for (auto& processor : processors) {
+                    network_->removeProcessor(processor);
+                }
+                it->second->setActive(false);
+            }
             portInspectors_.erase(it);
         }
     }
@@ -343,14 +335,12 @@ std::unique_ptr<std::vector<unsigned char>> NetworkEditor::renderPortInspectorIm
             portInspector->setActive(true);
 
             auto canvasProcessor = portInspector->getCanvasProcessor();
-            auto wm = canvasProcessor->createMetaData<ProcessorWidgetMetaData>(
-                ProcessorWidgetMetaData::CLASS_IDENTIFIER);
-            wm->setVisibile(false);
             {
                 NetworkLock lock(network_);
                 // Add processors to the network
                 for (auto& processor : portInspector->getProcessors()) {
                     network_->addProcessor(processor);
+                    //RenderContext::getPtr()->activateDefaultRenderContext();
                 }
 
                 // Connect the port to inspect to the inports of the inspector network
@@ -386,7 +376,6 @@ std::unique_ptr<std::vector<unsigned char>> NetworkEditor::renderPortInspectorIm
             for (auto processor : portInspector->getProcessors()) {
                 network_->removeProcessor(processor);
             }
-            wm->setVisibile(true);
             portInspector->setActive(false);
         }
     } catch (Exception& exception) {
@@ -462,7 +451,7 @@ std::vector<std::string> NetworkEditor::saveSnapshotsInExternalNetwork(
 
             if (canvasProcessor) {
                 std::string snapShotFilePath =
-                    directory + "snapshot_" + canvasProcessor->getIdentifier() + newFileName;
+                    directory + "/" + "snapshot_" + canvasProcessor->getIdentifier() + newFileName;
                 canvasSnapShotFiles.push_back(snapShotFilePath);
                 canvasProcessor->saveImageLayer(snapShotFilePath);
             }
@@ -754,9 +743,15 @@ void NetworkEditor::contextMenuEvent(QGraphicsSceneContextMenuEvent* e) {
     menu.addAction(deleteAction);
     toBeDeleted_.append(items(e->scenePos()));
   
+    
+    doingContextMenu_ = true;
     menu.exec(QCursor::pos());
     e->accept();
     toBeDeleted_.clear();
+    doingContextMenu_ = false;
+}
+bool NetworkEditor::doingContextMenu() const {
+    return doingContextMenu_;
 }
 
 void NetworkEditor::progagateEventToSelecedProcessors(KeyboardEvent& pressKeyEvent) {
@@ -881,6 +876,8 @@ void NetworkEditor::dropEvent(QGraphicsSceneDragDropEvent* e) {
         ProcessorDragObject::decode(e->mimeData(), name);
         std::string className = name.toLocal8Bit().constData();
 
+        NetworkLock lock(network_);
+        
         if (!className.empty()) {
             e->setAccepted(true);
             e->acceptProposedAction();

@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,69 +24,46 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#ifndef IVW_TEXTURECALLBACK_H
-#define IVW_TEXTURECALLBACK_H
+#ifndef IVW_PATHLINEPROPERTIES_H
+#define IVW_PATHLINEPROPERTIES_H
 
 #include <inviwo/core/common/inviwo.h>
+#include <modules/vectorfieldvisualization/properties/integrallineproperties.h>
+#include <modules/vectorfieldvisualization/vectorfieldvisualizationmoduledefine.h>
+#include <inviwo/core/properties/ordinalproperty.h>
 
 namespace inviwo {
 
-class Texture;
-
-class BaseTextureCallBack {
+/**
+ * \class PathLineProperties
+ * \brief VERY_BRIEFLY_DESCRIBE_THE_CLASS
+ * DESCRIBE_THE_CLASS
+ */
+class IVW_MODULE_VECTORFIELDVISUALIZATION_API PathLineProperties : public IntegralLineProperties {
 public:
-    BaseTextureCallBack() {}
-    virtual ~BaseTextureCallBack() {}
-    virtual void invoke(Texture*) const=0;
-};
+    InviwoPropertyInfo();
 
-template <typename T>
-class MemberFunctionTextureCallback : public BaseTextureCallBack {
-public:
-    typedef void (T::*fPointerTexture)(Texture*);
+    PathLineProperties(std::string identifier, std::string displayName);
+    PathLineProperties(const PathLineProperties& rhs);
+    PathLineProperties& operator=(const PathLineProperties& that);
+    virtual PathLineProperties* clone() const override;
+    virtual ~PathLineProperties();
 
-    MemberFunctionTextureCallback(T* obj, fPointerTexture functionPtr)
-        : functionPtr_(functionPtr)
-        , obj_(obj) {}
+    double getStartT()const { return startT_.get(); }
 
-    virtual ~MemberFunctionTextureCallback() {}
 
-    void invoke(Texture* p) const {
-        if (functionPtr_)(*obj_.*functionPtr_)(p);
-    }
+    void deserialize(Deserializer& d) override;
 
 private:
-    fPointerTexture functionPtr_;
-    T* obj_;
+    void setUpProperties();
+
+protected:
+    DoubleProperty startT_;
 };
 
-class TextureCallback {
-public:
-    TextureCallback() : callBack_(0) {}
-    virtual ~TextureCallback() {
-        delete callBack_;
-    }
+}  // namespace
 
-    void invoke(Texture* p) const {
-        if (callBack_)
-            callBack_->invoke(p);
-    }
-
-    template <typename T>
-    void addMemberFunction(T* o, void (T::*m)(Texture*)) {
-        if(callBack_)
-            delete callBack_;
-        callBack_ = new MemberFunctionTextureCallback<T>(o,m);
-    }
-
-private:
-    BaseTextureCallBack* callBack_;
-};
-
-
-} // namespace
-
-#endif // IVW_TEXTURECALLBACK_H
+#endif  // IVW_PATHLINEPROPERTIES_H

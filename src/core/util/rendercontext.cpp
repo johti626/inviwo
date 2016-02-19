@@ -58,7 +58,7 @@ void RenderContext::activateLocalRenderContext() const {
         std::unique_lock<std::mutex> lock(mutex_);
         auto it = contextMap_.find(id);
         if (it == contextMap_.end()) {
-            auto canvas = defaultContext_->create();
+            auto canvas = defaultContext_->createHiddenCanvas();
             localContext = canvas.get();
             contextMap_[id] = std::move(canvas);
         } else {
@@ -68,15 +68,12 @@ void RenderContext::activateLocalRenderContext() const {
     localContext->activate();
 }
 
-void RenderContext::clearContext(const std::thread::id& id) {
+void RenderContext::clearContext() {
+    auto id = std::this_thread::get_id();
     std::unique_lock<std::mutex> lock(mutex_);
     contextMap_.erase(id);
 }
 
-void RenderContext::clearLocalContexts() {
-    std::unique_lock<std::mutex> lock(mutex_);
-    contextMap_.clear();
-}
 
 Canvas* RenderContext::getDefaultRenderContext() { return defaultContext_; }
 

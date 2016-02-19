@@ -32,6 +32,7 @@
 #include <modules/opengl/image/layergl.h>
 #include <modules/opengl/texture/textureutils.h>
 #include <modules/opengl/volume/volumeutils.h>
+#include <modules/opengl/geometry/meshgl.h>
 #include <inviwo/core/datastructures/light/pointlight.h>
 #include <inviwo/core/datastructures/light/directionallight.h>
 
@@ -197,7 +198,8 @@ void LightVolumeGL::process() {
     propagationShader_.setUniform("lightVolumeParameters_.dimensions", volumeDimOutF_);
     propagationShader_.setUniform("lightVolumeParameters_.reciprocalDimensions", volumeDimOutFRCP_);
 
-    BufferObjectArray* rectArray = utilgl::enableImagePlaneRect();
+    utilgl::imagePlaneRect()->enable();
+    glDepthFunc(GL_ALWAYS);
 
     //Perform propagation passes
     for (int i=0; i<2; ++i) {
@@ -228,7 +230,8 @@ void LightVolumeGL::process() {
         propParams_[i].fbo->deactivate();
     }
 
-    utilgl::disableImagePlaneRect(rectArray);
+    utilgl::imagePlaneRect()->disable();
+    glDepthFunc(GL_LESS);
 
     propagationShader_.deactivate();
     mergeShader_.activate();
@@ -359,9 +362,9 @@ bool LightVolumeGL::volumeChanged(bool lightColorChanged) {
 
         for (auto& elem : propParams_) {
             if (!elem.vol || elem.vol->getDataFormat() != format) {
-                 elem.vol.reset(new VolumeGL(volumeDimOut_, format, false));
-                elem.vol->getTexture()->setTextureParameterFunction(
-                    this, &LightVolumeGL::propagation3DTextureParameterFunction);
+                elem.vol.reset(new VolumeGL(volumeDimOut_, format, false));
+                elem.vol->getTexture()->setTextureParameters(
+                    [&](Texture* t) { propagation3DTextureParameterFunction(t); });
                 elem.vol->getTexture()->initialize(nullptr);
             } else {
                 elem.vol->setDimensions(volumeDimOut_);

@@ -29,19 +29,21 @@
  
 $(document).ready(function() {
    	$('div.lihead').click(function() {
-   			body = $(this).next(".libody")
+   			body = $(this).next(".libody") 			
    			body.slideToggle(100);
-    
            	$.sparkline_display_visible()
     });
-	$('div.libody').hide();
 
 	$('.sparkline_elapsed_time').sparkline('html', {
 		type : 'line', 
 		width : '75px', 
 		enableTagOptions: true,
 		fillColor : false,
-		normalRangeColor: '#88ff88',
+		lineColor : '#473386',
+		spotColor : '#C3AC3B',
+		minSpotColor : '#C3AC3B',
+		maxSpotColor : '#C3AC3B',
+		normalRangeColor: '#B3EEB3',
 		drawNormalOnTop: false,
 		tooltipFormatFieldlist : ['x', 'y'],
 		tooltipFormatter :  function(sp, options, fields) {
@@ -61,7 +63,11 @@ $(document).ready(function() {
 		width : '75px', 
 		enableTagOptions: true,
 		fillColor : false,
-		normalRangeColor: '#88ff88',
+		lineColor : '#473386',
+		spotColor : '#C3AC3B',
+		minSpotColor : '#C3AC3B',
+		maxSpotColor : '#C3AC3B',
+		normalRangeColor: '#B3EEB3',
 		drawNormalOnTop: false,
 		tooltipFormatFieldlist : ['x', 'y'],
 		tooltipFormatter :  function(sp, options, fields) {
@@ -81,9 +87,13 @@ $(document).ready(function() {
 		width : '75px', 
 		enableTagOptions: true,
 		fillColor : false,
+		lineColor : '#473386',
+		spotColor : '#C3AC3B',
+		minSpotColor : '#C3AC3B',
+		maxSpotColor : '#C3AC3B',
 		chartRangeMin : 0, 
 		chartRangeMax : 6,
-		normalRangeColor: '#88ff88',
+		normalRangeColor: '#B3EEB3',
 		normalRangeMin : -0.5,
 		normalRangeMax : 0.5,
 		drawNormalOnTop: true,
@@ -99,8 +109,8 @@ $(document).ready(function() {
 		}
 	});
 
-	$('div.zoom').zoom({magnify : 4, on : 'grab', duration : 400});
-
+	$('.zoomset').zoom({magnify : 4, on : 'grab', duration : 400});
+	
 	userList.sort('testname');
 	userList.sort('testfailures', { order: "desc" });
 	userList.sort('testmodule');

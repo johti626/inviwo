@@ -73,7 +73,7 @@ public:
     Factory() = default;
     virtual ~Factory() = default;
 
-    virtual std::unique_ptr<T> create(K key, Args&&... args) const = 0;
+    virtual std::unique_ptr<T> create(K key, Args... args) const = 0;
     virtual bool hasKey(K key) const = 0;
 };
 
@@ -127,7 +127,12 @@ inline bool StandardFactory<T, M, K>::unRegisterObject(M* obj) {
 
 template <typename T, typename M, typename K>
 std::unique_ptr<T> StandardFactory<T, M, K>::create(K key) const {
-    return std::unique_ptr<T>(util::map_find_or_null(map_, key, [](M* o) { return o->create(); }));
+    auto it = map_.find(key);
+    if (it != end(map_)) {
+        return it->second->create();
+    } else {
+        return nullptr;
+    }
 }
 
 template <typename T, typename M, typename K>

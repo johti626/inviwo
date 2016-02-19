@@ -79,7 +79,18 @@ class Git:
 	
 		return out, err
 
-	def commit(self, path):
+	def foundGit(self):
+		try:
+			self.gitversion()
+		except:
+			return False
+		return True
+
+	def gitversion(self):
+		out, err = self.run(".", ["--version"])
+		return out
+
+	def hash(self, path):
 		out, err = self.run(path, ["log", "-n1", "--pretty=format:%H"])
 		return out
 
@@ -95,10 +106,19 @@ class Git:
 		out, err = self.run(path, ["log", "-n1", "--pretty=format:%B"])
 		return out
 
+	def server(self, path):
+		out, err = self.run(path, ["config", "--local", "remote.origin.url"])
+		m = re.match(r"(?P<proto>https?:\/\/)(\w+@)?(?P<url>[_\w.\d/-]+)\.git", out)
+		if m:
+			return m.group("proto") + m.group("url")
+		else:
+			return ""
+
 	def info(self, path):
 		return {
-			'commit' : self.commit(path),
+			'hash'   : self.hash(path),
 			'date'   : util.dateToString(self.date(path)),
 			'author' : self.author(path),
-			'message': self.message(path)
+			'message': self.message(path),
+			'server' : self.server(path)
 		}

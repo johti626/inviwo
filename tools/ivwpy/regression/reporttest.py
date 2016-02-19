@@ -29,6 +29,10 @@
 
 from .. util import *
 
+class ReportTestSettings:
+	def __init__(self, imageDifferenceTolerance = 0.0):
+		self.imageDifferenceTolerance = imageDifferenceTolerance
+
 class ReportTest:
 	def __init__(self, key, testfun, message):
 		self.key = key
@@ -42,16 +46,29 @@ class ReportTest:
 		return {self.key : [self.message]}
 
 class ReportImageTest(ReportTest):
-	def __init__(self, key):
+	def __init__(self, key, differenceTolerance = 0.0):
 		self.key = key
-		self.message = []
+		self.message = {}
+		self.differenceTolerance = differenceTolerance
 
 	def test(self, report):
 		imgs = report[self.key]
 		for img in imgs:
-			if img["difference"] != 0.0:
-				self.message.append(
-					"Image {image} has non-zero ({difference}%) difference".format(**img))
+			tol = safeget(report, "config", "image_test", "differenceTolerance", img["image"], failure = self.differenceTolerance)
+
+			if img['test_mode'] != img['ref_mode']:
+				self.message[img['image']] = \
+					("Image {image} has different modes, " +
+					"Test: {test_mode} vs Reference:{ref_mode}").format(**img)
+			elif img['test_size'] != img['ref_size']:
+				self.message[img['image']] = \
+					("Image {image} has different sizes, " +
+					"Test: {test_size} vs Reference:{ref_size}").format(**img)
+			elif img["difference"] > tol:
+				self.message[img['image']] = \
+					("Image {image} has difference greater then the allowd tolerance ({difference}% &gt; {tol})  " +
+					"difference, {different_pixels} different pixels, " +
+					"largest difference {max_difference}").format(tol=tol, **img)
 
 		return len(self.message) == 0
 
@@ -77,13 +94,14 @@ class ReportLogTest(ReportTest):
 
 
 class ReportTestSuite:
-	def __init__(self):
+	def __init__(self, settings = ReportTestSettings()):
+		self.settings = settings
 		self.tests = [
 			ReportTest('returncode', lambda x : x == 0, "Non zero retuncode"),
 			ReportTest('timeout', lambda x : x == False, "Inviwo ran out of time"),
 			ReportTest('missing_refs', lambda x : len(x) == 0, "Missing refecence image"),
 			ReportTest('missing_imgs', lambda x : len(x) == 0, "Missing test image"),
-			ReportImageTest('image_tests'),
+			ReportImageTest('image_tests', settings.imageDifferenceTolerance),
 			ReportLogTest()
 		]
 
@@ -98,3 +116,4 @@ class ReportTestSuite:
 		report['failures'] = failures
 		report['successes'] = successes
 		return report
+

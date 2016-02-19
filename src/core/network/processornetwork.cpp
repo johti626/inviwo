@@ -67,6 +67,11 @@ bool ProcessorNetwork::addProcessor(Processor* processor) {
     processor->setNetwork(this);
     processor->ProcessorObservable::addObserver(this);
     addPropertyOwnerObservation(processor);
+    
+    if (auto widget = application_->getProcessorWidgetFactory()->create(processor)) {
+        processor->setProcessorWidget(std::move(widget));
+    }
+    
     processor->invalidate(InvalidationLevel::InvalidResources);
     modified();
     notifyObserversProcessorNetworkDidAddProcessor(processor);
@@ -108,6 +113,7 @@ void ProcessorNetwork::removeProcessor(Processor* processor) {
     processor->ProcessorObservable::removeObserver(this);
     removePropertyOwnerObservation(processor);
     processor->setNetwork(nullptr);
+    processor->setProcessorWidget(nullptr);
     modified();
     notifyObserversProcessorNetworkDidRemoveProcessor(processor);
 }

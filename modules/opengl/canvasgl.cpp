@@ -28,67 +28,33 @@
  *********************************************************************************/
 
 #include "canvasgl.h"
-#include <inviwo/core/datastructures/geometry/mesh.h>
+
 #include <inviwo/core/datastructures/image/layerram.h>
 #include <inviwo/core/processors/processor.h>
+#include <inviwo/core/processors/processorwidget.h>
 #include <modules/opengl/inviwoopengl.h>
-#include <modules/opengl/shader/shader.h>
 #include <modules/opengl/image/imagegl.h>
-#include <modules/opengl/geometry/meshgl.h>
-#include <modules/opengl/buffer/bufferobjectarray.h>
-#include <modules/opengl/buffer/buffergl.h>
 #include <modules/opengl/texture/textureunit.h>
-#include <modules/opengl/rendering/meshdrawergl.h>
+#include <modules/opengl/texture/textureutils.h>
 #include <modules/opengl/openglcapabilities.h>
 #include <inviwo/core/datastructures/image/image.h>
+#include <modules/opengl/geometry/meshgl.h>
 
 namespace inviwo {
-
-const MeshGL* CanvasGL::screenAlignedRectGL_ = nullptr;
 
 CanvasGL::CanvasGL(uvec2 dimensions)
     : Canvas(dimensions)
     , imageGL_(nullptr)
     , image_()
     , layerType_(LayerType::Color)
-    , shader_(nullptr)
+    , textureShader_(nullptr)
     , noiseShader_(nullptr)
     , channels_(0)
     , previousRenderedLayerIdx_(0) {}
 
-CanvasGL::~CanvasGL() { deinitialize(); }
-
-void CanvasGL::initialize() {
-    if (!OpenGLCapabilities::hasSupportedOpenGLVersion()) return;
-
-    defaultGLState();
-    shader_ = util::make_unique<Shader>("img_texturequad.vert", "img_texturequad.frag");
-    LGL_ERROR;
-    noiseShader_ = util::make_unique<Shader>("img_texturequad.vert", "img_noise.frag");
-    LGL_ERROR;
-    Canvas::initialize();
-}
-
-void CanvasGL::initializeSquare() {
-    if (!OpenGLCapabilities::hasSupportedOpenGLVersion()) return;
-
-    if (screenAlignedRect_) {
-        screenAlignedRectGL_ = screenAlignedRect_->getRepresentation<MeshGL>();
-        LGL_ERROR;
-    }
-}
-
-void CanvasGL::deinitialize() {
-    shader_.reset();
-    noiseShader_.reset();
-
-    image_.reset();
-    imageGL_ = nullptr;
-    Canvas::deinitialize();
-}
-
 void CanvasGL::defaultGLState() {
     if (!OpenGLCapabilities::hasSupportedOpenGLVersion()) return;
+
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClearDepth(1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -97,31 +63,29 @@ void CanvasGL::defaultGLState() {
     LGL_ERROR;
 }
 
-void CanvasGL::activate() {}
-
-void CanvasGL::render(std::shared_ptr<const Image> image, LayerType layerType, size_t idx) {
+void CanvasGL::render(std::shared_ptr<const Image> image, LayerType layerType, size_t idx) {   
     image_ = image;
     layerType_ = layerType;
     pickingContainer_.setPickingSource(image);
     if (image_) {
         imageGL_ = image_->getRepresentation<ImageGL>();
+        
         if (imageGL_ && imageGL_->getLayerGL(layerType_, idx)) {
             checkChannels(imageGL_->getLayerGL(layerType_, idx)->getDataFormat()->getComponents());
         } else {
             checkChannels(image_->getDataFormat()->getComponents());
         }
-        renderLayer(idx);
 
         // Faster async download of textures sampled on interaction
         if (imageGL_->getDepthLayerGL()) imageGL_->getDepthLayerGL()->getTexture()->downloadToPBO();
         if (pickingContainer_.pickingEnabled() && imageGL_->getPickingLayerGL()) {
             imageGL_->getPickingLayerGL()->getTexture()->downloadToPBO();
         }
-        
+
     } else {
         imageGL_ = nullptr;
-        renderNoise();
     }
+    update();
 }
 
 void CanvasGL::resize(uvec2 size) {
@@ -130,28 +94,7 @@ void CanvasGL::resize(uvec2 size) {
     Canvas::resize(size);
 }
 
-void CanvasGL::glSwapBuffers() {}
-
 void CanvasGL::update() { renderLayer(previousRenderedLayerIdx_); }
-
-void CanvasGL::attachImagePlanRect(BufferObjectArray* arrayObject) {
-    if (arrayObject) {
-        arrayObject->bind();
-        arrayObject->attachBufferObject(
-            screenAlignedRectGL_->getBufferGL(0)->getBufferObject().get(),
-            static_cast<GLuint>(BufferType::PositionAttrib));
-        arrayObject->attachBufferObject(
-            screenAlignedRectGL_->getBufferGL(1)->getBufferObject().get(),
-            static_cast<GLuint>(BufferType::TexcoordAttrib));
-        arrayObject->unbind();
-    }
-}
-
-void CanvasGL::singleDrawImagePlaneRect() { glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); }
-
-void CanvasGL::multiDrawImagePlaneRect(int instances) {
-    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, instances);
-}
 
 void CanvasGL::renderLayer(size_t idx) {
     previousRenderedLayerIdx_ = idx;
@@ -167,102 +110,115 @@ void CanvasGL::renderLayer(size_t idx) {
     renderNoise();
 }
 
+bool CanvasGL::ready() {
+    if (ready_) {
+        return true;
+    } else if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE) {
+        ready_ = true;
+        LGL_ERROR;
+
+        defaultGLState();
+        square_ = utilgl::planeRect();
+        squareGL_ = square_->getRepresentation<MeshGL>();
+        textureShader();
+        noiseShader();
+
+        LGL_ERROR;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+Shader* CanvasGL::textureShader() {
+    if (!textureShader_) {
+        textureShader_ = util::make_unique<Shader>("img_texturequad.vert", "img_texturequad.frag");
+    }
+    return textureShader_.get();
+}
+Shader* CanvasGL::noiseShader() {
+    if (!noiseShader_) {
+        noiseShader_ = util::make_unique<Shader>("img_texturequad.vert", "img_noise.frag");
+    }
+    return noiseShader_.get();
+}
+
 void CanvasGL::renderNoise() {
-    if (!noiseShader_) return;
-    activate();
+    if (!ready()) return;
+    LGL_ERROR;
+    
     glViewport(0, 0, getScreenDimensions().x, getScreenDimensions().y);
+    LGL_ERROR;
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     noiseShader_->activate();
-    drawRect();
+    drawSquare();
     noiseShader_->deactivate();
     glSwapBuffers();
-    activateDefaultRenderContext();
+ 
+    LGL_ERROR;
 }
 
 void CanvasGL::renderTexture(int unitNumber) {
-    if (!shader_) return;
-    activate();
+    if (!ready()) return;
+    LGL_ERROR;
+
     glViewport(0, 0, getScreenDimensions().x, getScreenDimensions().y);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    shader_->activate();
-    shader_->setUniform("tex_", unitNumber);
-    drawRect();
-    shader_->deactivate();
+    textureShader_->activate();
+    textureShader_->setUniform("tex_", unitNumber);
+    drawSquare();
+    textureShader_->deactivate();
     glDisable(GL_BLEND);
     glSwapBuffers();
-    activateDefaultRenderContext();
+    LGL_ERROR;
 }
 
-void CanvasGL::drawRect() {
-    BufferObjectArray rectArray;
-    rectArray.bind();
-    rectArray.attachBufferObject(screenAlignedRectGL_->getBufferGL(0)->getBufferObject().get(),
-                                   static_cast<GLuint>(BufferType::PositionAttrib));
-    rectArray.attachBufferObject(screenAlignedRectGL_->getBufferGL(1)->getBufferObject().get(),
-                                   static_cast<GLuint>(BufferType::TexcoordAttrib));
+void CanvasGL::drawSquare() {
+    squareGL_->enable();
+    glDepthFunc(GL_ALWAYS);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    rectArray.unbind();
+    squareGL_->disable();
+    glDepthFunc(GL_LESS);
 }
 
 void CanvasGL::checkChannels(std::size_t channels) {
     if (channels_ == channels) return;
-    
-    switch(channels) {
-        case 1: {
-            shader_->getFragmentShaderObject()->addShaderDefine("SINGLE_CHANNEL");
-            break;
-        }
-        case 2: {
-            shader_->getFragmentShaderObject()->removeShaderDefine("SINGLE_CHANNEL");
-            break;
-        }
-        case 3: {
-            shader_->getFragmentShaderObject()->removeShaderDefine("SINGLE_CHANNEL");
-            break;
-        }
-        case 4: {
-            shader_->getFragmentShaderObject()->removeShaderDefine("SINGLE_CHANNEL");
-            break;
-        }
+
+    if (channels == 1) {
+        textureShader()->getFragmentShaderObject()->addShaderDefine("SINGLE_CHANNEL");
+    } else {
+        textureShader()->getFragmentShaderObject()->removeShaderDefine("SINGLE_CHANNEL");
     }
+    
     channels_ = channels;
-    shader_->getFragmentShaderObject()->build();
-    shader_->link();
+    textureShader_->getFragmentShaderObject()->build();
+    textureShader_->link();
 }
 
 const LayerRAM* CanvasGL::getDepthLayerRAM() const {
     if (image_) {
-        const Layer* depthLayer = image_->getDepthLayer();
-        if (depthLayer) {
+        if (auto depthLayer = image_->getDepthLayer()) {
             return depthLayer->getRepresentation<LayerRAM>();
-        } else
-            return nullptr;
-    } else
-        return nullptr;
+        }
+    }
+    return nullptr;
 }
 
 double CanvasGL::getDepthValueAtCoord(ivec2 coord, const LayerRAM* depthLayerRAM) const {
-    const LayerRAM* dlr = depthLayerRAM;
-    if (!dlr) dlr = getDepthLayerRAM();
+    if (!depthLayerRAM) depthLayerRAM = getDepthLayerRAM();
 
-    if (dlr) {
-        auto screenDims(getScreenDimensions());
-        auto depthDims = dlr->getDimensions();
+    if (depthLayerRAM) {
+        const dvec2 screenDims(getScreenDimensions());
+        const auto depthDims = depthLayerRAM->getDimensions();
         coord = glm::max(coord, ivec2(0));
 
-        double depthScreenRatioX =
-            static_cast<double>(depthDims.x) / static_cast<double>(screenDims.x);
-        double depthScreenRatioY =
-            static_cast<double>(depthDims.y) / static_cast<double>(screenDims.y);
-        size2_t coordDepth;
-        coordDepth.x = static_cast<size_t>(depthScreenRatioX * static_cast<double>(coord.x));
-        coordDepth.y = static_cast<size_t>(depthScreenRatioY * static_cast<double>(coord.y));
-        depthDims -= 1;
-        coordDepth = glm::min(coordDepth, depthDims);
+        const dvec2 depthScreenRatio{dvec2(depthDims) / screenDims};
+        size2_t coordDepth{depthScreenRatio * dvec2(coord)};
+        coordDepth = glm::min(coordDepth, depthDims - size2_t(1, 1));
 
-        double depthValue = dlr->getValueAsSingleDouble(coordDepth);
+        const double depthValue = depthLayerRAM->getValueAsSingleDouble(coordDepth);
 
         // Convert to normalized device coordinates
         return 2.0 * depthValue - 1.0;
@@ -271,20 +227,12 @@ double CanvasGL::getDepthValueAtCoord(ivec2 coord, const LayerRAM* depthLayerRAM
     }
 }
 
-void CanvasGL::enableDrawImagePlaneRect() { screenAlignedRectGL_->enable(); }
-
-void CanvasGL::disableDrawImagePlaneRect() { screenAlignedRectGL_->disable(); }
-
 void CanvasGL::setProcessorWidgetOwner(ProcessorWidget* widget) {
     // Clear internal state
     image_.reset();
     imageGL_ = nullptr;
     pickingContainer_.setPickingSource(nullptr);
     Canvas::setProcessorWidgetOwner(widget);
-}
-
-std::unique_ptr<Canvas> CanvasGL::create() {
-    return util::make_unique<CanvasGL>(screenDimensions_);
 }
 
 }  // namespace

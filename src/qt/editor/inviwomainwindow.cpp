@@ -49,12 +49,9 @@
 #include <warn/push>
 #include <warn/ignore/all>
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
 #include <QScreen>
 #include <QStandardPaths>
-#else
-#include <QDesktopServices>
-#endif
+
 #include <QActionGroup>
 #include <QClipboard>
 #include <QDesktopWidget>
@@ -168,7 +165,6 @@ void InviwoMainWindow::initialize() {
     updateRecentWorkspaceMenu();
 
 #ifdef WIN32
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
     // Fix window offset when restoring old position for correct positioning
     // The frame size should be determined only once before starting up the
     // main application and stored in InviwoApplicationQt
@@ -186,7 +182,6 @@ void InviwoMainWindow::initialize() {
     delete w;
 
     app_->setWindowDecorationOffset(offset);
-#endif
 #endif
 }
 
@@ -210,11 +205,7 @@ void InviwoMainWindow::getScreenGrab(std::string path, std::string fileName) {
 
     repaint();
     app_->processEvents();
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
     QPixmap screenGrab = QGuiApplication::primaryScreen()->grabWindow(this->winId());
-#else
-    QPixmap screenGrab = QPixmap::grabWindow(this->winId());
-#endif
     screenGrab.save(QString::fromStdString(path + "/" + fileName), "png");
 }
 
@@ -340,6 +331,8 @@ void InviwoMainWindow::addActions() {
         actions_["Cut"] = cutAction;
         cutAction->setShortcut(QKeySequence::Cut);
         editMenuItem->addAction(cutAction);
+        cutAction->setEnabled(false);
+        
     }
 
     {
@@ -347,6 +340,7 @@ void InviwoMainWindow::addActions() {
         actions_["Copy"] = copyAction;
         copyAction->setShortcut(QKeySequence::Copy);
         editMenuItem->addAction(copyAction);
+        copyAction->setEnabled(false);
     }
 
     {
@@ -359,8 +353,10 @@ void InviwoMainWindow::addActions() {
     {
         auto deleteAction = new QAction(tr("&Delete"), this);
         actions_["Delete"] = deleteAction;
-        deleteAction->setShortcut(QKeySequence::Delete);
+        deleteAction->setShortcuts(QList<QKeySequence>(
+            {QKeySequence::Delete, QKeySequence(Qt::ControlModifier + Qt::Key_Backspace)}));
         editMenuItem->addAction(deleteAction);
+        deleteAction->setEnabled(false);
     }
 
     editMenuItem->addSeparator();
