@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2012-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,60 +27,42 @@
  *
  *********************************************************************************/
 
-#ifndef IVW_HELPWIDGET_H
-#define IVW_HELPWIDGET_H
+#ifndef IVW_EIGENUTILS_H
+#define IVW_EIGENUTILS_H
 
-#include <inviwo/qt/editor/inviwoqteditordefine.h>
-#include <inviwo/qt/editor/inviwomainwindow.h>
-#include <inviwo/qt/widgets/inviwodockwidget.h>
+#include <modules/eigenutils/eigenutilsmoduledefine.h>
+#include <inviwo/core/common/inviwo.h>
 
-#include <warn/push>
-#include <warn/ignore/all>
-#include <QTextBrowser>
-#include <QEvent>
-#include <warn/pop>
-class QObject;
-class QHelpEngineCore;
+#include <Eigen/Dense>
 
 namespace inviwo {
 
-class IVW_QTEDITOR_API HelpWidget : public InviwoDockWidget {
-#include <warn/push>
-#include <warn/ignore/all>
-    Q_OBJECT
-#include <warn/pop>
-public:
-    HelpWidget(InviwoMainWindow* parent);
-    virtual ~HelpWidget() {}
+    namespace util{
 
-    void showDocForClassName(std::string className);
 
-protected slots:
-    void setupFinished();
+       
+        template <typename T, typename std::enable_if<util::rank<T>::value == 1, int>::type = 0>
+        auto glm2eigen(T& elem) -> Eigen::Matrix<typename T::value_type, util::extent<T, 0>::value, 1> {
+            Eigen::Vector<typename T::value_type, util::extent<T, 0>::value> a;
+            for (size_t i = 0; i < util::extent<T, 0>::value; i++) {
+                a(i) = elem[i];
+            }
+            return a;
+        }
+        template <typename T, typename std::enable_if<util::rank<T>::value == 2, int>::type = 0>
+        auto glm2eigen(T& elem) -> Eigen::Matrix<typename T::value_type, util::extent<T, 0>::value, util::extent<T, 1>::value> {
+            Eigen::Matrix<typename T::value_type, util::extent<T, 0>::value, util::extent<T, 1>::value> a;
+            for (size_t i = 0; i < util::extent<T, 0>::value; i++) {
+                for (size_t j = 0; j < util::extent<T, 1>::value; j++) {
+                    a(i,j) = elem[i][j];
+                }
+            }
+            return a;
+        }
 
-protected:
-    virtual void resizeEvent(QResizeEvent * event) override;
+    }
 
-private:
-    class HelpBrowser : public QTextBrowser {
-    public:
-        HelpBrowser(HelpWidget* parent, QHelpEngineCore* helpEngine);
-        virtual ~HelpBrowser();
+} // namespace
 
-    protected:
-        QVariant loadResource(int type, const QUrl& name);
+#endif // IVW_EIGENUTILS_H
 
-    private:
-        HelpWidget* helpwidget_;
-        QHelpEngineCore* helpEngine_;
-    };
-
-    InviwoMainWindow* mainwindow_;
-    HelpBrowser* helpBrowser_;
-    QHelpEngineCore* helpEngine_;
-    std::string current_ = "org.inviwo.Background";
-};
-
-}  // namespace
-
-#endif  // IVW_HELPWIDGET_H

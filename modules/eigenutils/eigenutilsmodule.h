@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2012-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,60 +27,19 @@
  *
  *********************************************************************************/
 
-#ifndef IVW_HELPWIDGET_H
-#define IVW_HELPWIDGET_H
+#ifndef IVW_EIGENUTILSMODULE_H
+#define IVW_EIGENUTILSMODULE_H
 
-#include <inviwo/qt/editor/inviwoqteditordefine.h>
-#include <inviwo/qt/editor/inviwomainwindow.h>
-#include <inviwo/qt/widgets/inviwodockwidget.h>
-
-#include <warn/push>
-#include <warn/ignore/all>
-#include <QTextBrowser>
-#include <QEvent>
-#include <warn/pop>
-class QObject;
-class QHelpEngineCore;
+#include <modules/eigenutils/eigenutilsmoduledefine.h>
+#include <inviwo/core/common/inviwomodule.h>
 
 namespace inviwo {
 
-class IVW_QTEDITOR_API HelpWidget : public InviwoDockWidget {
-#include <warn/push>
-#include <warn/ignore/all>
-    Q_OBJECT
-#include <warn/pop>
+class IVW_MODULE_EIGENUTILS_API EigenUtilsModule : public InviwoModule {
 public:
-    HelpWidget(InviwoMainWindow* parent);
-    virtual ~HelpWidget() {}
-
-    void showDocForClassName(std::string className);
-
-protected slots:
-    void setupFinished();
-
-protected:
-    virtual void resizeEvent(QResizeEvent * event) override;
-
-private:
-    class HelpBrowser : public QTextBrowser {
-    public:
-        HelpBrowser(HelpWidget* parent, QHelpEngineCore* helpEngine);
-        virtual ~HelpBrowser();
-
-    protected:
-        QVariant loadResource(int type, const QUrl& name);
-
-    private:
-        HelpWidget* helpwidget_;
-        QHelpEngineCore* helpEngine_;
-    };
-
-    InviwoMainWindow* mainwindow_;
-    HelpBrowser* helpBrowser_;
-    QHelpEngineCore* helpEngine_;
-    std::string current_ = "org.inviwo.Background";
+    EigenUtilsModule(InviwoApplication* app);
 };
 
-}  // namespace
+} // namespace
 
-#endif  // IVW_HELPWIDGET_H
+#endif // IVW_EIGENUTILSMODULE_H
