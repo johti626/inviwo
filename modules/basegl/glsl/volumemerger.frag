@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2013-2015 Inviwo Foundation
+ * Copyright (c) 2014-2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,28 +24,36 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
+ * 
  *********************************************************************************/
 
-#ifndef IVW_INFOMEHTODINVIWO_H
-#define IVW_INFOMEHTODINVIWO_H
+#include "utils/sampler3d.glsl"
 
-#include <modules/python3/python3moduledefine.h>
+uniform sampler3D volume;
+uniform VolumeParameters volumeParameters;
+uniform sampler3D vol2;
+uniform VolumeParameters vol2Parameters;
+uniform sampler3D vol3;
+uniform VolumeParameters vol3Parameters;
+uniform sampler3D vol4;
+uniform VolumeParameters vol4Parameters;
 
-#include <modules/python3/pythoninterface/pymethod.h>
+in vec4 texCoord_;
 
-namespace inviwo {
-PyObject* py_info(PyObject* /*self*/, PyObject* /*args*/);
+ 
 
-class IVW_MODULE_PYTHON3_API PyInfoMethod : public PyMethod {
-public:
-    virtual std::string getName() const { return "info"; }
-    virtual std::string getDesc() const {
-        return "Prints documentation of the module's functions.";
-    }
-    virtual PyCFunction getFunc() { return py_info; }
-};
-
-}  // namespace
-
-#endif  // IVW_INFOMEHTODINVIWO_H
+void main() {
+    vec4 outv = vec4(0.0,0.0,0.0,0.0);
+    outv[0] = getVoxel(volume,volumeParameters, texCoord_.xyz).r;
+    int i = 1;
+#ifdef HAS_VOL2
+    outv[i++] = getVoxel(vol2,vol2Parameters, texCoord_.xyz).r;
+#endif
+#ifdef HAS_VOL3
+    outv[i++] = getVoxel(vol3,vol3Parameters, texCoord_.xyz).r;
+#endif
+#ifdef HAS_VOL4
+    outv[i++] = getVoxel(vol4,vol4Parameters, texCoord_.xyz).r;
+#endif
+    FragData0 = outv;
+}

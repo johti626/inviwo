@@ -47,6 +47,7 @@ set(HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/volumeprocessing/volumelaplacian.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/volumeprocessing/volumelowpass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/volumeprocessing/volumemapping.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/processors/volumeprocessing/volumemerger.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/volumeraycaster.h
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/volumeslicegl.h
     ${CMAKE_CURRENT_SOURCE_DIR}/viewmanager.h
@@ -98,6 +99,7 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/volumeprocessing/volumelaplacian.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/volumeprocessing/volumelowpass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/volumeprocessing/volumemapping.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/processors/volumeprocessing/volumemerger.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/volumeraycaster.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/processors/volumeslicegl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/viewmanager.cpp
@@ -131,9 +133,12 @@ set(SHADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/lighting/lightvolumeblend.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/lighting/lightvolumeblend.geom
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/lighting/lightvolumeblend.vert
-    ${CMAKE_CURRENT_SOURCE_DIR}/glsl/mesh2drendering.vert
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/mesh2drendering.frag
+    ${CMAKE_CURRENT_SOURCE_DIR}/glsl/mesh2drendering.vert
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/multichannelraycaster.frag
+    ${CMAKE_CURRENT_SOURCE_DIR}/glsl/tuberendering.frag
+    ${CMAKE_CURRENT_SOURCE_DIR}/glsl/tuberendering.geom
+    ${CMAKE_CURRENT_SOURCE_DIR}/glsl/tuberendering.vert
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/vectormagnitudeprocessor.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/volume_binary.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/volume_combiner.frag
@@ -145,10 +150,8 @@ set(SHADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/volume_lowpass.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/volume_mapping.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/volumegradientmagnitude.frag
+    ${CMAKE_CURRENT_SOURCE_DIR}/glsl/volumemerger.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/glsl/volumeslice.frag
-    ${CMAKE_CURRENT_SOURCE_DIR}/glsl/tuberendering.vert
-    ${CMAKE_CURRENT_SOURCE_DIR}/glsl/tuberendering.geom
-    ${CMAKE_CURRENT_SOURCE_DIR}/glsl/tuberendering.frag
 )
 ivw_group("Shader Files" ${SHADER_FILES})
 
@@ -157,14 +160,6 @@ ivw_group("Shader Files" ${SHADER_FILES})
 ivw_create_module(${SOURCE_FILES} ${HEADER_FILES} ${SHADER_FILES})
 
 #--------------------------------------------------------------------
-# Handle external resources
-if(IVW_USE_GENERATED_RESOURCES)
-#--------------------------------------------------------------------
-# Generate shader resource (if GENERATE_SHADER_RESOURCES is checked)
-ivw_generate_shader_resource(${CMAKE_CURRENT_SOURCE_DIR}/glsl ${SHADER_FILES})
-else()
-#--------------------------------------------------------------------
-# Add shader directory to pack
-ivw_add_to_module_pack(${CMAKE_CURRENT_SOURCE_DIR}/glsl)
-endif()
+# Package or build shaders into resources
+ivw_handle_shader_resources(${CMAKE_CURRENT_SOURCE_DIR}/glsl ${SHADER_FILES})
 

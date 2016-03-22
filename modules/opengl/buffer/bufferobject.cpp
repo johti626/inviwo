@@ -31,7 +31,8 @@
 
 namespace inviwo {
 
-BufferObject::BufferObject(size_t sizeInBytes, const DataFormatBase* format,                            BufferUsage usage, GLenum target /*= GL_ARRAY_BUFFER*/)
+BufferObject::BufferObject(size_t sizeInBytes, const DataFormatBase* format, BufferUsage usage,
+                           GLenum target /*= GL_ARRAY_BUFFER*/)
     : Observable<BufferObjectObserver>()
     , target_(target)
     , glFormat_(getGLFormats()->getGLFormat(format->getId())) {
@@ -145,7 +146,9 @@ void BufferObject::initialize(const void* data, GLsizeiptr sizeInBytes) {
 
     bind();
     // Allocate and transfer possible data
-    glBufferData(target_, sizeInBytes, data, usageGL_);
+    // Allocation a zero sized buffer may create
+    // errors (OpenCL sharing) so ensure at least one byte
+    glBufferData(target_, sizeInBytes <= 0 ? 1 : sizeInBytes, data, usageGL_);
 
     for (auto observer : observers_) {
         observer->onAfterBufferInitialization();

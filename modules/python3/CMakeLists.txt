@@ -35,13 +35,48 @@ endif()
 
 ivw_include_directories(${PYTHON_INCLUDE_DIR})
 get_filename_component(PYTHON_LIBRARY_DIR "${PYTHON_LIBRARY}" PATH)
-ivw_link_directories(${PYTHON_LIBRARY_DIR})
 
 if(PYTHON_DEBUG_LIBRARY)
-    ivw_add_definition(IVW_PYTHON_LINK_DEBUG)
+    option(IVW_PYTHON_LINK_DEBUG "Link python debug libraries" OFF)
 endif()
 
-add_dependency_libs_to_module(${PYTHON_LIBRARIES})
+
+
+
+if(IVW_PYTHON_LINK_DEBUG)
+    ivw_add_definition(IVW_PYTHON_LINK_DEBUG)
+    add_dependency_libs_to_module(${PYTHON_LIBRARIES})
+    ivw_link_directories(${PYTHON_LIBRARY_DIR})
+else()
+    list(LENGTH PYTHON_LIBRARIES NUM_DIRS)
+    if(${NUM_DIRS} EQUAL 4)
+        list(GET PYTHON_LIBRARIES 0 LIB1_TYPE)
+        list(GET PYTHON_LIBRARIES 1 LIB1_PATH)
+        list(GET PYTHON_LIBRARIES 2 LIB2_TYPE)
+        list(GET PYTHON_LIBRARIES 3 LIB2_PATH)
+
+        list(GET PYTHON_LIBRARY_DIR 0 LIB_DIR1_TYPE)
+        list(GET PYTHON_LIBRARY_DIR 1 LIB_DIR1_PATH)
+        list(GET PYTHON_LIBRARY_DIR 2 LIB_DIR2_TYPE)
+        list(GET PYTHON_LIBRARY_DIR 3 LIB_DIR2_PATH)
+
+
+        if(${LIB1_TYPE} STREQUAL "optimized")
+            add_dependency_libs_to_module(${LIB1_PATH})
+        elseif(${LIB2_TYPE} STREQUAL "optimized")
+            add_dependency_libs_to_module(${LIB2_PATH})
+        endif()
+
+        if(${LIB_DIR1_TYPE} STREQUAL "optimized")
+            ivw_link_directories(${LIB_DIR1_PATH})
+        elseif(${LIB_DIR2_TYPE} STREQUAL "optimized")
+            ivw_link_directories(${LIB_DIR2_PATH})
+        endif()
+    else()
+        add_dependency_libs_to_module(${PYTHON_LIBRARIES})
+        ivw_link_directories(${PYTHON_LIBRARY_DIR})
+    endif()
+endif()
 
 
 
@@ -51,17 +86,14 @@ add_dependency_libs_to_module(${PYTHON_LIBRARIES})
 set(HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/defaultinterface/pycamera.h
     ${CMAKE_CURRENT_SOURCE_DIR}/defaultinterface/pycanvas.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/defaultinterface/pyinfo.h
     ${CMAKE_CURRENT_SOURCE_DIR}/defaultinterface/pylist.h
     ${CMAKE_CURRENT_SOURCE_DIR}/defaultinterface/pyproperties.h
     ${CMAKE_CURRENT_SOURCE_DIR}/defaultinterface/pyutil.h
     ${CMAKE_CURRENT_SOURCE_DIR}/defaultinterface/pyvolume.h
     ${CMAKE_CURRENT_SOURCE_DIR}/pyinviwo.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/pyinviwoobserver.h
     ${CMAKE_CURRENT_SOURCE_DIR}/pythonexecutionoutputobservable.h
     ${CMAKE_CURRENT_SOURCE_DIR}/pythonincluder.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/pythoninterface/pymethod.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/pythoninterface/pymodule.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/pythoninterface/pythonparameterparser.h
     ${CMAKE_CURRENT_SOURCE_DIR}/pythoninterface/pyvalueparser.h
     ${CMAKE_CURRENT_SOURCE_DIR}/pythonscript.h
 )
@@ -72,16 +104,13 @@ ivw_group("Header Files" ${HEADER_FILES})
 set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/defaultinterface/pycamera.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/defaultinterface/pycanvas.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/defaultinterface/pyinfo.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/defaultinterface/pylist.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/defaultinterface/pyproperties.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/defaultinterface/pyutil.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/defaultinterface/pyvolume.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/pyinviwo.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/pyinviwoobserver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/pythonexecutionoutputobservable.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/pythoninterface/pymethod.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/pythoninterface/pymodule.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/pythoninterface/pythonparameterparser.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/pythoninterface/pyvalueparser.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/pythonscript.cpp
 )
@@ -122,3 +151,5 @@ ivw_create_module(${SOURCE_FILES} ${HEADER_FILES} ${SCRIPT_FILES})
         # install(FILES ${PYTHON3_MSVCP_DLL} DESTINATION bin COMPONENT modules)
    # endif()
 # endif()
+# Add scripts directory to pack
+ivw_add_to_module_pack(${CMAKE_CURRENT_SOURCE_DIR}/scripts)

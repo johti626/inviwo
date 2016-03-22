@@ -64,15 +64,14 @@ CameraProperty::CameraProperty(std::string identifier, std::string displayName, 
     , aspectRatio_("aspectRatio", "Aspect Ratio", 1.0f, 0.01f, 100.0f, 0.01f)
     , nearPlane_("near", "Near Plane", 0.1f, 0.001f, 10.f, 0.001f)
     , farPlane_("far", "Far Plane", 100.0f, 1.0f, 1000.0f, 1.0f)
-    , adjustCameraOnDataChange_("fitToBasis_", "Adjust camera on data change", true,
-                                InvalidationLevel::Valid)
-
-
 
     , mouseChangeFocusPoint_("mouseChangeFocusPoint", "Change Focus Point",
         new MouseEvent(MouseEvent::MOUSE_BUTTON_LEFT, InteractionEvent::MODIFIER_NONE,
             MouseEvent::MOUSE_STATE_DOUBLE_CLICK),
         new Action(this, &CameraProperty::changeFocusPoint))
+
+    , adjustCameraOnDataChange_("fitToBasis_", "Adjust camera on data change", true,
+                                InvalidationLevel::Valid)
 
     , camera_()
     , inport_(inport)
@@ -118,8 +117,8 @@ CameraProperty::CameraProperty(const CameraProperty& rhs)
     , aspectRatio_(rhs.aspectRatio_)
     , nearPlane_(rhs.nearPlane_)
     , farPlane_(rhs.farPlane_)
-    , adjustCameraOnDataChange_(rhs.adjustCameraOnDataChange_)
     , mouseChangeFocusPoint_(rhs.mouseChangeFocusPoint_)
+    , adjustCameraOnDataChange_(rhs.adjustCameraOnDataChange_)
     , camera_()
     , inport_(rhs.inport_)
     , data_(nullptr)
@@ -400,14 +399,14 @@ const mat4& CameraProperty::inverseProjectionMatrix() const {
 
 void CameraProperty::changeFocusPoint(Event* event) {
     if (auto mouseEvent = dynamic_cast<MouseEvent*>(event)) {
-        vec2 p = mouseEvent->posNormalized();
-        float d = mouseEvent->depth();
-        if (std::abs(d - 1) < glm::epsilon<float>()) {
+        auto p = mouseEvent->posNormalized();
+        auto d = mouseEvent->depth();
+        if (std::abs(d - 1.0) < glm::epsilon<decltype(d)>()) {
             return;
         }
-        p.y = 1 - p.y;
+        p.y = 1.0f - p.y;
         p = p * 2.0f - 1.0f;
-        vec4 viewPos(p.x,p.y, d , 1.0f);
+        vec4 viewPos(p.x, p.y, static_cast<float>(d), 1.0f);
 
         auto point = (inverseViewMatrix() * inverseProjectionMatrix()) * viewPos;
         auto newLookTo = point.xyz() / point.w;

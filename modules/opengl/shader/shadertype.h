@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,25 +27,58 @@
  *
  *********************************************************************************/
 
-#include <modules/python3/pythonincluder.h>
+#ifndef IVW_SHADERTYPE_H
+#define IVW_SHADERTYPE_H
 
-#include "pylist.h"
-#include <modules/python3/pythoninterface/pymodule.h>
-
-#include <inviwo/core/common/inviwoapplication.h>
-#include <inviwo/core/processors/processor.h>
-#include <modules/python3/pythoninterface/pyvalueparser.h>
-
-#include "pyinfo.h"
+#include <modules/opengl/openglmoduledefine.h>
+#include <inviwo/core/common/inviwo.h>
+#include <modules/opengl/inviwoopengl.h>
 
 namespace inviwo {
 
-PyObject* py_info(PyObject* self, PyObject* args) {
-    static PyInfoMethod p;
+/**
+ * \class ShaderType
+ * \brief Encapsulate a GLenum shader type, and related information.
+ */
+class IVW_MODULE_OPENGL_API ShaderType { 
+public:
+    ShaderType() = default;
+    explicit ShaderType(GLenum type);
+    ShaderType(const ShaderType&) = default;
+    ShaderType& operator=(const ShaderType&) = default;
+    ~ShaderType() = default;
 
-    if (!p.testParams(args)) return nullptr;
+    operator GLenum() const;
+    operator bool() const;
 
-    inviwo::PyModule::getModuleByPyObject(self)->printInfo();
-    Py_RETURN_NONE;
-}
-}
+    std::string extension() const;
+
+    static ShaderType Vertex;
+    static ShaderType Geometry;
+    static ShaderType Fragment;
+    static ShaderType TessellationControl;
+    static ShaderType TessellationEvaluation;
+    static ShaderType Compute;
+
+    static std::string extension(const ShaderType& type);
+    static ShaderType get(const std::string& ext);
+
+private:
+    GLenum type_ = 0;
+};
+
+bool operator==(const ShaderType& lhs, const ShaderType& rhs);
+
+} // namespace
+
+namespace std {
+template<>
+struct hash<inviwo::ShaderType> {
+    size_t operator()(const inviwo::ShaderType& type) const {
+        return std::hash<GLenum>()(static_cast<GLenum>(type));
+    }
+};
+}  // namespace
+
+#endif // IVW_SHADERTYPE_H
+

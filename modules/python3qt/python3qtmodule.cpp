@@ -1,3 +1,4 @@
+
 /*********************************************************************************
  *
  * Inviwo - Interactive Visualization Workshop
@@ -33,28 +34,14 @@
 #include <modules/python3qt/pythoneditorwidget.h>
 #include <modules/python3/pyinviwo.h>
 #include <modules/python3qt/pythonmenu.h>
-#include <modules/python3/pythoninterface/pymodule.h>
 
 namespace inviwo {
 
 Python3QtModule::Python3QtModule(InviwoApplication* app)
     : InviwoModule(app, "Python3Qt")
-    , inviwoPyQtModule_(util::make_unique<PyModule>("inviwoqt"))
     , menu_(util::make_unique<PythonMenu>(app))
-    , pythonScriptArg_("p", "pythonScript", "Specify a python script to run at startup", false, "",
-                       "Path to the file containing the script") {
-    inviwoPyQtModule_->addMethod(new PyGetPathCurrentWorkspace());
-    inviwoPyQtModule_->addMethod(new PyLoadNetworkMethod());
-    inviwoPyQtModule_->addMethod(new PySaveNetworkMethod());
-    inviwoPyQtModule_->addMethod(new PyQuitInviwoMethod());
-    inviwoPyQtModule_->addMethod(new PyPromptMethod());
-    inviwoPyQtModule_->addMethod(new PyShowPropertyWidgetMethod());
-    PyInviwo::getPtr()->registerPyModule(inviwoPyQtModule_.get());
-
-    app->getCommandLineParser().add(&pythonScriptArg_, [this]() {
-        menu_->getEditor()->loadFile(pythonScriptArg_.getValue(), false);
-        menu_->getEditor()->run();
-    }, 100);
+{
+    initPythonQT();
 }
 
 Python3QtModule::~Python3QtModule() = default;

@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,15 +27,33 @@
  *
  *********************************************************************************/
 
-#include <modules/python3/pythonincluder.h>
-
-#include <modules/python3/pyinviwoobserver.h>
-#include <modules/python3/pyinviwo.h>
+#include "pythonparameterparser.h"
 
 namespace inviwo {
 
-PyInviwoObserver::PyInviwoObserver() { PyInviwo::getPtr()->addObserver(this); }
+PythonParameterParser::PythonParameterParser(size_t optional) : optional_(optional) {}
 
-PyInviwoObserver::~PyInviwoObserver() { PyInviwo::getPtr()->removeObserver(this); }
+int PythonParameterParser::parse(PyObject* args) {
+    auto params = static_cast<size_t>(PyTuple_Size(args));
+    if (params != 0) {
+        std::stringstream ss;
+        ss << "Function expects zero parameters, got " << params;
+
+        PyErr_SetString(PyExc_TypeError, ss.str().c_str());
+
+        return -1;
+    }
+    return 0;
+}
+
+bool PythonParameterParser::parseValue(int idx, PyObject* obj, PyObject*& t) {
+    t = obj;
+    return true;
+}
+
+template <>
+std::string PythonParameterParser::typeToString<std::string>() {
+    return "string";
+}
 
 }  // namespace

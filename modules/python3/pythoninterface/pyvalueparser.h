@@ -52,7 +52,7 @@ public:
     template <typename T>
     static bool is(PyObject* arg);
     
-    static void setProperty(Property* p, PyObject* args);
+    static bool setProperty(Property* p, PyObject* args);
     static PyObject* getProperty(Property* p);
 };
 
@@ -207,8 +207,12 @@ IVW_MODULE_PYTHON3_API PyObject* PyValueParser::toPyObject<std::string>(std::str
 
 template <typename T>
 bool PyValueParser::is(PyObject* arg) {
+    if (!arg) return false;
     return detail::test<T>(arg);
 }
+
+template <> IVW_MODULE_PYTHON3_API
+bool PyValueParser::is<bool>(PyObject* arg);
 
 }  // namespace
 

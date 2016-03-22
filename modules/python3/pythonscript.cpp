@@ -34,7 +34,6 @@
 
 #include <modules/python3/pythonexecutionoutputobservable.h>
 #include <modules/python3/pythoninterface/pyvalueparser.h>
-#include <modules/python3/pythoninterface/pymodule.h>
 #include <modules/python3/pyinviwo.h>
 
 #include <modules/python3/pythonincluder.h>
@@ -68,9 +67,6 @@ PythonScript::PythonScript() : source_(""), byteCode_(nullptr), isCompileNeeded_
     }
 
     bool PythonScript::run(bool outputInfo) {
-        PyObject* glb = PyInviwo::getPtr()->getMainDictionary();
-
-
         if (isCompileNeeded_ && !compile(outputInfo)) {
             LogError("Failed to run script, script could not be compiled");
             return false;
@@ -78,14 +74,18 @@ PythonScript::PythonScript() : source_(""), byteCode_(nullptr), isCompileNeeded_
 
         ivwAssert(byteCode_ != nullptr, "No byte code");
 
-        if (outputInfo)
-            LogInfo("Running compiled script ...");
+        if (outputInfo) LogInfo("Running compiled script ...");
+       
+        auto m = PyImport_AddModule("__main__");
+        if (m == NULL) return false;
+       
+        auto d = PyModule_GetDict(m);
 
-        PyObject* loc = PyDict_New();
-        PyObject* ret = PyEval_EvalCode(BYTE_CODE, glb, loc);
+        PyObject* copy = PyDict_Copy(d);
+        PyObject* ret = PyEval_EvalCode(BYTE_CODE, copy, copy);
         bool success = checkRuntimeError();
         Py_XDECREF(ret);
-        Py_XDECREF(loc);
+        Py_XDECREF(copy);
         return success;
     }
 

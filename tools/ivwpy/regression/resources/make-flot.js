@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2013-2015 Inviwo Foundation
+ * Copyright (c) 2012-2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,56 +24,75 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#ifndef IVW_PYMODULE_H
-#define IVW_PYMODULE_H
-
-#include <modules/python3/python3moduledefine.h>
-
-#include <modules/python3/pythoninterface/pymethod.h>
-#include <modules/python3/defaultinterface/pyinfo.h>
-
-#include <vector>
-#include <string>
-#include <map>
-
-
-namespace inviwo {
-
-class IVW_MODULE_PYTHON3_API PyModule {
-public:
-    PyModule(std::string moduleName);
-    ~PyModule();
-    void addMethod(PyMethod* method);
-
-    const char* getModuleName();
-
-    PyMethodDef* getPyMethodDefs();
-
-    void printInfo();
-
-    std::vector<PyMethod*> getPyMethods();
-
-    void setPyObject(PyObject* obj);
-    PyObject* getPyObject();
-
-    static PyModule* getModuleByPyObject(PyObject* obj);
-
-    static std::map<PyObject*, PyModule*>::iterator begin(){ return instances_.begin(); }
-    static std::map<PyObject*, PyModule*>::iterator end(){ return instances_.end(); }
-
-
-private:
-    PyObject* obj_;
-    std::string moduleName_;
-    std::vector<PyMethod*> methods_;
-    PyMethodDef* embMethods_;
-    static std::map<PyObject*,PyModule*> instances_;
+var options = {
+    yaxes: [ { 
+        show : true,
+        position : "right",
+    }, {
+        show : true,
+        position : "left",
+        min : 0,
+    }],
+    xaxis : {
+        mode: "time",
+        timeformat: "%e %b",
+    },
+    grid: {
+        show: true,
+        borderColor: "gray"
+    },
+    legend: {
+        show : true,
+        position : "sw",
+        backgroundColor : null,
+        backgroundOpacity : 0,
+        noColumns : 3
+    }
 };
 
-
-}//namespace
-
-#endif
+$.plot($("#flot-summary"), 
+    [{
+        lines: { 
+            show : true, 
+            fill : true,
+            steps : true,
+            fillColor : "#E4FBE4;"
+        },
+        points: { show : false },
+        label : "Successes",
+        data  : passdata,
+        color : "#82DB82",
+        stack : "test",
+        yaxis : 2,
+        fill  : 0
+    }
+    ,
+    {
+        lines: { 
+            show : true, 
+            fill  : true,
+            steps  : true,
+            fillColor : "#FFE7E7"
+        },
+        points: { show: false },
+        label : "Failues/Disabled",
+        data  : faildata,
+        color : "#FF9898",
+        stack : "test",
+        yaxis : 2,
+        fill  : 1
+    },
+    {
+        lines: { show: true },
+        points: { show: true },
+        label : "Normalized run time",
+        data  : summarydata,
+        color : "#907FC6",
+        yaxis : 1
+    }
+    ],
+    options 
+);

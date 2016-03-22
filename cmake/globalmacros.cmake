@@ -179,7 +179,7 @@ function(generate_module_registration_file module_classes modules_class_paths)
                 "        \"${${mod_dep}_description}\",\n" 
                 "        ${module_depdens_vector}\n" 
                 "        )\n"
-                "    ):\n"
+                "    )__SEMICOLON__\n"
                 "    #endif\n"
                 "\n"
             )
@@ -192,16 +192,20 @@ function(generate_module_registration_file module_classes modules_class_paths)
 
     join(";" "" headers ${headers})
     join(";" "" functions ${functions})
-    string(REGEX REPLACE ":" ";" MODULE_HEADERS "${headers}")   
-    string(REGEX REPLACE ":" ";" MODULE_CLASS_FUNCTIONS "${functions}")
+
+    # undo encoding of linebreaks and semicolon in the module description read from file
+    # linebreaks are replaced with '\n"'
+    string(REPLACE "__LINEBREAK__" "\\n\"\n        \"" functions "${functions}")
+    string(REPLACE "__SEMICOLON__" ";" functions "${functions}")
+
+    string(REPLACE ":" ";" MODULE_HEADERS "${headers}")   
+    string(REPLACE ":" ";" MODULE_CLASS_FUNCTIONS "${functions}")
 
     configure_file(${IVW_CMAKE_TEMPLATES}/mod_registration_template.h 
                    ${CMAKE_BINARY_DIR}/modules/_generated/moduleregistration.h @ONLY)
-
 endfunction()
 
 function(ivw_create_pyconfig modulepaths activemodules)
-       
     # template vars:
     set(MODULEPATHS ${modulepaths})
     set(ACTIVEMODULES ${activemodules})
@@ -215,48 +219,7 @@ function(ivw_create_pyconfig modulepaths activemodules)
 
     configure_file(${IVW_CMAKE_TEMPLATES}/pyconfig_template.ini 
                    ${CMAKE_BINARY_DIR}/pyconfig.ini @ONLY)
-
 endfunction()
-
-
-#--------------------------------------------------------------------
-# Create CMAKE file for pre-process 
-function(ivw_generate_shader_resource parent_path)
-    set(output "include(${IVW_ROOT_DIR}/cmake/utilities/txt2h.cmake)\n")
-    set(shaders "")
-    foreach(current_path ${ARGN})
-        file(RELATIVE_PATH filepath0 ${parent_path} ${current_path})
-        string(REPLACE "/" "_" filepath1 ${filepath0})
-        string(REPLACE "." "_" outname ${filepath1})
-
-        set(outname_with_dollar "\${${outname}}")
-        
-        set(shaders "${shaders} ${outname}")
-                
-        #Add: file(READ outname variable)
-        set(output "${output}file(READ ${current_path} ${outname})\n")
-        
-        set(output "${output}string(REPLACE \"\;\" \"?????\" ${outname} \"${outname_with_dollar}\")\n")
-        
-        set(output "${output}ivw_text_to_header(${outname} ${outname}_header ${outname_with_dollar})\n")
-        set(outname_header_with_dollar "\${${outname}_header}")
-        
-        set(output "${output}string(REPLACE \"?????\" \"\;\" ${outname}_header \"${outname_header_with_dollar}\")\n")
-        
-        #Add: file(WRITE outname variable)
-        set(output "${output}file(WRITE ${CMAKE_BINARY_DIR}/modules/_generated/modules/${_projectName}/glsl/${outname}.h \"${outname_header_with_dollar}\")\n")
-    endforeach()
-    string(STRIP ${shaders} shaders)
-    string(TOUPPER ${_projectName} u_project_name)
-    string(TOLOWER ${_projectName} l_project_name)
-    add_definitions(-D${u_project_name}_INCLUDE_SHADER_RESOURCES)
-    set(output "${output}ivw_create_shader_resource_header(${_projectName} shader_resource ${shaders})\n")
-    set(output "${output}file(WRITE ${CMAKE_BINARY_DIR}/modules/_generated/modules/${_projectName}/shader_resources.h \${shader_resource})\n")
-    file(WRITE ${CMAKE_BINARY_DIR}/modules/${_projectName}/create_shader_resource.cmake ${output})
-    add_custom_command(TARGET inviwo-module-${_projectName} 
-                       PRE_BUILD COMMAND ${CMAKE_COMMAND} -P ${CMAKE_BINARY_DIR}/modules/${_projectName}/create_shader_resource.cmake)
-endfunction()
-
 
 #--------------------------------------------------------------------
 # Add all internal modules
@@ -352,7 +315,8 @@ function(generate_unset_mod_options_and_depend_sort module_root_path retval)
             # In that case set to INVIWO<NAME>MODULE_description
             if(EXISTS "${module_root_path}/${dir}/readme.md")
                 file(READ "${module_root_path}/${dir}/readme.md" description)
-                join("\n" "\\\\\\\\n\"\n        \"" cdescription ${description})
+                # encode linebreaks, i.e. '\n', and semicolon in description for proper handling in CMAKE
+                encodeLineBreaks(cdescription ${description})
                 set("${mod_dep}_description" ${cdescription} CACHE INTERNAL "Module description")
             endif()
 
@@ -890,24 +854,7 @@ endmacro()
 #-------------------------------------------------------------------#
 # Wrap Qt CPP to create MOC files
 macro(ivw_qt_wrap_cpp retval)
-    set(the_list "")
-    if(WIN32)
-        set(output_dir ${CMAKE_CURRENT_BINARY_DIR}/_moc)
-        set(the_arg_list ${ARGN})
-        list(GET the_arg_list 0 first_item)
-        if(${first_item} MATCHES "/include/inviwo/")
-            set(output_dir ${IVW_BINARY_DIR}/src/_moc)
-        elseif(${first_item} MATCHES "/modules/")
-            set(output_dir ${IVW_BINARY_DIR}/modules/_moc)
-        endif()
-        foreach(item ${the_arg_list})
-            get_filename_component(_moc_outfile_name "${item}" NAME_WE)
-            qt5_generate_moc(${item} ${output_dir}/moc_${_moc_outfile_name}.cxx)
-            list(APPEND the_list ${output_dir}/moc_${_moc_outfile_name}.cxx)
-        endforeach()
-    else()
-        qt5_wrap_cpp(the_list ${ARGN})
-    endif()
+    qt5_wrap_cpp(the_list ${ARGN})
     set(${retval} ${the_list})
 endmacro()
 
@@ -920,6 +867,11 @@ endmacro()
 #--------------------------------------------------------------------
 # Define QT definitions
 macro(ivw_define_qt_definitions)
+    if(WIN32) 
+        # Disable some warnings for qt modules.
+        add_definitions( "/wd4800" ) # 'type' : forcing value to bool 'true' or 'false'
+    endif()
+
     add_definitions(-DQT_CORE_LIB
                     -DQT_GUI_LIB)
 endmacro()
