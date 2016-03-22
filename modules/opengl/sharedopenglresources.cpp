@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2016 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,38 +27,20 @@
  *
  *********************************************************************************/
 
-#ifndef IVW_VOLUMEVECTORELEMENTSELECTORPROCESSOR_H
-#define IVW_VOLUMEVECTORELEMENTSELECTORPROCESSOR_H
+#include <modules/opengl/sharedopenglresources.h>
 
-#include <modules/base/basemoduledefine.h>
-#include <inviwo/core/common/inviwo.h>
-#include <inviwo/core/datastructures/volume/volume.h>
-#include <inviwo/core/ports/volumeport.h>
-#include <modules/base/processors/vectorelementselectorprocessor.h>
-
+#include <modules/opengl/geometry/meshgl.h>
+#include <modules/opengl/texture/textureutils.h>
 
 namespace inviwo {
 
-/** \docpage{org.inviwo.TimeStepSelector, Volume Sequence/Time Selector}
- * ![](org.inviwo.TimeStepSelector.png?classIdentifier=org.inviwo.TimeStepSelector)
- *
- *
- * ### Outports
- *   * __outport__ ...
- *
- * ### Properties
- *   * __Time Step__ ...
- *
- */
-class IVW_MODULE_BASE_API VolumeVectorElementSelectorProcessor : public VectorElementSelectorProcessor<Volume> {
-public:
-    VolumeVectorElementSelectorProcessor();
-    virtual ~VolumeVectorElementSelectorProcessor() = default;
+const MeshGL* SharedOpenGLResources::imagePlaneRect() {
+    if (!planeRectMesh_) {
+        planeRectMesh_ = utilgl::planeRect();
+        planeRectMeshGl_ = planeRectMesh_->getRepresentation<MeshGL>();
+    }
+    return planeRectMeshGl_;
+}
 
-    virtual const ProcessorInfo getProcessorInfo() const override;
-    static const ProcessorInfo processorInfo_;
-};
+} // namespace
 
-}  // namespace
-
-#endif  // IVW_VOLUMEVECTORELEMENTSELECTORPROCESSOR_H

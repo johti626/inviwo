@@ -27,6 +27,7 @@
  *
  *********************************************************************************/
 
+#include <modules/python3/pythonincluder.h>
 #include <modules/python3qt/pythoneditorwidget.h>
 #include <inviwo/core/common/inviwoapplication.h>
 #include <inviwo/core/network/processornetwork.h>
@@ -39,6 +40,7 @@
 
 #include <inviwo/qt/widgets/inviwofiledialog.h>
 #include <inviwo/core/util/settings/systemsettings.h>
+#include <modules/python3/pyinviwo.h>
 
 #include <warn/push>
 #include <warn/ignore/all>
@@ -228,7 +230,6 @@ void PythonEditorWidget::loadFile(std::string fileName, bool askForSave) {
 void PythonEditorWidget::onPyhonExecutionOutput(const std::string& msg,
                                                 const PythonExecutionOutputStream& outputType) {
     appendToOutput(msg, outputType != sysstdout);
-    LogInfo(msg);
 }
 
 void PythonEditorWidget::save() {
@@ -336,7 +337,7 @@ void PythonEditorWidget::run() {
     if (unsavedChanges_ && scriptFileName_.size() != 0)  // save if needed
         save();
 
-    PythonExecutionOutputObservable::getPtr()->addObserver(this);
+    PyInviwo::getPtr()->addObserver(this);
 
     clearOutput();
     Clock c;
@@ -349,7 +350,7 @@ void PythonEditorWidget::run() {
     }
 
     LogInfo("Execution time: " << c.getElapsedMiliseconds() << " ms");
-    PythonExecutionOutputObservable::getPtr()->removeObserver(this);
+    PyInviwo::getPtr()->removeObserver(this);
 }
 
 void PythonEditorWidget::show() {

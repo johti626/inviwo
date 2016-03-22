@@ -340,7 +340,6 @@ std::unique_ptr<std::vector<unsigned char>> NetworkEditor::renderPortInspectorIm
                 // Add processors to the network
                 for (auto& processor : portInspector->getProcessors()) {
                     network_->addProcessor(processor);
-                    //RenderContext::getPtr()->activateDefaultRenderContext();
                 }
 
                 // Connect the port to inspect to the inports of the inspector network
@@ -1059,6 +1058,7 @@ bool NetworkEditor::saveNetwork(std::string fileName) {
         xmlSerializer.writeFile();
         filename_ = fileName;
         setModified(false);
+        LogInfo("Workspace saved to: " << fileName);
     } catch (SerializationException& exception) {
         util::log(exception.getContext(),
                   "Unable to save network " + fileName + " due to " + exception.getMessage(),

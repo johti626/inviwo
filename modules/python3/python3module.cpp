@@ -34,22 +34,27 @@
 
 #include <inviwo/core/common/inviwoapplication.h>
 #include <inviwo/core/util/commandlineparser.h>
+#include <inviwo/core/util/filesystem.h>
 #include <modules/python3/pythonscript.h>
+#include <modules/python3/pythonlogger.h>
 
 namespace inviwo {
 
 Python3Module::Python3Module(InviwoApplication* app)
     : InviwoModule(app, "Python3")
-    , pyInviwo_(nullptr)
+    , pyInviwo_(util::make_unique<PyInviwo>(this))
     , pythonScriptArg_("p", "pythonScript", "Specify a python script to run at startup", false, "",
         "Path to the file containing the script") {
 
-    PythonExecutionOutputObservable::init();
-    pyInviwo_ = util::make_unique<PyInviwo>(this);
+    pyInviwo_->addObserver(&pythonLogger_);
 
     app->getCommandLineParser().add(&pythonScriptArg_, [this]() {
         PythonScript s;
         auto filename = pythonScriptArg_.getValue();
+        if (!filesystem::fileExists(filename)) {
+            LogWarn("Could not run script, file does not exist: " << filename);
+            return;
+        }
         std::ifstream file(filename.c_str());
         std::string src((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
         file.close();
@@ -64,8 +69,7 @@ Python3Module::Python3Module(InviwoApplication* app)
 }
 
 Python3Module::~Python3Module() {
-    pyInviwo_.reset();  // issue destruction before PythonExecutionOutputObservable
-    PythonExecutionOutputObservable::deleteInstance();
+    pyInviwo_->removeObserver(&pythonLogger_);
 }
 
 }  // namespace

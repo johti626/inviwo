@@ -33,45 +33,27 @@
 #include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/common/inviwo.h>
 #include <string>
-#include <sstream>
 
 namespace inviwo {
 
-#define BYTE_SWAP 1024
+namespace util {
 
-static const glm::u64 BYTE_SIZE = 1;
-static const glm::u64 KILO_BYTE_SIZE = BYTE_SWAP* BYTE_SIZE;
-static const glm::u64 MEGA_BYTE_SIZE = BYTE_SWAP* KILO_BYTE_SIZE;
-static const glm::u64 GIGA_BYTE_SIZE = BYTE_SWAP* MEGA_BYTE_SIZE;
-static const glm::u64 TERA_BYTE_SIZE = BYTE_SWAP* GIGA_BYTE_SIZE;
-static const float BYTE_DIV = 1.f/BYTE_SWAP;
+static const glm::u64 byte_swap = 1024;
+static const glm::u64 byte_size = 1;
+static const glm::u64 kilo_byte_size = byte_swap * byte_size;
+static const glm::u64 mega_byte_size = byte_swap * kilo_byte_size;
+static const glm::u64 giga_byte_size = byte_swap * mega_byte_size;
+static const glm::u64 tera_byte_size = byte_swap * giga_byte_size;
+static const double byte_div = 1.0 / byte_swap;
 
-#define BYTES_TO_KILOBYTES(bytes) (bytes/BYTE_SWAP)
-#define BYTES_TO_MEGABYTES(bytes) (bytes/(BYTE_SWAP*BYTE_SWAP))
-#define KILOBYTES_TO_BYTES(bytes) (bytes*BYTE_SWAP)
-#define MEGABYTES_TO_BYTES(bytes) (bytes*BYTE_SWAP*BYTE_SWAP)
+IVW_CORE_API glm::u64 bytes_to_kilobytes(glm::u64 bytes);
+IVW_CORE_API glm::u64 bytes_to_megabytes(glm::u64 bytes);
+IVW_CORE_API glm::u64 kilobytes_to_bytes(glm::u64 bytes);
+IVW_CORE_API glm::u64 megabytes_to_bytes(glm::u64 bytes);
 
-#include <warn/push>
-#include <warn/ignore/unused-function>
-static std::string formatBytesToString(glm::u64 bytes) {
-    std::ostringstream stream;
-    stream.precision(2);
-    stream.setf(std::ios::fixed, std::ios::floatfield);
+IVW_CORE_API std::string formatBytesToString(glm::u64 bytes);;
 
-    if (bytes > TERA_BYTE_SIZE)
-        stream << static_cast<float>(bytes/GIGA_BYTE_SIZE)*BYTE_DIV << " TB";
-    else if (bytes > GIGA_BYTE_SIZE)
-        stream << static_cast<float>(bytes/MEGA_BYTE_SIZE)*BYTE_DIV << " GB";
-    else if (bytes > MEGA_BYTE_SIZE)
-        stream << static_cast<float>(bytes/KILO_BYTE_SIZE)*BYTE_DIV << " MB";
-    else if (bytes > KILO_BYTE_SIZE)
-        stream << static_cast<float>(bytes)*BYTE_DIV << " KB";
-    else
-        stream << static_cast<float>(bytes) << " B";
-
-    return stream.str();
-};
-#include <warn/pop>
+} // namespace
 
 } // namespace
 

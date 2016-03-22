@@ -220,6 +220,15 @@ include(${CMAKE_CURRENT_LIST_DIR}/compileresources.cmake)
 option(IVW_PROFILING "Enable profiling" OFF)
 
 #--------------------------------------------------------------------
+# Iterator debug level in Visual Studio
+# https://msdn.microsoft.com/en-us/library/hh697468.aspx
+# This does unfortunately _NOT_ work without recompiling Qt every time you change this flag
+#if(WIN32 AND MSVC)
+#    set(IVW_ITERATOR_DEBUG_LEVEL "2" CACHE STRING "Iterator debug level (IDL, default=2). IDL=0: Disables checked iterators and disables iterator debugging. IDL=1: Enables checked iterators and disables iterator debugging. IDL=2: Enables iterator debugging.")
+#    set_property(CACHE IVW_ITERATOR_DEBUG_LEVEL PROPERTY STRINGS 0 1 2)
+#endif()
+
+#--------------------------------------------------------------------
 # Build unittest for all modules
 include(${CMAKE_CURRENT_LIST_DIR}/unittests.cmake)
 
@@ -236,19 +245,27 @@ mark_as_advanced(FORCE CMAKE_CONFIGURATION_TYPES)
 if(WIN32 AND MSVC)
     if(SHARED_LIBS)
         set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libs, else static libs" FORCE)
+    else()
+        set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libs, else static libs" FORCE)
+    endif()
+    
+    # Determine runtime library linkage depending on SHARED_LIBS setting.
+    # Shared runtime can be forced by setting the IVW_FORCE_SHARED_CRT option.
+    option(IVW_FORCE_SHARED_CRT "Use shared runtime library linkage for Inviwo" OFF)
+    mark_as_advanced(IVW_FORCE_SHARED_CRT)
+    if(SHARED_LIBS OR IVW_FORCE_SHARED_CRT)
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
         set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MD")
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
         set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MDd")
     else()
-        set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libs, else static libs" FORCE)
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
         set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MT")
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
         set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MTd")
     endif()
 
-    if(MSVC_VERSION LESS 1900) # Pre visualstdio 2015
+    if(MSVC_VERSION LESS 1900) # Pre visual studio 2015
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi")
         set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /Zi")
     else()
@@ -259,11 +276,23 @@ if(WIN32 AND MSVC)
 
     # Disable deprecation warnings for standard C functions
     add_definitions( "/W3 /D_CRT_SECURE_NO_WARNINGS /wd4005 /wd4996 /nologo" )
-    string(REGEX REPLACE "[/\\-]Zm[0-9]+" " " CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Ym0x20000000")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zm1000")
+
+    if(MSVC_VERSION LESS 1900) # Pre visualstdio 2015
+        # http://www.beta.microsoft.com/VisualStudio/feedbackdetail/view/746718/frequently-get-c1027-from-vc-100-compiler-after-installing-vs-2012-rc
+        # https://github.com/inviwo/inviwo-dev/commit/6054985bdd471b209b9d5ef7a8b9a1db66518cfa#commitcomment-16684802
+        string(REGEX REPLACE "[/\\-]Zm[0-9]+" " " CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Ym0x20000000")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zm512")
+    endif()
+    
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+
+    # set iterator debug level (default=2)
+    # https://msdn.microsoft.com/en-us/library/hh697468.aspx
+    ## This does unfortunately _NOT_ work without recompiling Qt every time you change this flag
+    #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /D_ITERATOR_DEBUG_LEVEL=${IVW_ITERATOR_DEBUG_LEVEL}")
+
 
     # MSVC Variable checks and include redist in packs
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)

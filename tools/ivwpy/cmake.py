@@ -102,7 +102,7 @@ class CMakefile:
 		for line in it:
 			if m1.match(line):
 				lines.append(line)
-				lines.extend(sort_and_insert_line(it, file))						
+				lines.extend(sort_and_insert_line(it, file))
 			else:
 				lines.append(line)
 			

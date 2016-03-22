@@ -89,21 +89,21 @@ void VolumeSource::load(bool deserialize) {
     auto rf = InviwoApplication::getPtr()->getDataReaderFactory();
 
     std::string ext = filesystem::getFileExtension(file_.get());
-    if (auto volVecReader = rf->getReaderForTypeAndExtension<VolumeVector>(ext)) {
+    if (auto volVecReader = rf->getReaderForTypeAndExtension<VolumeSequence>(ext)) {
         try {
             auto volumes = volVecReader->readData(file_.get());
             std::swap(volumes, volumes_);
         } catch (DataReaderException const& e) {
-            LogProcessorError("Could not load data: " << file_.get() << ", " << e.getMessage());
+            LogProcessorError(e.getMessage());
         }
     } else if (auto volreader = rf->getReaderForTypeAndExtension<Volume>(ext)) {
         try {
             auto volume(volreader->readData(file_.get()));
-            auto volumes = std::make_shared<VolumeVector>();
+            auto volumes = std::make_shared<VolumeSequence>();
             volumes->push_back(volume);
             std::swap(volumes, volumes_);
         } catch (DataReaderException const& e) {
-            LogProcessorError("Could not load data: " << file_.get() << ", " << e.getMessage());
+            LogProcessorError(e.getMessage());
         }
     } else {
         LogProcessorError("Could not find a data reader for file: " << file_.get());
@@ -126,7 +126,7 @@ void VolumeSource::addFileNameFilters() {
     for (auto& ext : extensions) {
         file_.addNameFilter(ext.description_ + " (*." + ext.extension_ + ")");
     }
-    extensions = rf->getExtensionsForType<VolumeVector>();
+    extensions = rf->getExtensionsForType<VolumeSequence>();
     for (auto& ext : extensions) {
         file_.addNameFilter(ext.description_ + " (*." + ext.extension_ + ")");
     }

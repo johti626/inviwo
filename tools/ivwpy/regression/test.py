@@ -48,6 +48,9 @@ class Test:
 			with open(configfile, 'r') as f:
 				self.config = json.load(f)
 
+		scripts = glob.glob(self.path +"/*.py")
+		if len(scripts) > 0: self.script = scripts[0]
+
 	def __str__(self):
 		return self.toString()
 
@@ -78,4 +81,4 @@ class Test:
 		mkdir(base, self.module, self.name)
 		return toPath(base, self.module, self.name)
 
-		raise RegressionError("Invalid Test kind")
+

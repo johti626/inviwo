@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2015 Inviwo Foundation
+ * Copyright (c) 2016 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,52 +27,32 @@
  *
  *********************************************************************************/
 
-#include <inviwo/core/util/volumevectorsampler.h>
+#ifndef IVW_GLFWEXCEPTION_H
+#define IVW_GLFWEXCEPTION_H
+
+#include <modules/glfw/glfwmoduledefine.h>
+#include <inviwo/core/common/inviwo.h>
+#include <inviwo/core/util/exception.h>
 
 namespace inviwo {
 
-VolumeVectorSampler::VolumeVectorSampler(
-    std::shared_ptr<const std::vector<std::shared_ptr<Volume>>> volumeVector) {
-    for (const auto &vol : (*volumeVector.get())) {
-        samplers_.emplace_back(vol);
-    }
-}
+/**
+ * \class GLFWException
+ */
+class IVW_MODULE_GLFW_API GLFWException : public Exception {
+public:
+    GLFWException(const std::string& message = "", ExceptionContext context = ExceptionContext());
+    virtual ~GLFWException() throw() {}
+};
 
-VolumeVectorSampler::~VolumeVectorSampler() {}
+class IVW_MODULE_GLFW_API GLFWInitException : public ModuleInitException {
+public:
+    GLFWInitException(const std::string& message = "",
+                      ExceptionContext context = ExceptionContext());
+    virtual ~GLFWInitException() throw() {}
+};
 
-void VolumeVectorSampler::setVectorInterpolation(bool enable) {
-    for (auto &s : samplers_) {
-        s.setVectorInterpolation(enable);
-    }
-}
+} // namespace
 
-dvec4 VolumeVectorSampler::sample(const dvec4 &pos) const {
-    dvec3 spatialPos = pos.xyz();
-    double t = pos.w;
-    while (t < 0) t += 1;
-    while (t > 1) t -= 1;
+#endif // IVW_GLFWEXCEPTION_H
 
-    t *= (samplers_.size() - 1);
-
-    int tIndex = static_cast<int>(t);
-    double tInterpolant = t - static_cast<float>(tIndex);
-
-    dvec4 v0, v1;
-    v0 = getVoxel(spatialPos, tIndex);
-    v1 = getVoxel(spatialPos, tIndex + 1);
-
-    return Interpolation<dvec4>::linear(v0, v1, tInterpolant);
-}
-
-dvec4 VolumeVectorSampler::sample(double x, double y, double z, double t) const {
-    return sample(dvec4(x, y, z, t));
-}
-
-dvec4 VolumeVectorSampler::sample(const vec4 &pos) const { return sample(dvec4(pos)); }
-
-dvec4 VolumeVectorSampler::getVoxel(const dvec3 &pos, int T) const {
-    T = glm::clamp(T, 0, static_cast<int>(samplers_.size()) - 1);
-    return samplers_[T].sample(pos);
-}
-
-}  // namespace

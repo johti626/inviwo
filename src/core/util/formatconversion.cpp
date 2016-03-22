@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2015 Inviwo Foundation
+ * Copyright (c) 2016 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,39 +27,36 @@
  *
  *********************************************************************************/
 
-#ifndef IVW_VOLUMEVECTORSAMPLER_H
-#define IVW_VOLUMEVECTORSAMPLER_H
-
-#include <inviwo/core/common/inviwocoredefine.h>
-#include <inviwo/core/common/inviwo.h>
-#include <inviwo/core/util/volumesampler.h>
+#include <inviwo/core/util/formatconversion.h>
+#include <sstream>
 
 namespace inviwo {
 
-/**
- * \class VolumeVectorSampler
- * \brief VERY_BRIEFLY_DESCRIBE_THE_CLASS
- * DESCRIBE_THE_CLASS
- */
-class IVW_CORE_API VolumeVectorSampler { 
-public:
-    VolumeVectorSampler(std::shared_ptr<const std::vector<std::shared_ptr<Volume>>> volumeVector);
-    virtual ~VolumeVectorSampler();
+glm::u64 util::bytes_to_kilobytes(glm::u64 bytes) { return bytes / byte_swap; }
 
-    void setVectorInterpolation(bool enable);
+glm::u64 util::bytes_to_megabytes(glm::u64 bytes) { return bytes / (byte_swap * byte_swap); }
 
-    dvec4 sample(const dvec4 &pos) const;
-    dvec4 sample(double x, double y, double z, double t) const;
-    dvec4 sample(const vec4 &pos) const;
+glm::u64 util::kilobytes_to_bytes(glm::u64 bytes) { return bytes * byte_swap; }
 
-private:
-    dvec4 getVoxel(const dvec3 &pos, int T) const;
+glm::u64 util::megabytes_to_bytes(glm::u64 bytes) { return bytes * byte_swap * byte_swap; }
 
-    size3_t dims_;
-    std::vector<VolumeSampler> samplers_;
-};
+std::string util::formatBytesToString(glm::u64 bytes) {
+    std::ostringstream stream;
+    stream.precision(2);
+    stream.setf(std::ios::fixed, std::ios::floatfield);
 
-} // namespace
+    if (bytes > tera_byte_size)
+        stream << static_cast<float>(bytes / giga_byte_size) * byte_div << " TB";
+    else if (bytes > giga_byte_size)
+        stream << static_cast<float>(bytes / mega_byte_size) * byte_div << " GB";
+    else if (bytes > mega_byte_size)
+        stream << static_cast<float>(bytes / kilo_byte_size) * byte_div << " MB";
+    else if (bytes > kilo_byte_size)
+        stream << static_cast<float>(bytes) * byte_div << " KB";
+    else
+        stream << static_cast<float>(bytes) << " B";
 
-#endif // IVW_VOLUMEVECTORSAMPLER_H
+    return stream.str();
+}
 
+}  // namespace

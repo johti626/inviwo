@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2015 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,25 +27,62 @@
  * 
  *********************************************************************************/
 
-#include "volumevectorelementselectorprocessor.h"
+#ifndef IVW_SINGLEVOXEL_H
+#define IVW_SINGLEVOXEL_H
+
+#include <modules/base/basemoduledefine.h>
+#include <inviwo/core/common/inviwo.h>
+#include <inviwo/core/processors/processor.h>
+#include <inviwo/core/properties/optionproperty.h>
+#include <inviwo/core/properties/ordinalproperty.h>
+#include <inviwo/core/ports/imageport.h>
+#include <inviwo/core/ports/volumeport.h>
 
 namespace inviwo {
 
-const ProcessorInfo VolumeVectorElementSelectorProcessor::processorInfo_{
-    "org.inviwo.TimeStepSelector",  // Class identifier
-    "Volume Sequence/Time Selector",// Display name
-    "Volume Operation",             // Category
-    CodeState::Stable,              // Code state
-    Tags::CPU,                      // Tags
+/** \docpage{org.inviwo.SingleVoxel, Single Voxel}
+ * ![](org.inviwo.SingleVoxel.png?classIdentifier=org.inviwo.SingleVoxel)
+ * Explanation of how to use the processor.
+ *
+ * ### Inports
+ *   * __<Inport1>__ <description>.
+ *
+ * ### Outports
+ *   * __<Outport1>__ <description>.
+ * 
+ * ### Properties
+ *   * __<Prop1>__ <description>.
+ *   * __<Prop2>__ <description>
+ */
+
+
+/**
+ * \class SingleVoxel
+ * \brief <brief description> 
+ * <Detailed description from a developer prespective>
+ */
+class IVW_MODULE_BASE_API SingleVoxel : public Processor { 
+public:
+    SingleVoxel();
+    virtual ~SingleVoxel() = default;
+     
+    virtual void process() override;
+
+    virtual const ProcessorInfo getProcessorInfo() const override;
+    static const ProcessorInfo processorInfo_;
+private:
+    VolumeInport volume_;
+    FloatVec3Property position_;
+
+    DoubleProperty doubleProperty_;
+    DoubleVec2Property dvec2Property_;
+    DoubleVec3Property dvec3Property_;
+    DoubleVec4Property dvec4Property_;
+
+    TemplateOptionProperty<SpatialCoordinateTransformer<3>::Space> space_;
 };
-const ProcessorInfo VolumeVectorElementSelectorProcessor::getProcessorInfo() const {
-    return processorInfo_;
-}
-VolumeVectorElementSelectorProcessor::VolumeVectorElementSelectorProcessor()
-    : VectorElementSelectorProcessor<Volume>() {
-    timeStep_.index_.autoLinkToProperty<VolumeVectorElementSelectorProcessor>("timeStep.selectedSequenceIndex");
 
-}
+} // namespace
 
-}  // namespace
+#endif // IVW_SINGLEVOXEL_H
 

@@ -33,34 +33,35 @@
 #include <inviwo/core/common/inviwocoredefine.h>
 #include <inviwo/core/common/inviwo.h>
 #include <inviwo/core/util/singleton.h>
+#include <inviwo/core/util/canvas.h>
 
 namespace inviwo {
 
-class Canvas;
 /**
  * \class RenderContext
  * \brief Keeper of the default render context.
  */
-class IVW_CORE_API RenderContext : public Singleton<RenderContext>{ 
+class IVW_CORE_API RenderContext : public Singleton<RenderContext> {
 public:
-    RenderContext();
-    virtual ~RenderContext();
+    RenderContext() = default;
+    virtual ~RenderContext() = default;
 
-    Canvas* getDefaultRenderContext(); 
+    Canvas* getDefaultRenderContext();
     void setDefaultRenderContext(Canvas* canvas);
     void activateDefaultRenderContext() const;
 
     void activateLocalRenderContext() const;
+    Canvas::ContextID activeContext() const;
+
     void clearContext();
 
-private: 
-    Canvas* defaultContext_;
+private:
+    Canvas* defaultContext_ = nullptr;
     std::thread::id mainThread_;
     mutable std::mutex mutex_;
     mutable std::unordered_map<std::thread::id, std::unique_ptr<Canvas>> contextMap_;
 };
 
-} // namespace
+}  // namespace
 
-#endif // IVW_RENDERCONTEXT_H
-
+#endif  // IVW_RENDERCONTEXT_H
