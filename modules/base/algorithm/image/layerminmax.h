@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2012-2015 Inviwo Foundation
+ * Copyright (c) 2016 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,55 +27,56 @@
  *
  *********************************************************************************/
 
-#ifndef IVW_DESERIALIZATIONERRORHANDLER_H
-#define IVW_DESERIALIZATIONERRORHANDLER_H
+#ifndef IVW_LAYERMINMAX_H
+#define IVW_LAYERMINMAX_H
 
-#include <inviwo/core/common/inviwocoredefine.h>
-#include <inviwo/core/io/serialization/serializationexception.h>
+#include <modules/base/basemoduledefine.h>
+#include <inviwo/core/common/inviwo.h>
+#include <inviwo/core/datastructures/image/layerram.h>
 
 namespace inviwo {
 
-class IVW_CORE_API BaseDeserializationErrorHandler {
-public:
-    BaseDeserializationErrorHandler();
-    virtual ~BaseDeserializationErrorHandler();
+namespace util {
 
-    virtual void handleError(SerializationException&) = 0;
-    virtual std::string getKey() = 0;
+namespace detail {
+
+struct LayerMinMaxDispatcher {
+    using type = std::pair<dvec4, dvec4>;
+
+    template <typename T>
+    std::pair<dvec4, dvec4> dispatch(const LayerRAM* layer) {
+        using dataType = typename T::type;
+        auto data = static_cast<const dataType*>(layer->getData());
+        auto df = layer->getDataFormat();
+
+// Visual studio warns here even with the static casts, bug?
+#include <warn/push>
+#include <warn/ignore/conversion>
+        auto minV = static_cast<dataType>(df->getMax());
+        auto maxV = static_cast<dataType>(df->getLowest());
+#include <warn/pop>
+
+        const auto dim = layer->getDimensions();
+        const auto size = dim.x * dim.y;
+
+        for (size_t i = 0; i < size; i++) {
+            auto v = data[i];
+
+            if (util::all(v != v + dataType(1))) {
+                minV = glm::min(minV, v);
+                maxV = glm::max(maxV, v);
+            }
+        }
+
+        return {util::glm_convert<dvec4>(minV), util::glm_convert<dvec4>(maxV)};
+    }
 };
+}  // namespace
 
-template <typename T>
-class DeserializationErrorHandler : public BaseDeserializationErrorHandler {
-public:
-    typedef void (T::*Callback)(SerializationException&);
-
-    DeserializationErrorHandler(std::string type, T* obj, Callback callback);
-    virtual ~DeserializationErrorHandler() {}
-
-    virtual void handleError(SerializationException&);
-    virtual std::string getKey();
-
-private:
-    std::string key_;
-    T* obj_;
-    Callback callback_;
-};
-
-template <typename T>
-DeserializationErrorHandler<T>::DeserializationErrorHandler(std::string type, T* obj,
-                                                            Callback callback)
-    : key_(type), obj_(obj), callback_(callback) {}
-
-template <typename T>
-std::string DeserializationErrorHandler<T>::getKey() {
-    return key_;
-}
-
-template <typename T>
-void inviwo::DeserializationErrorHandler<T>::handleError(SerializationException& e) {
-    (*obj_.*callback_)(e);
-}
+IVW_MODULE_BASE_API std::pair<dvec4, dvec4> layerMinMax(const LayerRAM* layer);
 
 }  // namespace
 
-#endif  // IVW_DESERIALIZATIONERRORHANDLER_H
+}  // namespace
+
+#endif  // IVW_LAYERMINMAX_H

@@ -73,11 +73,11 @@ public:
     virtual ~PythonEditorWidget();
 
     void appendToOutput(const std::string& msg, bool error = false);
-    virtual void fileChanged(std::string fileName);
+    virtual void fileChanged(const std::string& fileName) override;
     void loadFile(std::string fileName, bool askForSave = true);
 
     virtual void onPyhonExecutionOutput(const std::string& msg,
-                                        const PythonExecutionOutputStream& outputType);
+                                        const PythonExecutionOutputStream& outputType) override;
 
     bool hasFocus() const;
 

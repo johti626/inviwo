@@ -47,7 +47,7 @@ class Layer;
 class LayerRAM;
 
 /**
- * \class VolumeSampler
+ * \class ImageSampler
  *
  * \brief VERY_BRIEFLY_DESCRIBE_THE_CLASS
  *
@@ -120,4 +120,4 @@ private:
 
 }  // namespace
 
-#endif  // IVW_VOLUMESAMPLER_H
+#endif  // IVW_IMAGESAMPLER_H

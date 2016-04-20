@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2012-2015 Inviwo Foundation
+ * Copyright (c) 2016 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,10 +27,14 @@
  *
  *********************************************************************************/
 
-#include <inviwo/core/io/serialization/deserializationerrorhandler.h>
+#include <modules/base/algorithm/image/layerminmax.h>
 
 namespace inviwo {
-    BaseDeserializationErrorHandler::BaseDeserializationErrorHandler() {}
-    BaseDeserializationErrorHandler::~BaseDeserializationErrorHandler() {}
+
+std::pair<dvec4, dvec4> util::layerMinMax(const LayerRAM* layer) {
+    detail::LayerMinMaxDispatcher disp;
+    return layer->getDataFormat()->dispatch(disp, layer);
+}
+
 } // namespace
 

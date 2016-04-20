@@ -31,31 +31,8 @@
 
 namespace inviwo {
 
-MetaData::MetaData() {}
-MetaData::MetaData(const MetaData& rhs) {};
-MetaData& MetaData::operator=(const MetaData& that) {
-    return *this;
-}
-MetaData::~MetaData() {}
-
 std::string MetaData::getClassIdentifier() const {
     return "MetaData";
-}
-
-MetaData* MetaData::clone() const {
-    return new MetaData(*this);
-}
-
-void MetaData::serialize(Serializer& s) const {
-    IVW_UNUSED_PARAM(s);
-}
-
-void MetaData::deserialize(Deserializer& d) {
-    IVW_UNUSED_PARAM(d);
-}
-
-bool MetaData::equal(const MetaData& rhs) const {
-    return false;
 }
 
 bool operator==(const MetaData& lhs, const MetaData& rhs) {

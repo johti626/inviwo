@@ -2,7 +2,7 @@
  *
  * Inviwo - Interactive Visualization Workshop
  *
- * Copyright (c) 2014-2015 Inviwo Foundation
+ * Copyright (c) 2016 Inviwo Foundation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,18 +24,57 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  *********************************************************************************/
 
-#include "utils/structs.glsl"
-#include "utils/sampler3d.glsl"
+#ifndef IVW_VOLUMEMINMAX_H
+#define IVW_VOLUMEMINMAX_H
 
-GEN_UNIFORMS
+#include <modules/base/basemoduledefine.h>
+#include <inviwo/core/common/inviwo.h>
+#include <inviwo/core/datastructures/volume/volumeram.h>
 
-in vec4 texCoord_;
+namespace inviwo {
+namespace util {
+namespace detail {
 
-void main() {
-    GEN_SAMPLING
-    FragData0 = EQUATION;
-    gl_FragDepth = 1.0;
-}
+struct VolumeMinMaxDispatcher {
+    using type = std::pair<dvec4, dvec4>;
+
+    template <typename T>
+    std::pair<dvec4, dvec4> dispatch(const VolumeRAM* volume) {
+        using dataType = typename T::type;
+        using primitive = typename T::primitive;
+        auto data = static_cast<const dataType*>(volume->getData());
+        auto df = volume->getDataFormat();
+
+#include <warn/push>
+#include <warn/ignore/conversion>  // Visual Studio 2015 complains about type conversion despite static_cast
+        dataType minV(static_cast<primitive>(df->getMax()));
+        dataType maxV(static_cast<primitive>(df->getLowest()));
+#include <warn/pop>
+
+        const auto dim = volume->getDimensions();
+        const auto size = dim.x * dim.y * dim.z;
+        for (size_t i = 0; i < size; i++) {
+            auto v = data[i];
+
+            if (util::all(v != v + dataType(1))) {
+                minV = glm::min(minV, v);
+                maxV = glm::max(maxV, v);
+            }
+        }
+
+        return {util::glm_convert<dvec4>(minV), util::glm_convert<dvec4>(maxV)};
+    }
+};
+}  // namespace
+
+IVW_MODULE_BASE_API std::pair<dvec4, dvec4> volumeMinMax(const VolumeRAM* volume);
+
+}  // namespace
+
+}  // namespace
+
+#endif // IVW_VOLUMEMINMAX_H
+
