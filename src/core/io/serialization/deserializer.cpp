@@ -35,6 +35,7 @@
 #include <inviwo/core/processors/processorfactory.h>
 #include <inviwo/core/metadata/metadatafactory.h>
 #include <inviwo/core/properties/propertyfactory.h>
+#include <inviwo/core/ports/portfactory.h>
 #include <inviwo/core/util/factory.h>
 #include <inviwo/core/util/exception.h>
 
@@ -65,14 +66,8 @@ Deserializer::Deserializer(InviwoApplication* app, std::istream& stream, const s
     }
 }
 
-Deserializer::~Deserializer() {}
-
 void Deserializer::deserialize(const std::string& key, Serializable& sObj) {
-    try {
-        NodeSwitch ns(*this, key);
-        sObj.deserialize(*this);
-    } catch (TxException&) {
-    }
+    if (NodeSwitch ns{*this, key}) sObj.deserialize(*this);
 }
 
 void Deserializer::deserialize(const std::string& key, signed char& data,
@@ -99,10 +94,11 @@ void Deserializer::setExceptionHandler(ExceptionHandler handler) {
 }
 
 void Deserializer::convertVersion(VersionConverter* converter) {
-    converter->convert(rootElement_);
-    // Re-generate the reference table
-    referenceLookup_.clear();
-    storeReferences(doc_.FirstChildElement());
+    if (converter->convert(rootElement_)) {
+        // Re-generate the reference table
+        referenceLookup_.clear();
+        storeReferences(doc_.FirstChildElement());
+    }
 }
 
 void Deserializer::handleError(const ExceptionContext& context) {
@@ -134,6 +130,8 @@ void Deserializer::registerFactories(InviwoApplication* app) {
         registeredFactories_.push_back(app->getProcessorFactory());
         registeredFactories_.push_back(app->getMetaDataFactory());
         registeredFactories_.push_back(app->getPropertyFactory());
+        registeredFactories_.push_back(app->getInportFactory());
+        registeredFactories_.push_back(app->getOutportFactory());
     }
 }
 

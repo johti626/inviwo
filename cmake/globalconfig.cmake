@@ -181,7 +181,7 @@ set(IVW_CMAKE_BINARY_MODULE_DIR ${CMAKE_BINARY_DIR}/cmake)
 set(IVW_CMAKE_TEMPLATES         ${IVW_ROOT_DIR}/cmake/templates)
 
 #Generate headers
-generate_module_paths_header()
+ivw_generate_module_paths_header()
 configure_file(${IVW_CMAKE_TEMPLATES}/inviwocommondefines_template.h 
                ${CMAKE_BINARY_DIR}/modules/_generated/inviwocommondefines.h 
                @ONLY IMMEDIATE)
@@ -202,12 +202,6 @@ set(VS_MULTITHREADED_RELEASE_DLL_IGNORE_LIBRARY_FLAGS
      /NODEFAULTLIB:msvcrtd.lib"
 )
     
-#--------------------------------------------------------------------
-# Disable deprecation warnings for standard C functions
-if(CMAKE_COMPILER_2005)
-    add_definitions(-D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE)
-endif(CMAKE_COMPILER_2005)
-
 #--------------------------------------------------------------------
 # Mac specific
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -353,8 +347,9 @@ if(WIN32 AND MSVC)
     endif()  
 endif()
 
-if (LINUX)
+if(UNIX)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON) # Will add -fPIC under linux.
+    set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--as-needed") # Only link to libs as needed.
 endif()
 
 #--------------------------------------------------------------------

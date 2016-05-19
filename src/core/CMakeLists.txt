@@ -80,10 +80,12 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/events/gestureevent.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/events/interactionevent.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/events/keyboardevent.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/interaction/events/keyboardkeys.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/events/mouseevent.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/events/resizeevent.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/events/touchevent.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/interactionhandler.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/interaction/interactionstatemanager.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/pickingcontainer.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/pickingmanager.h
     ${IVW_INCLUDE_DIR}/inviwo/core/interaction/pickingmapper.h
@@ -131,6 +133,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/network/portconnection.h
     ${IVW_INCLUDE_DIR}/inviwo/core/network/processornetwork.h
     ${IVW_INCLUDE_DIR}/inviwo/core/network/processornetworkconverter.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/network/processornetworkevaluationobserver.h
     ${IVW_INCLUDE_DIR}/inviwo/core/network/processornetworkevaluator.h
     ${IVW_INCLUDE_DIR}/inviwo/core/network/processornetworkobserver.h
     ${IVW_INCLUDE_DIR}/inviwo/core/ports/bufferport.h
@@ -216,6 +219,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/util/capabilities.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/clock.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/cloneableptr.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/util/colorbrewer.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/colorconversion.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/commandlineparser.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/datetime.h
@@ -251,6 +255,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/util/settings/systemsettings.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/shuntingyard.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/singleton.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/util/spatialsampler.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/stacktrace.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/stdextensions.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/stringconversion.h
@@ -262,6 +267,7 @@ set(HEADER_FILES
     ${IVW_INCLUDE_DIR}/inviwo/core/util/utilities.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/vectoroperations.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/volumesampler.h
+    ${IVW_INCLUDE_DIR}/inviwo/core/util/volumesequenceutils.h
     ${IVW_INCLUDE_DIR}/inviwo/core/util/volumesequencesampler.h
 )
 ivw_group("Header Files" ${HEADER_FILES})
@@ -332,6 +338,7 @@ set(SOURCE_FILES
     interaction/events/resizeevent.cpp
     interaction/events/touchevent.cpp
     interaction/interactionhandler.cpp
+    interaction/interactionstatemanager.cpp
     interaction/pickingcontainer.cpp
     interaction/pickingmanager.cpp
     interaction/pickingmapper.cpp
@@ -375,6 +382,7 @@ set(SOURCE_FILES
     network/portconnection.cpp
     network/processornetwork.cpp
     network/processornetworkconverter.cpp
+    network/processornetworkevaluationobserver.cpp
     network/processornetworkevaluator.cpp
     network/processornetworkobserver.cpp
     ports/imageport.cpp
@@ -435,6 +443,7 @@ set(SOURCE_FILES
     util/canvas.cpp
     util/capabilities.cpp
     util/clock.cpp
+    util/colorbrewer.cpp
     util/colorconversion.cpp
     util/commandlineparser.cpp
     util/dialogfactory.cpp
@@ -470,6 +479,7 @@ set(SOURCE_FILES
     util/tooltiphelper.cpp
     util/utilities.cpp
     util/volumesampler.cpp
+    util/volumesequenceutils.cpp
     util/volumesequencesampler.cpp
 )
 ivw_group("Source Files" ${SOURCE_FILES})
@@ -494,6 +504,7 @@ set(TEST_FILES
     tests/unittests/serialize-container-test.cpp
     tests/unittests/serializer-test.cpp
     tests/unittests/filesystem-test.cpp
+    tests/unittests/volumesequenceutils-tests.cpp
     tests/unittests/conversion-test.cpp
 )
 ivw_add_unittest(${TEST_FILES})

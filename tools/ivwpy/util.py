@@ -28,9 +28,11 @@
 #*********************************************************************************
 
 import os
+import sys
 import itertools
 import datetime
 import math
+import subprocess
 
 def subDirs(path):
 	if os.path.isdir(path):
@@ -80,6 +82,20 @@ def pad_infinite(iterable, padding=None):
 def pad(iterable, size, padding=None):
    return itertools.islice(pad_infinite(iterable, padding), size)
 
+def addMidSteps(func, iterable, transform = lambda x: x):
+	''' s -> s1, func(s1,s2), s2, func(s2,s3), s3'''
+	tmp = next(iterable)
+	yield transform(tmp)
+	for n in iterable:
+		res = func(tmp, n)
+		try:
+			for r in res: yield r
+		except TypeError:
+			yield res
+		tmp = n
+		yield transform(n)
+
+
 def makeSlice(string):
 	def toInt(s):
 		try:
@@ -115,3 +131,12 @@ def stats(l):
 	mean = sum(l)/len(l)
 	std = math.sqrt(sum([pow(mean-x,2) for x in l])/len(l))
 	return mean, std
+
+def openWithDefaultApp(file):
+	print(file)
+	if sys.platform.startswith('linux'):
+	    subprocess.call(["xdg-open", file])
+	elif sys.platform == "darwin":
+	    subprocess.call(["open", file])
+	elif sys.platform == "win32":
+	    os.startfile(file)

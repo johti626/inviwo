@@ -57,6 +57,7 @@
 #include <modules/base/processors/volumesubset.h>
 #include <modules/base/processors/volumesequencesource.h>
 #include <modules/base/processors/stereocamerasyncer.h>
+#include <modules/base/processors/volumetospatialsampler.h>
 #include <modules/base/processors/orientationindicator.h>
 #include <modules/base/processors/singlevoxel.h>
 
@@ -70,6 +71,7 @@
 #include <inviwo/core/processors/processor.h>
 #include <inviwo/core/ports/meshport.h>
 #include <inviwo/core/ports/volumeport.h>
+#include <modules/base/processors/pixelvalue.h>
 
 namespace inviwo {
 
@@ -111,7 +113,9 @@ BaseModule::BaseModule(InviwoApplication* app) : InviwoModule(app, "Base") {
     registerProcessor<VolumeBoundingBox>();
     registerProcessor<SingleVoxel>();
 
+    registerProcessor<VolumeToSpatialSampler>();
     registerProcessor<OrientationIndicator>();
+    registerProcessor<PixelValue>();
 
     registerProperty<SequenceTimerProperty>();
     registerProperty<BasisProperty>();

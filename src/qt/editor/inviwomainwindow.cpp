@@ -43,6 +43,7 @@
 #include <inviwo/qt/widgets/inviwoapplicationqt.h>
 #include <inviwo/qt/widgets/inviwofiledialog.h>
 #include <inviwo/qt/widgets/propertylistwidget.h>
+#include <inviwo/core/metadata/processormetadata.h>
 
 #include <inviwomodulespaths.h>
 
@@ -84,7 +85,9 @@ InviwoMainWindow::InviwoMainWindow(InviwoApplicationQt* app)
                    "Specify base name of each snapshot, or \"UPN\" string for processor name.",
                    false, "", "file name")
     , screenGrabArg_("g", "screengrab", "Specify default name of each screen grab.", false, "",
-                     "file name") {
+                     "file name")
+    , eventFilter_(app->getInteractionStateManager())
+    , undoManager_(this) {
     networkEditor_ = new NetworkEditor(this);
     // initialize console widget first to receive log messages
     consoleWidget_ = new ConsoleWidget(this);
@@ -96,6 +99,8 @@ InviwoMainWindow::InviwoMainWindow(InviwoApplicationQt* app)
     auto screen = dw.screenGeometry(this);
     const float maxRatio = 0.8f;
 
+    QApplication::instance()->installEventFilter(&eventFilter_);
+
     QSize size(1920, 1080);
     size.setWidth(std::min(size.width(), static_cast<int>(screen.width() * maxRatio)));
     size.setHeight(std::min(size.height(), static_cast<int>(screen.height() * maxRatio)));
@@ -106,13 +111,19 @@ InviwoMainWindow::InviwoMainWindow(InviwoApplicationQt* app)
     resize(size);
     move(pos);
 
-    app->getCommandLineParser().add(&snapshotArg_, [this]() {
-        saveCanvases(app_->getCommandLineParser().getOutputPath(), snapshotArg_.getValue());
-    }, 1000);
+    app->getCommandLineParser().add(&snapshotArg_,
+                                    [this]() {
+                                        saveCanvases(app_->getCommandLineParser().getOutputPath(),
+                                                     snapshotArg_.getValue());
+                                    },
+                                    1000);
 
-    app->getCommandLineParser().add(&screenGrabArg_, [this]() {
-        getScreenGrab(app_->getCommandLineParser().getOutputPath(), screenGrabArg_.getValue());
-    }, 1000);
+    app->getCommandLineParser().add(&screenGrabArg_,
+                                    [this]() {
+                                        getScreenGrab(app_->getCommandLineParser().getOutputPath(),
+                                                      screenGrabArg_.getValue());
+                                    },
+                                    1000);
 }
 
 InviwoMainWindow::~InviwoMainWindow() {
@@ -327,6 +338,19 @@ void InviwoMainWindow::addActions() {
 
     // Edit
     {
+        auto undoAction = undoManager_.getUndoAction();
+        actions_["Undo"] = undoAction;
+        editMenuItem->addAction(undoAction);
+    }
+    {
+        auto redoAction = undoManager_.getRedoAction();
+        actions_["Redo"] = redoAction;
+        editMenuItem->addAction(redoAction);
+    }
+
+    editMenuItem->addSeparator();
+    
+    {
         auto cutAction = new QAction(tr("&Cut"), this);
         actions_["Cut"] = cutAction;
         cutAction->setShortcut(QKeySequence::Cut);
@@ -452,11 +476,11 @@ void InviwoMainWindow::addActions() {
         lockNetworkAction->setShortcut(Qt::ControlModifier + Qt::Key_L);
         evalMenuItem->addAction(lockNetworkAction);
         evalToolBar->addAction(lockNetworkAction);
-        connect(lockNetworkAction, &QAction::triggered, [lockNetworkAction]() {
+        connect(lockNetworkAction, &QAction::triggered, [lockNetworkAction,this]() {
             if (lockNetworkAction->isChecked()) {
-                InviwoApplicationQt::getPtr()->getProcessorNetwork()->lock();
+                app_->getProcessorNetwork()->lock();
             } else {
-                InviwoApplicationQt::getPtr()->getProcessorNetwork()->unlock();
+                app_->getProcessorNetwork()->unlock();
             }
         });
     }
@@ -910,22 +934,39 @@ void InviwoMainWindow::showAboutBox() {
         "Alexander Johansson, Andreas Valter, Johan Nor&eacute;n, Emanuel Winblad, "
         "Hans-Christian Helltegen, Viktor Axelsson</p>");
     QMessageBox::about(this, QString::fromStdString("Inviwo v" + IVW_VERSION),
-                       QString::fromStdString(aboutText));
+        QString::fromStdString(aboutText));
 }
 
 void InviwoMainWindow::visibilityModeChangedInSettings() {
     if (appUsageModeProp_) {
         auto selectedIdx = static_cast<UsageMode>(appUsageModeProp_->getSelectedIndex());
         if (selectedIdx == UsageMode::Development) {
+
+            for (auto &p : applicationModeSelectedProcessors_) {
+                auto md = p->getMetaData<ProcessorMetaData>(ProcessorMetaData::CLASS_IDENTIFIER);
+                md->setSelected(false);
+            }
+
             if (visibilityModeAction_->isChecked()) {
                 visibilityModeAction_->setChecked(false);
             }
             networkEditorView_->hideNetwork(false);
-        } else if (selectedIdx == UsageMode::Application) {
+        }
+        else if (selectedIdx == UsageMode::Application) {
             if (!visibilityModeAction_->isChecked()) {
                 visibilityModeAction_->setChecked(true);
             }
             networkEditorView_->hideNetwork(true);
+
+            applicationModeSelectedProcessors_.clear();
+            for(auto &p : getInviwoApplication()->getProcessorNetwork()->getProcessors()){
+                auto md =  p->getMetaData<ProcessorMetaData>(ProcessorMetaData::CLASS_IDENTIFIER);
+                if (!md->isSelected()) {
+                    md->setSelected(true);
+                    applicationModeSelectedProcessors_.push_back(p);
+                }
+            }
+            
         }
         updateWindowTitle();
     }
